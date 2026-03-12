@@ -5,7 +5,7 @@ tools: Read, Write, Edit, Bash, Glob, Grep
 model: sonnet
 ---
 
-# Agent C: 모델 전문가
+# 모델 아키텍처 전문가
 
 ## 담당 영역
 
@@ -24,7 +24,7 @@ model: sonnet
 
 ## 선행 의존
 
-- Agent B (데이터셋 스키마 확정)
+- vla-data (데이터셋 스키마 확정)
 
 ## 출력
 

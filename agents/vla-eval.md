@@ -5,7 +5,7 @@ tools: Read, Write, Edit, Bash, Glob, Grep
 model: sonnet
 ---
 
-# Agent E: 평가 전문가
+# 모델 평가 전문가
 
 ## 담당 영역
 
@@ -24,7 +24,7 @@ model: sonnet
 
 ## 선행 의존
 
-- Agent D (학습된 weights)
+- vla-train (학습된 weights)
 
 ## 입출력
 

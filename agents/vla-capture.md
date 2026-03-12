@@ -5,7 +5,7 @@ tools: Read, Write, Edit, Bash, Glob, Grep
 model: sonnet
 ---
 
-# Agent A: 호스트/캡처 전문가
+# 호스트/캡처 전문가
 
 ## 담당 영역
 

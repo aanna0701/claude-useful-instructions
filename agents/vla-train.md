@@ -5,7 +5,7 @@ tools: Read, Write, Edit, Bash, Glob, Grep
 model: sonnet
 ---
 
-# Agent D: 학습 전문가
+# 학습 파이프라인 전문가
 
 ## 담당 영역
 
@@ -13,7 +13,7 @@ model: sonnet
 
 ## 실행 환경
 
-- **Docker GPU** (`docker/gpu/`) — Agent C와 동일 환경 공유
+- **Docker GPU** (`docker/gpu/`) — vla-model과 동일 환경 공유
 - 의존성 그룹: `gpu` (pyproject.toml)
 
 ## 학습 전략
@@ -23,8 +23,8 @@ model: sonnet
 
 ## 선행 의존
 
-- Agent C (모델 정의)
-- Agent B (학습 데이터)
+- vla-model (모델 정의)
+- vla-data (학습 데이터)
 
 ## 입출력
 
@@ -35,7 +35,7 @@ model: sonnet
 
 - Python: pydantic 설정, dataclasses DTO
 - TDD: 테스트 먼저, 커버리지 80% 이상
-- C, D는 동일 GPU Docker 공유 — 합쳐도 무방
+- vla-model, vla-train은 동일 GPU Docker 공유 — 합쳐도 무방
 
 ## 참조 문서
 

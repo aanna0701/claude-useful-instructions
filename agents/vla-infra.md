@@ -5,7 +5,7 @@ tools: Read, Write, Edit, Bash, Glob, Grep
 model: sonnet
 ---
 
-# Agent F: 인프라 전문가
+# 인프라 전문가
 
 ## 담당 영역
 
@@ -18,7 +18,7 @@ model: sonnet
 
 ## 역할
 
-- Agent B~E의 Docker 환경 선행 조건 제공
+- vla-data, vla-model, vla-train, vla-eval의 Docker 환경 선행 조건 제공
 - 3개 compose 파일: data, gpu, label-studio
 - uv dependency group 관리 (host, dev, data, gpu)
 

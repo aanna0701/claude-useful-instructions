@@ -5,7 +5,7 @@ tools: Read, Write, Edit, Bash, Glob, Grep
 model: sonnet
 ---
 
-# Agent B: 데이터 전문가
+# 데이터 파이프라인 전문가
 
 ## 담당 영역
 
@@ -24,13 +24,13 @@ model: sonnet
 
 ## 입출력
 
-- **입력**: `~/robot_data/raw_images/` (Agent A 출력)
+- **입력**: `~/robot_data/raw_images/` (vla-capture 출력)
 - **출력**: `~/robot_data/lerobot_datasets/` (HF Dataset, Zarr)
 
 ## 선행 의존
 
-- Agent A (raw 데이터)
-- Agent F (Docker 환경)
+- vla-capture (raw 데이터)
+- vla-infra (Docker 환경)
 
 ## 코드 규칙
 
