@@ -15,6 +15,12 @@ if [ -d "$REPO_DIR/commands" ]; then
   cp -v "$REPO_DIR/commands/"*.md "$CLAUDE_DIR/commands/"
 fi
 
+# agents/
+if [ -d "$REPO_DIR/agents" ]; then
+  mkdir -p "$CLAUDE_DIR/agents"
+  cp -v "$REPO_DIR/agents/"*.md "$CLAUDE_DIR/agents/"
+fi
+
 # rules/
 if [ -d "$REPO_DIR/rules" ]; then
   find "$REPO_DIR/rules" -type d | while read -r dir; do
