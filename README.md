@@ -6,10 +6,7 @@
 
 ```
 claude-useful-instructions/
-├── agents/
-│   ├── example-frontend.md  # 프론트엔드 서브에이전트 예시
-│   ├── example-backend.md   # 백엔드 서브에이전트 예시
-│   └── example-infra.md     # 인프라 서브에이전트 예시
+├── agents/                   # 서브에이전트 (README에 작성법 문서화)
 ├── commands/
 │   └── sync-docs.md         # /sync-docs 커맨드
 └── install.sh               # ~/.claude/ 에 설정 복사
@@ -54,22 +51,38 @@ model: sonnet  # sonnet, opus, haiku 중 선택
 - **model**: 단순 작업은 `haiku`, 복잡한 작업은 `opus`로 비용 최적화
 - 프로젝트별 에이전트는 `<project>/.claude/agents/`에, 전역은 `~/.claude/agents/`에 배치
 
+### 네이밍 컨벤션
+
+프로젝트 접두사를 붙여 범위를 명확히 합니다:
+
+```
+.claude/agents/
+├── vla-capture.md   # VLA 프로젝트 — 카메라 캡처
+├── vla-data.md      # VLA 프로젝트 — 데이터 파이프라인
+├── vla-model.md     # VLA 프로젝트 — 모델 아키텍처
+├── vla-train.md     # VLA 프로젝트 — 학습
+├── vla-eval.md      # VLA 프로젝트 — 평가
+└── vla-infra.md     # VLA 프로젝트 — 인프라
+```
+
+패턴: `<project>-<domain>.md` (예: `vla-data`, `web-frontend`, `api-auth`)
+
 ### 예시: 도메인 분할 패턴
 
 ```
 .claude/agents/
-├── frontend.md   # React, UI 상태, 스타일링
-├── backend.md    # API, 서버 로직, DB
-└── infra.md      # Docker, CI/CD, 스크립트
+├── web-frontend.md   # React, UI 상태, 스타일링
+├── web-backend.md    # API, 서버 로직, DB
+└── web-infra.md      # Docker, CI/CD, 스크립트
 ```
 
 CLAUDE.md에 라우팅 규칙을 추가하면 자동 위임:
 
 ```markdown
 ## 서브에이전트 라우팅
-- frontend 관련 작업 → frontend 에이전트
-- API/서버 작업 → backend 에이전트
-- Docker/배포 작업 → infra 에이전트
+- frontend 관련 작업 → web-frontend 에이전트
+- API/서버 작업 → web-backend 에이전트
+- Docker/배포 작업 → web-infra 에이전트
 ```
 
 ## Commands
