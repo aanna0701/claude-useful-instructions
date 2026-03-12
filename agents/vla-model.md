@@ -3,6 +3,7 @@ name: vla-model
 description: "모델 아키텍처 — VLM backbone + Action decoder 정의 (Docker GPU)"
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: sonnet
+isolation: worktree
 ---
 
 # 모델 아키텍처 전문가

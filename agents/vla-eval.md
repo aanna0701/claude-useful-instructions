@@ -3,6 +3,7 @@ name: vla-eval
 description: "모델 평가 — 성능 메트릭 산출, safety_guard 검증 (Docker GPU)"
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: sonnet
+isolation: worktree
 ---
 
 # 모델 평가 전문가

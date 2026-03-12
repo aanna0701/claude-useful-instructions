@@ -3,6 +3,7 @@ name: vla-train
 description: "학습 파이프라인 — VLM QLoRA fine-tuning, Action BC 학습 (Docker GPU)"
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: sonnet
+isolation: worktree
 ---
 
 # 학습 파이프라인 전문가

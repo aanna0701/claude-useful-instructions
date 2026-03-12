@@ -3,6 +3,7 @@ name: vla-capture
 description: "카메라 캡처, 로봇 통신 — frame_sync (C++), ai_bridge, vas_client (Python) 호스트 실행"
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: sonnet
+isolation: worktree
 ---
 
 # 호스트/캡처 전문가

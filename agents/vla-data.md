@@ -3,6 +3,7 @@ name: vla-data
 description: "데이터 파이프라인 — 전처리, 수집, 라벨링, lerobot 포맷 변환 (Docker)"
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: sonnet
+isolation: worktree
 ---
 
 # 데이터 파이프라인 전문가

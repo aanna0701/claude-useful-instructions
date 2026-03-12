@@ -3,6 +3,7 @@ name: vla-infra
 description: "인프라 환경 — Docker, docker-compose, 빌드/배포 스크립트 관리"
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: sonnet
+isolation: worktree
 ---
 
 # 인프라 전문가
