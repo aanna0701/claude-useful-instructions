@@ -1,10 +1,18 @@
 #!/usr/bin/env bash
-# install.sh — Claude 설정을 ~/.claude/ 에 적용
+# install.sh — Copy Claude settings (commands, agents, rules) to a target directory
+# Usage: ./install.sh [TARGET_DIR]
+#   TARGET_DIR: root directory to install into (default: ~/.claude)
 
 set -e
 
 REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
-CLAUDE_DIR="$HOME/.claude"
+
+# Accept optional target directory as first argument (default: ~/.claude)
+if [ -n "$1" ]; then
+  CLAUDE_DIR="$(cd "$1" 2>/dev/null && pwd || echo "$1")"
+else
+  CLAUDE_DIR="$HOME/.claude"
+fi
 
 echo "Installing Claude settings from $REPO_DIR → $CLAUDE_DIR"
 echo "────────────────────────────────────────────────────────"
