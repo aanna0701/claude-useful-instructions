@@ -51,11 +51,7 @@ Proposed commits
 ──────────────────────────────────────────────
 ```
 
-**Ask the user for confirmation before proceeding.** The user may:
-- Approve as-is
-- Request re-grouping (merge or split groups)
-- Exclude certain files
-- Edit commit messages
+**Do NOT ask for confirmation — proceed automatically.** Print the table for visibility, then immediately start committing.
 
 ---
 
@@ -90,7 +86,7 @@ After all commits are created:
    - If the branch has no upstream, use `git push -u origin <branch>`
    - Otherwise, use `git push`
 
-**Ask the user for confirmation before pushing.**
+**Do NOT ask for confirmation — push automatically after commits.**
 
 ---
 
