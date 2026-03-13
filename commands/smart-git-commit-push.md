@@ -76,15 +76,19 @@ Rules:
 
 ---
 
-## Step 4: Push to remote
+## Step 4: Sync and push to remote
 
 After all commits are created:
 
-1. Determine push target:
+1. **Pull first to sync with remote:**
+   - Run `git pull --rebase` to incorporate remote changes and replay local commits on top
+   - If rebase conflicts occur, notify the user and help resolve them before continuing
+   - If pull fails due to no upstream, skip this step (new branch)
+
+2. **Push:**
    - If `$ARGUMENTS` is provided, use it as the target branch
-   - Otherwise, push to the current branch's upstream
-2. If the branch has no upstream, use `git push -u origin <branch>`
-3. Otherwise, use `git push`
+   - If the branch has no upstream, use `git push -u origin <branch>`
+   - Otherwise, use `git push`
 
 **Ask the user for confirmation before pushing.**
 
