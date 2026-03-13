@@ -9,6 +9,8 @@ claude-useful-instructions/
 ├── agents/                   # 서브에이전트 (README에 작성법 문서화)
 ├── commands/
 │   └── sync-docs.md         # /sync-docs 커맨드
+├── rules/
+│   └── vla-code-standards.md # 공통 코드 표준 (서브에이전트 공유용)
 └── install.sh               # ~/.claude/ 에 설정 복사
 ```
 
@@ -84,6 +86,30 @@ CLAUDE.md에 라우팅 규칙을 추가하면 자동 위임:
 - API/서버 작업 → web-backend 에이전트
 - Docker/배포 작업 → web-infra 에이전트
 ```
+
+## Rules (공유 규칙)
+
+`rules/` 디렉토리에 코드 표준 파일을 넣으면 `install.sh`가 `~/.claude/rules/`로 복사합니다.
+
+### 서브에이전트 규칙 적용 패턴
+
+서브에이전트는 `CLAUDE.md`나 `.claude/rules/`를 자동으로 읽지 않습니다. 에이전트 정의에 반드시 Read 지시를 넣어야 합니다:
+
+```markdown
+## 필수 선행 작업
+
+코드를 수정하기 전에 반드시 다음 파일을 Read하라:
+1. `CLAUDE.md` — 프로젝트 강제 규칙
+2. `.claude/rules/vla-code-standards.md` — 코드 표준
+```
+
+프로젝트별로 `.claude/rules/`에 규칙 파일을 두고, 에이전트가 이를 Read하게 하면 규칙이 일관되게 적용됩니다.
+
+### 현재 규칙
+
+| 파일 | 내용 |
+|------|------|
+| `rules/vla-code-standards.md` | pydantic vs dataclass 기준, 불변 패턴, TDD, import 순서 |
 
 ## Commands
 
