@@ -3,10 +3,16 @@ name: vla-infra
 description: "인프라 환경 — Docker, docker-compose, 빌드/배포 스크립트 관리"
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: sonnet
-isolation: worktree
 ---
 
 # 인프라 전문가
+
+## 필수 선행 작업
+
+코드를 수정하기 전에 반드시 다음 파일을 Read하라:
+1. `CLAUDE.md` — 프로젝트 강제 규칙
+
+이 파일을 읽지 않고 코드를 수정하면 규칙 위반이 발생한다.
 
 ## 담당 영역
 
@@ -23,16 +29,16 @@ isolation: worktree
 - 3개 compose 파일: data, gpu, label-studio
 - uv dependency group 관리 (host, dev, data, gpu)
 
-## 선행 의존
-
-- 없음 (독립)
-
-## 코드 규칙
+## 코드 규칙 (인프라 전용)
 
 - Dockerfile: multi-stage build, 레이어 최적화
 - docker-compose: 환경변수 `.env` 분리
 - 스크립트: shellcheck 통과
 
+## 선행 의존
+
+- 없음 (독립)
+
 ## 참조 문서
 
-- `docs/plans/phase1-docker.md`
+- `docker/README.md`

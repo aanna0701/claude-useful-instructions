@@ -3,10 +3,17 @@ name: vla-eval
 description: "모델 평가 — 성능 메트릭 산출, safety_guard 검증 (Docker GPU)"
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: sonnet
-isolation: worktree
 ---
 
-# 모델 평가 전문가
+# 평가 전문가
+
+## 필수 선행 작업
+
+코드를 수정하기 전에 반드시 다음 파일을 Read하라:
+1. `CLAUDE.md` — 프로젝트 강제 규칙
+2. `.claude/rules/vla-code-standards.md` — 코드 표준 (pydantic/dataclass 기준, 불변 패턴 등)
+
+이 파일들을 읽지 않고 코드를 수정하면 규칙 위반이 발생한다.
 
 ## 담당 영역
 
@@ -32,11 +39,7 @@ isolation: worktree
 - **입력**: 체크포인트 (`~/robot_data/checkpoints/`), 테스트 데이터
 - **출력**: 메트릭 리포트
 
-## 코드 규칙
-
-- Python: pydantic 설정, dataclasses DTO
-- TDD: 테스트 먼저, 커버리지 80% 이상
-
 ## 참조 문서
 
+- `eval/README.md`
 - `docs/plans/phase6-eval.md`

@@ -3,10 +3,18 @@ name: vla-capture
 description: "카메라 캡처, 로봇 통신 — frame_sync (C++), ai_bridge, vas_client (Python) 호스트 실행"
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: sonnet
-isolation: worktree
 ---
 
 # 호스트/캡처 전문가
+
+## 필수 선행 작업
+
+코드를 수정하기 전에 반드시 다음 파일을 Read하라:
+1. `CLAUDE.md` — 프로젝트 강제 규칙
+2. `.claude/rules/vla-code-standards.md` — 코드 표준 (pydantic/dataclass 기준, 불변 패턴 등)
+3. `env/frame_sync/CLAUDE.md` — frame_sync 전용 규칙
+
+이 파일들을 읽지 않고 코드를 수정하면 규칙 위반이 발생한다.
 
 ## 담당 영역
 
@@ -26,14 +34,7 @@ isolation: worktree
 - `~/robot_data/raw_images/` (환경변수 `ROBOT_DATA_RAW` 오버라이드)
 - 세션 폴더: `YYYYMMDD_HHMMSS/` + `frames.csv`
 
-## 코드 규칙
-
-- C++: C++ Core Guidelines 준수, GoogleTest 사용
-- Python: pydantic 설정 검증, dataclasses DTO
-- 불변 객체 패턴, 파일당 800줄 이하, 함수당 50줄 이하
-
 ## 참조 문서
 
 - `env/frame_sync/CLAUDE.md`
-- `docs/plans/phase6-eval.md`
 - `docs/DATA_STRUCTURE.md`
