@@ -6,12 +6,18 @@
 
 ```
 claude-useful-instructions/
-├── agents/                   # 서브에이전트 (README에 작성법 문서화)
+├── agents/
+│   ├── vla-*.md              # VLA 프로젝트 서브에이전트
+│   ├── cover-letter-writer.md   # 자소서 Writer 에이전트
+│   └── cover-letter-reviewer.md # 자소서 Reviewer 에이전트
 ├── commands/
-│   └── sync-docs.md         # /sync-docs 커맨드
+│   ├── sync-docs.md          # /sync-docs 커맨드
+│   ├── smart-git-commit-push.md # /smart-git-commit-push 커맨드
+│   └── cover-letter.md       # /cover-letter 자소서 작성 시스템
 ├── rules/
+│   ├── coding-style.md       # 코딩 스타일
 │   └── vla-code-standards.md # 공통 코드 표준 (서브에이전트 공유용)
-└── install.sh               # ~/.claude/ 에 설정 복사
+└── install.sh                # ~/.claude/ 에 설정 복사
 ```
 
 ## 설치
@@ -112,6 +118,21 @@ CLAUDE.md에 라우팅 규칙을 추가하면 자동 위임:
 | `rules/vla-code-standards.md` | pydantic vs dataclass 기준, 불변 패턴, TDD, import 순서 |
 
 ## Commands
+
+### `/cover-letter`
+
+NotebookLM MCP 기반 한국어 자소서 작성 멀티 에이전트 시스템입니다.
+
+- Writer 에이전트(초안 작성)와 Reviewer 에이전트(평가/피드백)가 반복 루프를 돌며 자소서 품질을 개선
+- 7가지 평가 항목(문법, 자연스러움, 사실검증, AI스타일탈피, 항목적합성, 구성, 글자수)으로 100점 만점 채점
+- 총점 76점 이상 또는 최대 5회 반복 시 종료
+- 전체 개선 과정을 기록한 `.md` 파일 자동 생성
+
+**사전 요구사항**: NotebookLM MCP 연결 + "자소서" 노트북에 이력서/포트폴리오 저장
+
+```
+/cover-letter    # 자소서 작성 시작 (항목, 강조사항, 글자수 입력)
+```
 
 ### `/sync-docs`
 
