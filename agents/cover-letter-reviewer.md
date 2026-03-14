@@ -68,18 +68,26 @@ Red flags to catch:
 - Is the content specific to the target company/role?
 - Would a hiring manager feel their question was answered?
 
-### 6. 구성/구조 (Structure & Composition)
-Good 자소서 structure:
-- **도입 (Opening)**: Attention-grabbing hook, sets the theme
-- **본론 (Body)**: Concrete experiences with STAR method (Situation, Task, Action, Result)
-- **성찰 (Reflection)**: What was learned, how it shaped the applicant
-- **연결 (Connection)**: Why this company, why this role, why now
-- **마무리 (Closing)**: Forward-looking, confident, memorable
+### 6. 구성/구조 & 스토리라인 (Structure & Storyline)
 
-Check:
-- Is there a clear narrative thread?
-- Does the structure serve the content?
-- Is there appropriate balance between sections?
+The cover letter MUST follow a 기승전결 narrative arc. This is the most critical structural dimension.
+
+**기승전결 checklist:**
+- **기 (Hook)**: Does it open with a vivid, specific moment or insight? Does it make you want to keep reading?
+- **승 (Development)**: Do the experiences build upon the opening? If multiple experiences are present, do they use concise [소제목] sub-headings (3-5 words) and connect to each other logically?
+- **전 (Turning point)**: Is there a genuine realization or synthesis moment that ties everything together?
+- **결 (Conclusion)**: Does it connect the narrative specifically to THIS company/role?
+
+**Anti-listing check (critical):**
+- Does it read as a STORY or as a LIST of achievements?
+- Are transitions between experiences natural and connected?
+- If [소제목] sub-headings are used, do they feel like chapters of one story or disconnected bullet points?
+- Does each section advance a single narrative thread?
+
+**Score 25**: No narrative structure — flat list of experiences, no connections
+**Score 50**: Attempts structure but feels forced — experiences listed with weak transitions
+**Score 75**: Good narrative flow with minor disconnections — mostly reads as a story
+**Score 100**: Compelling 기승전결 arc — every section naturally advances one unified story
 
 ### 7. 글자수 준수 (Character Limit Compliance)
 If a limit was specified:
@@ -107,15 +115,18 @@ Each dimension is scored on a 4-level numeric scale. The total score is the aver
 | 0-25 | 매우 나쁨 | Complete rewrite |
 | 26-50 | 개선 필요 | Significant revisions |
 | 51-75 | 어느정도 괜찮음 | Minor polish |
-| 76-100 | 완벽에 가까움 | Ready for submission ✅ |
+| 76-94 | 완벽에 가까움 | Continue iterating (min 3 rounds required) |
+| 95-100 | 완벽에 가까움 | Ready for submission ✅ (after min 3 rounds) |
 
-**The iteration loop continues until total score ≥ 76.**
+**The iteration loop requires a minimum of 3 rounds AND total score ≥ 95 to exit.**
 
 ### Scoring Discipline
-- Do NOT give 100 on any dimension easily. 100 means you would confidently submit it yourself.
+- Do NOT give 100 on any dimension easily. 100 means you would confidently submit it yourself with zero hesitation.
 - If you hesitate even slightly, score 75 at most.
 - Be especially strict on iterations 1-2. A first draft rarely averages above 50.
 - Score each dimension INDEPENDENTLY — a great structure doesn't compensate for grammar errors.
+- The 기승전결 storyline structure is critical — a flat list of experiences should score at most 50 on 구성/구조.
+- The bar for exit is 95 average. This means most dimensions need to be 100, with at most one or two at 75. Be honest but fair.
 
 ## Output Format
 
