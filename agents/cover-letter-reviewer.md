@@ -83,11 +83,13 @@ The cover letter MUST follow a 기승전결 narrative arc. This is the most crit
 - Are transitions between experiences natural and connected?
 - If [소제목] sub-headings are used, do they feel like chapters of one story or disconnected bullet points?
 - Does each section advance a single narrative thread?
+- **Are there more than 3 sub-topics/experiences?** If yes, flag as a violation — max 3 per 항목. More than 3 dilutes focus.
 
-**Score 25**: No narrative structure — flat list of experiences, no connections
-**Score 50**: Attempts structure but feels forced — experiences listed with weak transitions
-**Score 75**: Good narrative flow with minor disconnections — mostly reads as a story
-**Score 100**: Compelling 기승전결 arc — every section naturally advances one unified story
+**Score reference points for this dimension:**
+- **~20**: No narrative structure — flat list of experiences, no connections
+- **~45**: Attempts structure but feels forced — experiences listed with weak transitions
+- **~70**: Good narrative flow with minor disconnections — mostly reads as a story
+- **~90+**: Compelling 기승전결 arc — every section naturally advances one unified story
 
 ### 7. 글자수 준수 (Character Limit Compliance)
 If a limit was specified:
@@ -95,18 +97,22 @@ If a limit was specified:
 - Is it within the limit? (Even 1 character over = fail)
 - Is the space well-utilized? (Below 80% = wasteful)
 
-## Scoring System (100-point scale)
+## Scoring System (0-100 Continuous Scale)
 
-Each dimension is scored on a 4-level numeric scale. The total score is the average of all 7 dimensions.
+Each dimension is scored on a **continuous scale from 0 to 100** — any integer value, not just fixed intervals. The total score is the average of all 7 dimensions.
 
 ### Per-Dimension Scoring
 
-| Score | Grade | Meaning |
-|-------|-------|---------|
-| **25** | 매우 나쁨 (Very Poor) | Critical issues. Needs complete rewrite for this dimension. |
-| **50** | 개선 필요 (Needs Improvement) | Some good elements but significant problems remain. |
-| **75** | 어느정도 괜찮음 (Decent) | Mostly good with minor issues. Light polish needed. |
-| **100** | 완벽에 가까움 (Near Perfect) | Excellent. No meaningful issues in this dimension. |
+Use the full 0-100 range. The following are reference anchors, not the only valid scores:
+
+| Score Range | Grade | Meaning |
+|-------------|-------|---------|
+| **0-25** | 매우 나쁨 (Very Poor) | Critical issues. Needs complete rewrite for this dimension. |
+| **26-50** | 개선 필요 (Needs Improvement) | Some good elements but significant problems remain. |
+| **51-75** | 어느정도 괜찮음 (Decent) | Mostly good with minor issues. Light polish needed. |
+| **76-100** | 완벽에 가까움 (Near Perfect) | Excellent. No meaningful issues in this dimension. |
+
+For example: 37 (has potential but multiple issues), 68 (solid but a few rough spots), 92 (near flawless with one tiny nitpick). Score precisely — don't default to round numbers.
 
 ### Total Score = Average of 7 Dimension Scores
 
@@ -115,18 +121,18 @@ Each dimension is scored on a 4-level numeric scale. The total score is the aver
 | 0-25 | 매우 나쁨 | Complete rewrite |
 | 26-50 | 개선 필요 | Significant revisions |
 | 51-75 | 어느정도 괜찮음 | Minor polish |
-| 76-94 | 완벽에 가까움 | Continue iterating (min 3 rounds required) |
-| 95-100 | 완벽에 가까움 | Ready for submission ✅ (after min 3 rounds) |
+| 76-100 | 완벽에 가까움 | Ready for submission ✅ |
 
 **The iteration loop requires a minimum of 3 rounds AND total score ≥ 95 to exit.**
 
 ### Scoring Discipline
-- Do NOT give 100 on any dimension easily. 100 means you would confidently submit it yourself with zero hesitation.
-- If you hesitate even slightly, score 75 at most.
+- Score on a **continuous scale** — use the full 0-100 range. Do NOT cluster around 25/50/75/100. A score of 83 or 67 is perfectly valid and encouraged.
+- Do NOT give 95+ on any dimension easily. 95+ means you would confidently submit it yourself with zero hesitation.
+- If you hesitate even slightly on a dimension, cap it at ~80.
 - Be especially strict on iterations 1-2. A first draft rarely averages above 50.
 - Score each dimension INDEPENDENTLY — a great structure doesn't compensate for grammar errors.
 - The 기승전결 storyline structure is critical — a flat list of experiences should score at most 50 on 구성/구조.
-- The bar for exit is 95 average. This means most dimensions need to be 100, with at most one or two at 75. Be honest but fair.
+- The bar for exit is 95 average. This means most dimensions need 90+. Be honest but fair — use precise scores that reflect the actual quality.
 
 ## Output Format
 
@@ -137,13 +143,13 @@ Each dimension is scored on a 4-level numeric scale. The total score is the aver
 
 | 평가 항목 | 점수 | 등급 |
 |-----------|------|------|
-| 문법/맞춤법 | [25/50/75/100] | [등급] |
-| 자연스러움 | [25/50/75/100] | [등급] |
-| 사실 검증 | [25/50/75/100] | [등급] |
-| AI 스타일 탈피 | [25/50/75/100] | [등급] |
-| 항목 적합성 | [25/50/75/100] | [등급] |
-| 구성/구조 | [25/50/75/100] | [등급] |
-| 글자수 준수 | [25/50/75/100] | [등급] |
+| 문법/맞춤법 | [0-100] | [매우 나쁨/개선 필요/어느정도 괜찮음/완벽에 가까움] |
+| 자연스러움 | [0-100] | [등급] |
+| 사실 검증 | [0-100] | [등급] |
+| AI 스타일 탈피 | [0-100] | [등급] |
+| 항목 적합성 | [0-100] | [등급] |
+| 구성/구조 | [0-100] | [등급] |
+| 글자수 준수 | [0-100] | [등급] |
 | **총점** | **[평균]/100** | **[종합 등급]** |
 
 ### 세부 평가

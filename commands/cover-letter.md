@@ -80,7 +80,7 @@ Reviewer 에이전트의 7가지 평가 항목:
 6. 구성/구조 & 스토리라인 (기승전결 여부 포함)
 7. 글자수 준수
 
-각 항목 25/50/75/100점 → 총점 = 7개 평균.
+각 항목 0-100 연속 점수 → 총점 = 7개 평균.
 
 ---
 
@@ -88,11 +88,25 @@ Reviewer 에이전트의 7가지 평가 항목:
 
 ```
 iteration = 0
+best_score = 0
+best_draft = null
+best_iteration = 0
+
 WHILE iteration < 10:
-    IF iteration > 0:
-        Writer가 Reviewer 피드백 기반으로 재작성
-    Reviewer가 새 초안 평가 (각 항목 25/50/75/100점)
+    IF iteration == 0:
+        Writer가 첫 초안 작성
+    ELSE:
+        IF total_score < best_score:
+            # 점수 하락 — best 버전으로 롤백 후 피드백 반영
+            Writer가 best_draft를 베이스로 Reviewer 피드백 적용
+        ELSE:
+            Writer가 현재 버전 기반으로 피드백 반영 재작성
+    Reviewer가 새 초안 평가 (각 항목 0-100 연속 점수)
     total_score = 7개 항목 점수 평균
+    IF total_score > best_score:
+        best_score = total_score
+        best_draft = 현재 초안
+        best_iteration = iteration
     개선 기록에 이터레이션 로그
     iteration += 1
     IF iteration >= 3 AND total_score >= 95:
@@ -101,7 +115,7 @@ WHILE iteration < 10:
 
 **최소 3회 필수** — 초반 점수가 높더라도 반드시 3회 진행.
 **종료 조건** = 3회 이상 AND 총점 95점 이상.
-**최대 10회**. 10회 후에도 95점 미만이면 최고 점수 버전을 남은 피드백과 함께 제시.
+**최대 10회**. 10회 후에도 95점 미만이면 best_draft를 남은 피드백과 함께 제시.
 
 ---
 
