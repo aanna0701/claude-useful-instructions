@@ -51,7 +51,7 @@ Cross-reference with NotebookLM context:
 - Are job titles and roles correct?
 - Flag ANY claim not supported by the notebook as "확인 불가" (unverifiable)
 
-### 4. AI 스타일 탈피 (Anti-AI Style Check)
+### 4. AI 스타일 탈피 & 과장/오버 표현 검사 (Anti-AI Style, Exaggeration & Over-the-top Check)
 Red flags to catch:
 - Repetitive sentence patterns (same structure repeating)
 - Overuse of "~를 통해", "~의 중요성을 깨달았습니다", "다양한 경험"
@@ -61,6 +61,23 @@ Red flags to catch:
 - Excessive use of buzzwords without substance
 - Overly smooth transitions that feel templated
 - Conclusions that are too neat and wrapped-up
+- **Exaggerated or grandiose expressions** — flag any of these and similar patterns:
+  - "혁신적인 변화를 이끌었습니다", "폭발적인 성장", "완벽하게 해냈습니다"
+  - "누구보다 열정적으로", "최고의 성과", "남다른 열정", "탁월한 리더십"
+  - "놀라운 결과", "비약적인 발전", "획기적인 성과"
+  - Any superlative or absolute claim not backed by specific numbers
+- **Over-the-top, performative sentences** — flag sentences that try too hard to impress or sound dramatic. The tone should be that of a composed professional, not a movie narrator. Examples to flag:
+  - "그 순간, 저는 깨달았습니다. 진정한 개발자란 무엇인지를." (overly dramatic staging)
+  - "밤낮을 가리지 않고 코드와 씨름하며..." (performative suffering narrative)
+  - "가슴이 뛰는 경험이었습니다" (empty emotional claim)
+  - "저의 DNA에는 도전 정신이 새겨져 있습니다" (cringe-level overstatement)
+  - Excessive rhetorical questions used for dramatic effect
+  - Any sentence that sounds like ad copy or a motivational speech
+- **Professional tone test**: Would a senior hiring manager read this and think "이 사람 일 잘하겠다" (competent) or "이 사람 오버한다" (trying too hard)? Every sentence should pass this test.
+- For each flagged exaggeration or over-the-top expression, suggest a calm, factual replacement. Example:
+  - "폭발적으로 성장했습니다" → "MAU가 3개월간 40% 증가했습니다"
+  - "탁월한 리더십으로 팀을 이끌었습니다" → "팀원 4명과 함께 3개월간 프로젝트를 완수했습니다"
+  - "그 순간 깨달았습니다" → "이 경험을 통해 ~의 중요성을 인식하게 되었습니다"
 
 ### 5. 항목 적합성 (Relevance to Prompt)
 - Does the cover letter DIRECTLY answer the 자소서 항목?
@@ -73,10 +90,18 @@ Red flags to catch:
 The cover letter MUST follow a 기승전결 narrative arc. This is the most critical structural dimension.
 
 **기승전결 checklist:**
-- **기 (Hook)**: Does it open with a vivid, specific moment or insight? Does it make you want to keep reading?
-- **승 (Development)**: Do the experiences build upon the opening? If multiple experiences are present, do they use concise [소제목] sub-headings (3-5 words) and connect to each other logically?
+- **기 (Hook)**: Does it open with a vivid, specific moment or insight? Does it make you want to keep reading? **Does the opening serve as an umbrella that naturally encompasses ALL experiences in 승?**
+- **승 (Development)**: Do the experiences build upon the opening? If multiple experiences are present, do they use concise [소제목] sub-headings (3-5 words) and connect to each other logically? Does every experience feel like a natural extension of the 기 theme?
 - **전 (Turning point)**: Is there a genuine realization or synthesis moment that ties everything together?
-- **결 (Conclusion)**: Does it connect the narrative specifically to THIS company/role?
+- **결 (Conclusion)**: Does it connect the narrative specifically to THIS company/role? **Does the closing synthesize ALL experiences from 승 — not just the last one?**
+
+**Opening-Closing coherence check (critical):**
+- Read ONLY the 기 and 결 together: do they form a coherent pair?
+- Does 기 set up a theme/question broad enough for ALL experiences?
+- Does 결 answer that theme by weaving insights from EVERY experience in 승?
+- If the opening only relates to the first experience → flag as broken frame
+- If the closing only wraps up the last experience → flag as broken frame
+- Each experience in 승 should feel like it belongs under both the opening's umbrella AND the closing's synthesis
 
 **Anti-listing check (critical):**
 - Does it read as a STORY or as a LIST of achievements?
@@ -86,10 +111,10 @@ The cover letter MUST follow a 기승전결 narrative arc. This is the most crit
 - **Are there more than 3 sub-topics/experiences?** If yes, flag as a violation — max 3 per 항목. More than 3 dilutes focus.
 
 **Score reference points for this dimension:**
-- **~20**: No narrative structure — flat list of experiences, no connections
-- **~45**: Attempts structure but feels forced — experiences listed with weak transitions
-- **~70**: Good narrative flow with minor disconnections — mostly reads as a story
-- **~90+**: Compelling 기승전결 arc — every section naturally advances one unified story
+- **~20**: No narrative structure — flat list of experiences, opening/closing disconnected from body
+- **~45**: Attempts structure but opening or closing only relates to one experience, not all
+- **~70**: Good narrative flow, opening/closing mostly encompass all experiences but with gaps
+- **~90+**: Compelling 기승전결 arc — opening frames all experiences, closing synthesizes them all into one unified message
 
 ### 7. 글자수 준수 (Character Limit Compliance)
 If a limit was specified:
@@ -123,16 +148,16 @@ For example: 37 (has potential but multiple issues), 68 (solid but a few rough s
 | 51-75 | 어느정도 괜찮음 | Minor polish |
 | 76-100 | 완벽에 가까움 | Ready for submission ✅ |
 
-**The iteration loop requires a minimum of 3 rounds AND total score ≥ 95 to exit.**
+**The iteration loop requires a minimum of 3 rounds AND every dimension score ≥ 90 to exit.**
 
 ### Scoring Discipline
-- Score on a **continuous scale** — use the full 0-100 range. Do NOT cluster around 25/50/75/100. A score of 83 or 67 is perfectly valid and encouraged.
+- **CONTINUOUS SCORING IS MANDATORY.** Each dimension gets a precise integer score from 0 to 100. Scores like 25, 50, 75, 100 should be rare — most scores should be numbers like 37, 58, 72, 83, 91. If you find yourself only giving round quarter-scores, you are doing it wrong.
 - Do NOT give 95+ on any dimension easily. 95+ means you would confidently submit it yourself with zero hesitation.
 - If you hesitate even slightly on a dimension, cap it at ~80.
 - Be especially strict on iterations 1-2. A first draft rarely averages above 50.
 - Score each dimension INDEPENDENTLY — a great structure doesn't compensate for grammar errors.
 - The 기승전결 storyline structure is critical — a flat list of experiences should score at most 50 on 구성/구조.
-- The bar for exit is 95 average. This means most dimensions need 90+. Be honest but fair — use precise scores that reflect the actual quality.
+- The exit condition is ALL dimensions ≥ 90. Even one dimension at 89 means the loop continues. Be honest but fair — use precise scores that reflect the actual quality.
 
 ## Output Format
 

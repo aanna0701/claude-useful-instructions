@@ -50,12 +50,14 @@ Every cover letter must follow a narrative arc. This is the single most importan
 - Start with a vivid, specific moment or insight that sets the theme
 - Make the reader curious to continue
 - Establish the "through-line" that connects everything
+- **The opening must be an umbrella that covers ALL experiences in 승.** Before writing, ask yourself: "Does this opening naturally lead to every experience I'm about to discuss?" If any experience feels unrelated to the opening, either change the opening or reconsider the experience.
 
 **승 (Development)**:
 - Build on the hook with concrete experiences from the notebook
 - If the user has multiple experiences to cover, use very concise [소제목] sub-headings (3-5 words max)
   - Example: [첫 번째 도전], [팀을 이끌며], [사용자 관점의 전환]
 - Each experience/section must ADVANCE the overall narrative — they are chapters in one story, not isolated bullet points
+- Every experience must feel like a natural extension of the 기 opening theme
 - Transitions between sections must feel natural: one experience should logically lead to the next
 
 **전 (Turning point)**:
@@ -67,6 +69,16 @@ Every cover letter must follow a narrative arc. This is the single most importan
 - Connect the narrative directly to THIS company and THIS role
 - Show why the story you told makes you the right fit — specifically
 - Forward-looking but grounded in what you've demonstrated
+- **The closing must synthesize ALL experiences from 승 into a unified message** — not just reference the last experience
+- The reader should feel that the conclusion naturally follows from every experience discussed
+
+**Opening-Closing coherence (핵심 원칙):**
+기 and 결 form a frame around 승. Think of it as:
+- 기 asks a question or sets a theme broad enough for ALL experiences
+- 승 explores it through specific experiences
+- 결 answers the question by weaving ALL experiences into one conclusion
+
+Self-check before finalizing: read ONLY the 기 and 결 together — do they make sense as a pair? Does 결 feel like the natural answer to 기, incorporating insights from every experience in 승?
 
 **Sub-heading [소제목] rules:**
 - Use ONLY when covering 2+ distinct experiences
@@ -86,6 +98,8 @@ Every cover letter must follow a narrative arc. This is the single most importan
 - Use active voice predominantly
 - Include specific project names, technologies, team sizes when available from the notebook
 - Ensure each paragraph flows into the next like a story
+- **Write in an understated, factual tone** — let results and numbers speak for themselves. Modesty + specificity > grandiosity.
+- **Maintain a professional, composed tone throughout.** Write as a competent professional stating facts, not as someone trying to impress. The reader should think "이 사람 일 잘하겠다" not "이 사람 오버한다".
 
 ### DON'T:
 - Start with "저는 ~대학교 ~학과에 재학 중인 ~입니다" (boring, generic opener)
@@ -97,6 +111,13 @@ Every cover letter must follow a narrative arc. This is the single most importan
 - Use English words unnecessarily when good Korean equivalents exist
 - **Simply list experiences one after another without narrative connection**
 - **Treat sub-headings as an excuse to write disconnected paragraphs**
+- **Use exaggerated or grandiose expressions.** Avoid: "혁신적인 변화를 이끌었습니다", "누구보다 열정적으로", "폭발적인 성장", "완벽하게 해냈습니다", "최고의 성과", "남다른 열정", "탁월한 리더십". Instead, state what happened factually. "MAU가 40% 증가했습니다" beats "폭발적으로 성장했습니다". "팀원 4명과 3개월간 프로젝트를 완수했습니다" beats "탁월한 리더십으로 팀을 이끌었습니다".
+- **Write over-the-top, performative sentences that try too hard.** Avoid dramatic flair, excessive emotional appeals, or sentences that sound like a movie trailer. Examples of what NOT to write:
+  - "그 순간, 저는 깨달았습니다. 진정한 개발자란 무엇인지를." (overly dramatic)
+  - "밤낮을 가리지 않고 코드와 씨름하며 피와 땀으로 완성한 프로젝트입니다." (performative suffering)
+  - "가슴이 뛰는 경험이었습니다." (empty emotional claim)
+  - "저의 DNA에는 도전 정신이 새겨져 있습니다." (cringe-level overstatement)
+  Instead, write with quiet confidence: state what you did, what happened, what you learned — calmly, specifically, professionally.
 
 ### Sentence Rhythm:
 Bad: "저는 A를 했으며, B를 통해 C를 배웠고, D를 경험하면서 E를 깨달았습니다."

@@ -100,22 +100,26 @@ WHILE iteration < 10:
             # 점수 하락 — best 버전으로 롤백 후 피드백 반영
             Writer가 best_draft를 베이스로 Reviewer 피드백 적용
         ELSE:
+            # 점수 유지/상승 — 현재 버전 기반으로 개선
             Writer가 현재 버전 기반으로 피드백 반영 재작성
-    Reviewer가 새 초안 평가 (각 항목 0-100 연속 점수)
-    total_score = 7개 항목 점수 평균
+    Reviewer가 초안 평가 (각 항목 0-100 연속 점수, e.g. 37, 68, 83, 92)
+    dimension_scores = [7개 항목 각 점수]
+    total_score = dimension_scores 평균
+    min_dimension_score = dimension_scores 중 최솟값
     IF total_score > best_score:
         best_score = total_score
         best_draft = 현재 초안
         best_iteration = iteration
     개선 기록에 이터레이션 로그
     iteration += 1
-    IF iteration >= 3 AND total_score >= 95:
-        BREAK  # 최소 3회 완료 후 95점 이상이면 종료
+    IF iteration >= 3 AND min_dimension_score >= 90:
+        BREAK  # 최소 3회 완료 후 모든 항목 90 이상이면 종료
 ```
 
 **최소 3회 필수** — 초반 점수가 높더라도 반드시 3회 진행.
-**종료 조건** = 3회 이상 AND 총점 95점 이상.
-**최대 10회**. 10회 후에도 95점 미만이면 best_draft를 남은 피드백과 함께 제시.
+**종료 조건** = 3회 이상 AND **모든 항목 개별 점수 ≥ 90** (평균이 아닌 최솟값 기준).
+**단 하나의 항목이라도 89 이하면 루프 계속**.
+**최대 10회**. 10회 후에도 미달이면 best_draft를 남은 피드백과 함께 제시.
 
 ---
 
