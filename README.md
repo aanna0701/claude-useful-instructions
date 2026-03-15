@@ -170,6 +170,56 @@ NotebookLM을 단순 검색 DB가 아닌 **AI 합성 엔진**으로 활용합니
 
 전체 개선 과정(각 회차 초안 + Reviewer 점수표 + 피드백)을 기록한 `.md` 파일을 자동 생성합니다.
 
+#### NotebookLM MCP 설치
+
+**설치**
+
+```bash
+# uv 사용 (권장)
+uv tool install notebooklm-mcp-cli
+
+# pip 사용
+pip install notebooklm-mcp-cli
+```
+
+**로그인**
+
+```bash
+# 브라우저를 먼저 완전히 닫은 후 실행
+nlm login
+# → 브라우저가 열리면 Google 계정으로 로그인 → SUCCESS 메시지 확인
+```
+
+**Cursor에 MCP 등록**
+
+```bash
+nlm setup add cursor
+# ~/.cursor/mcp.json 에 설정이 자동으로 추가됨
+```
+
+**Claude Code에 MCP 등록** (`~/.claude/mcp.json` 수동 추가)
+
+```json
+{
+  "mcpServers": {
+    "notebooklm": {
+      "command": "nlm",
+      "args": ["serve"]
+    }
+  }
+}
+```
+
+**진단**
+
+```bash
+nlm doctor
+```
+
+#### 세션 분리 (필수)
+
+Stage 1/2(컨텍스트 추출 + 경력 기술서 작성)와 Stage 3(자소서 작성)은 **반드시 별도 채팅**에서 실행합니다. Stage 1/2의 긴 컨텍스트가 쌓이면 Stage 3 품질이 떨어지기 때문입니다. Stage 1/2 완료 후 새 채팅에서 "자소서 써줘"라고 입력하면 NotebookLM에 저장된 결과를 불러와 바로 시작됩니다.
+
 **사전 요구사항**: NotebookLM MCP 연결 (`jacob-bd/notebooklm-mcp-cli`) + "자소서" 노트북에 이력서/포트폴리오 저장
 
 ```
