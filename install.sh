@@ -19,10 +19,16 @@ CLAUDE_DIR="$PROJECT_ROOT/.claude"
 echo "Installing Claude settings from $REPO_DIR → $CLAUDE_DIR"
 echo "────────────────────────────────────────────────────────"
 
-# commands/
+# commands/ (including subdirectories like references/)
 if [ -d "$REPO_DIR/commands" ]; then
-  mkdir -p "$CLAUDE_DIR/commands"
-  cp -v "$REPO_DIR/commands/"*.md "$CLAUDE_DIR/commands/"
+  find "$REPO_DIR/commands" -type d | while read -r dir; do
+    relative="${dir#$REPO_DIR/}"
+    mkdir -p "$CLAUDE_DIR/$relative"
+  done
+  find "$REPO_DIR/commands" -name "*.md" | while read -r file; do
+    relative="${file#$REPO_DIR/}"
+    cp -v "$file" "$CLAUDE_DIR/$relative"
+  done
 fi
 
 # agents/
