@@ -1,15 +1,3 @@
----
-name: cover-letter-agent
-description: >
-  Multi-agent Korean cover letter (자소서) writing skill with a 3-stage pipeline using NotebookLM MCP.
-  Stage 1: Extract structured context from CV/portfolio/papers in NotebookLM.
-  Stage 2: Generate a detailed career description and HR-perspective essay.
-  Stage 3: Write the actual 자소서 with Writer-Reviewer multi-agent loop.
-  Trigger this skill whenever the user asks to write, draft, improve, or create a Korean cover letter (자소서),
-  personal statement, or job application essay. Also trigger when the user mentions 자소서, 자기소개서,
-  cover letter for Korean jobs, or wants help with job application writing in Korean.
-  Even if the user just says "help me write 자소서" or "자소서 써줘", use this skill.
----
 
 # Cover Letter Agent (자소서 작성 멀티 에이전트)
 
@@ -101,6 +89,7 @@ Read `~/.claude/commands/references/writer-prompt.md` and `~/.claude/commands/re
 **Mode B/C**: 사용자 초안이 있으면 Writer를 건너뛰고 Reviewer가 먼저 평가. Writer는 사용자의 의도/톤/표현을 존중하며 개선 (에디터 역할).
 
 ### 3.1 Writer
+**`cover-letter-writer` 에이전트에게 위임한다.**
 - **NLM 1회만 호출** (첫 iteration에서만): "이 JD에 가장 적합한 경험 3개를 근거와 함께 추천해줘"
 - 이후 iteration에서는 NLM 쿼리 없이 Reviewer 피드백 기반으로 개선
 - 기승전결 구조 (기/결이 모든 경험을 포괄), 소제목 최대 3개
@@ -108,6 +97,7 @@ Read `~/.claude/commands/references/writer-prompt.md` and `~/.claude/commands/re
 - 경력직 전문 톤, 과장/오버 금지, 글자수 엄수
 
 ### 3.2 Reviewer
+**`cover-letter-reviewer` 에이전트에게 위임한다.**
 - 7개 차원 0-100 연속 점수 (25/50/75/100 고정 금지)
 - 팩트체크는 Stage 1/2 문서(컨텍스트에 이미 포함)를 기반으로 AI가 자체 대조 — NLM 호출 없음
 - 역량 프레이밍 검사: 결과만 나열하고 역량 연결 없으면 감점
