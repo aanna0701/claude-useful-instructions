@@ -60,7 +60,7 @@ Stage 3 진입 전, NLM에서 아래 문서 존재 확인:
 
 # Stage 1: Context Extraction
 
-Read `references/stage1-context-extraction.md` for full instructions.
+Read `~/.claude/commands/references/stage1-context-extraction.md` for full instructions.
 
 **핵심:** NLM을 검색 DB가 아닌 **추론 엔진**으로 활용. 합성 질문으로 교차 분석.
 
@@ -72,7 +72,7 @@ Read `references/stage1-context-extraction.md` for full instructions.
 
 # Stage 2: Career Description & Essay
 
-Read `references/stage2-career-docs.md` for full instructions.
+Read `~/.claude/commands/references/stage2-career-docs.md` for full instructions.
 
 **Stage 1 컨텍스트 기반으로 AI가 작성** — Stage 1에서 이미 NLM으로 충분히 추출/분석했으므로 Stage 2에서는 추가 NLM 쿼리 없이 진행.
 
@@ -92,7 +92,7 @@ Read `references/stage2-career-docs.md` for full instructions.
 
 # Stage 3: Cover Letter Writing (Multi-Agent Loop)
 
-Read `references/writer-prompt.md` and `references/reviewer-prompt.md` for agent details.
+Read `~/.claude/commands/references/writer-prompt.md` and `~/.claude/commands/references/reviewer-prompt.md` for agent details.
 
 ### 3.0 User Input
 1. 자소서 항목 + JD + 강조 사항 + 글자수 제한 + 지원 회사/직무
