@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# uninstall.sh — Remove Claude settings (commands, agents, rules) installed by install.sh
+# uninstall.sh — Remove Claude settings (commands, agents, rules, skills) installed by install.sh
 # Usage: ./uninstall.sh [TARGET_DIR]
 #   TARGET_DIR: project root to uninstall from (default: ~, i.e. ~/.claude)
 
@@ -23,15 +23,16 @@ removed=0
 
 # commands/ — remove only files that exist in this repo
 if [ -d "$REPO_DIR/commands" ]; then
-  for file in "$REPO_DIR/commands/"*.md; do
-    target="$CLAUDE_DIR/commands/$(basename "$file")"
+  find "$REPO_DIR/commands" -name "*.md" | while read -r file; do
+    relative="${file#$REPO_DIR/}"
+    target="$CLAUDE_DIR/$relative"
     if [ -f "$target" ]; then
       rm -v "$target"
       removed=$((removed + 1))
     fi
   done
-  # Remove directory if empty
-  [ -d "$CLAUDE_DIR/commands" ] && rmdir "$CLAUDE_DIR/commands" 2>/dev/null || true
+  # Remove empty subdirectories (deepest first)
+  find "$CLAUDE_DIR/commands" -type d -empty -delete 2>/dev/null || true
 fi
 
 # agents/ — remove only files that exist in this repo
@@ -56,9 +57,22 @@ if [ -d "$REPO_DIR/rules" ]; then
       removed=$((removed + 1))
     fi
   done
-  # Remove empty subdirectories (deepest first)
   find "$CLAUDE_DIR/rules" -type d -empty -delete 2>/dev/null || true
 fi
 
+# skills/ — remove only skill folders that exist in this repo
+if [ -d "$REPO_DIR/skills" ]; then
+  for skill_dir in "$REPO_DIR"/skills/*/; do
+    [ -d "$skill_dir" ] || continue
+    skill_name="$(basename "$skill_dir")"
+    target="$CLAUDE_DIR/skills/$skill_name"
+    if [ -d "$target" ]; then
+      rm -rv "$target"
+      removed=$((removed + 1))
+    fi
+  done
+  [ -d "$CLAUDE_DIR/skills" ] && rmdir "$CLAUDE_DIR/skills" 2>/dev/null || true
+fi
+
 echo "────────────────────────────────────────────────────────"
-echo "Done. Removed $removed file(s)."
+echo "Done. Removed $removed item(s)."

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# install.sh — Copy Claude settings (commands, agents, rules) into <TARGET>/.claude/
+# install.sh — Copy Claude settings (commands, agents, rules, skills) into <TARGET>/.claude/
 # Usage: ./install.sh [TARGET_DIR]
 #   TARGET_DIR: project root to install into (default: ~, i.e. ~/.claude)
 
@@ -46,6 +46,25 @@ if [ -d "$REPO_DIR/rules" ]; then
   find "$REPO_DIR/rules" -name "*.md" | while read -r file; do
     relative="${file#$REPO_DIR/}"
     cp -v "$file" "$CLAUDE_DIR/$relative"
+  done
+fi
+
+# skills/ (copy entire folder structure per skill)
+if [ -d "$REPO_DIR/skills" ]; then
+  for skill_dir in "$REPO_DIR"/skills/*/; do
+    [ -d "$skill_dir" ] || continue
+    skill_name="$(basename "$skill_dir")"
+    target="$CLAUDE_DIR/skills/$skill_name"
+    mkdir -p "$target"
+    # Preserve subdirectory structure (references/, scripts/, assets/)
+    find "$skill_dir" -type d | while read -r dir; do
+      relative="${dir#$skill_dir}"
+      [ -n "$relative" ] && mkdir -p "$target/$relative"
+    done
+    find "$skill_dir" -type f | while read -r file; do
+      relative="${file#$skill_dir}"
+      cp -v "$file" "$target/$relative"
+    done
   done
 fi
 
