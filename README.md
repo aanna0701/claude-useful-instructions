@@ -10,7 +10,7 @@
   - [Agents vs Skills](#agents-vs-skills)
   - [현재 스킬](#현재-스킬)
   - [`data-pipeline-architect`](#data-pipeline-architect)
-  - [`mermaid-extract` + `drawio-embed`](#mermaid-extract--drawio-embed-다이어그램-파이프라인)
+  - [`diagram-pipeline`](#diagram-pipeline)
   - [스킬 작성법](#스킬-작성법)
 - [Agents (서브에이전트)](#agents-서브에이전트)
   - [작성법](#작성법)
@@ -43,12 +43,9 @@ claude-useful-instructions/
 │   ├── data-pipeline-architect/  # 데이터 파이프라인 설계 스킬
 │   │   ├── SKILL.md
 │   │   └── references/
-│   ├── mermaid-extract/          # Mermaid → draw.io 변환 (Phase 1)
-│   │   ├── SKILL.md
-│   │   └── scripts/
-│   └── drawio-embed/             # draw.io → SVG → docs 삽입 (Phase 2)
+│   └── diagram-pipeline/         # mermaid → draw.io → docs 파이프라인
 │       ├── SKILL.md
-│       └── scripts/
+│       └── agents/               # extractor / generator / inserter
 └── install.sh                # ~/.claude/ 에 설정 복사
 ```
 
@@ -86,8 +83,7 @@ cd claude-useful-instructions
 | 스킬 | 트리거 예시 | 설명 |
 |------|------------|------|
 | [`data-pipeline-architect`](#data-pipeline-architect) | "데이터 파이프라인 설계해줘" | 8원칙 진단 → 서브에이전트 설계 → instruction 생성 |
-| [`mermaid-extract`](#mermaid-extract--drawio-embed-다이어그램-파이프라인) | "mermaid를 drawio로 변환해줘" | Phase 1: docs에서 mermaid 추출 → .drawio 생성 |
-| [`drawio-embed`](#mermaid-extract--drawio-embed-다이어그램-파이프라인) | "다이어그램 docs에 넣어줘" | Phase 2: .drawio → SVG → docs mermaid 교체 |
+| [`diagram-pipeline`](#diagram-pipeline) | "mermaid를 drawio로 변환해줘" | mermaid 추출 → .drawio 생성 → 편집 → docs 삽입 |
 
 ---
 
@@ -106,114 +102,43 @@ cd claude-useful-instructions
 
 ---
 
-### `mermaid-extract` + `drawio-embed` (다이어그램 파이프라인)
+### `diagram-pipeline`
 
-Markdown 문서의 Mermaid 다이어그램을 draw.io에서 편집 가능한 형태로 변환하고, 완성된 SVG를 docs에 다시 삽입하는 **2-Phase 파이프라인**입니다.
+Markdown 문서의 mermaid 다이어그램을 draw.io로 변환하고, Cursor에서 편집 후 docs에 재삽입하는 end-to-end 파이프라인. 스크립트 없이 Claude 에이전트가 전 과정을 처리합니다.
 
 **편집 환경**: Cursor + [`hediet.vscode-drawio`](https://marketplace.visualstudio.com/items?itemName=hediet.vscode-drawio) 확장
 
 #### 워크플로우
 
 ```
-Phase 1: mermaid-extract                    Phase 2: drawio-embed
-┌──────────────────────────┐               ┌──────────────────────────┐
-│ docs/*.md 스캔            │               │ .drawio.svg 존재 확인     │
-│   ↓                      │               │   ↓                      │
-│ mermaid 블록 추출         │               │ SVG → docs/assets/ 복사   │
-│   ↓                      │               │   ↓                      │
-│ Claude가 .drawio XML 생성 │   → 편집 →    │ mermaid 블록 → ![img] 교체 │
-│   ↓                      │               │   ↓                      │
-│ manifest.json 생성        │               │ 원본 mermaid HTML 주석 보존│
-└──────────────────────────┘               └──────────────────────────┘
+Phase 1: extractor 에이전트    Phase 2: generator 에이전트   Phase 3: 사용자 편집    Phase 4: inserter 에이전트
+┌─────────────────────────┐   ┌─────────────────────────┐   ┌──────────────────┐   ┌─────────────────────────┐
+│ docs/**/*.md 스캔        │   │ .mermaid 파일 읽기        │   │ Cursor에서       │   │ .drawio.svg 확인         │
+│   ↓                     │   │   ↓                     │   │ .drawio 열기     │   │   ↓                     │
+│ mermaid 블록 추출        │ → │ draw.io XML 생성         │ → │   ↓              │ → │ SVG → docs/assets/ 복사  │
+│   ↓                     │   │   ↓                     │   │ 노드/색상 편집    │   │   ↓                     │
+│ manifest.json 생성       │   │ .drawio 파일 Write       │   │   ↓              │   │ mermaid → ![img] 교체    │
+│ .mermaid 파일 저장       │   │                         │   │ Convert To SVG   │   │ 원본 mermaid 주석 보존   │
+└─────────────────────────┘   └─────────────────────────┘   └──────────────────┘   └─────────────────────────┘
 ```
 
-#### 사전 준비
+#### 사용법
 
-Cursor에 draw.io 확장을 설치합니다:
-
-> Extensions → `hediet.vscode-drawio` 검색 → Install
-
-#### Phase 1: Mermaid 추출 → .drawio 생성
-
-```bash
-# 1. mermaid 블록 추출 (자동)
-python .claude/skills/mermaid-extract/scripts/extract_mermaid.py \
-  --docs-dir docs/ --output-dir diagrams/
-
-# 2. Claude에게 "각 .mermaid 파일을 .drawio로 변환해줘" 요청
-#    → Claude가 mermaid를 파싱해서 draw.io XML 생성
-
-# 3. Cursor에서 .drawio 파일 열기 → GUI 에디터로 편집
 ```
-
-추출 결과:
+"mermaid를 drawio로 변환해줘"       → Phase 1+2 자동 실행
+"다이어그램 docs에 넣어줘"           → Phase 4 실행
+"처음부터 끝까지 다 해줘"            → Phase 1+2 후 사용자에게 Phase 3 안내
 ```
-diagrams/
-├── manifest.json               ← 다이어그램 추적 메타데이터
-├── agents/
-│   ├── agents_01.mermaid       ← 원본 mermaid
-│   ├── agents_01.drawio        ← Claude가 생성한 draw.io
-│   └── agents_02.mermaid
-└── index/
-    └── index_01.mermaid
-```
-
-#### 편집 (Cursor에서)
-
-1. `.drawio` 파일 클릭 → 비주얼 에디터 자동 열림
-2. 노드 배치, 색상, 스타일, 연결선 조정
-3. `Ctrl+S`로 저장
-4. SVG 필요 시: 탭 우클릭 → **"Convert To..."** → **"drawio.svg"**
-
-#### Phase 2: SVG → docs 삽입
-
-```bash
-# dry-run으로 미리보기
-python .claude/skills/drawio-embed/scripts/reinsert_svg.py \
-  --docs-dir docs/ --diagrams-dir diagrams/ --dry-run
-
-# 실제 적용
-python .claude/skills/drawio-embed/scripts/reinsert_svg.py \
-  --docs-dir docs/ --diagrams-dir diagrams/
-```
-
-변환 결과:
-
-**Before:**
-````markdown
-```mermaid
-flowchart LR
-    A --> B --> C
-```
-````
-
-**After:**
-```markdown
-<!-- mermaid-source: index_01
-flowchart LR
-    A --> B --> C
--->
-![시스템 아키텍처](assets/diagrams/index_01.drawio.svg)
-```
-
-#### 주요 기능
-
-| 기능 | 설명 |
-|------|------|
-| 점진적 변환 | SVG가 준비된 다이어그램만 교체, 나머지는 mermaid 유지 |
-| 원본 보존 | 원래 mermaid를 HTML 주석으로 보존 (`--no-keep-mermaid`로 비활성화) |
-| MkDocs 감지 | `mkdocs.yml`이 있으면 `docs/assets/diagrams/`에 SVG 배치 |
-| 변경 감지 | content hash로 mermaid 변경 여부 추적 |
-| 선택적 처리 | `--only index_01,agents_01`로 특정 다이어그램만 처리 |
 
 #### 커밋 가이드
 
 | 파일 | 커밋 | 이유 |
 |------|------|------|
-| `docs/assets/diagrams/*.svg` | **Yes** | MkDocs 서빙 산출물 |
 | `diagrams/*.drawio` | **Yes** | 편집 가능한 원본 |
+| `diagrams/*.drawio.svg` | **Yes** | 편집 가능 + SVG 겸용 |
 | `diagrams/*.mermaid` | **Yes** | mermaid 백업 |
-| `diagrams/manifest.json` | **Yes** | 매핑 추적 |
+| `diagrams/manifest.json` | **Yes** | 라인 추적용 |
+| `docs/assets/diagrams/*.drawio.svg` | **Yes** | MkDocs 서빙 산출물 |
 
 ---
 
