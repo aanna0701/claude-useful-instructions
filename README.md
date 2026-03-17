@@ -18,9 +18,15 @@ claude-useful-instructions/
 │   ├── coding-style.md       # 코딩 스타일
 │   └── vla-code-standards.md # 공통 코드 표준 (서브에이전트 공유용)
 ├── skills/
-│   └── data-pipeline-architect/  # 데이터 파이프라인 설계 스킬
+│   ├── data-pipeline-architect/  # 데이터 파이프라인 설계 스킬
+│   │   ├── SKILL.md
+│   │   └── references/
+│   ├── mermaid-extract/          # Mermaid → draw.io 변환 (Phase 1)
+│   │   ├── SKILL.md
+│   │   └── scripts/
+│   └── drawio-embed/             # draw.io → SVG → docs 삽입 (Phase 2)
 │       ├── SKILL.md
-│       └── references/
+│       └── scripts/
 └── install.sh                # ~/.claude/ 에 설정 복사
 ```
 
@@ -50,6 +56,8 @@ cd claude-useful-instructions
 | 스킬 | 트리거 예시 | 설명 |
 |------|------------|------|
 | [`data-pipeline-architect`](skills/data-pipeline-architect/) | "데이터 파이프라인 설계해줘", "ETL 구조 잡아줘" | 데이터 구조 → 8원칙 진단 → 서브에이전트 설계 → instruction 생성 |
+| [`mermaid-extract`](skills/mermaid-extract/) | "mermaid를 drawio로 변환해줘", "다이어그램 추출해줘" | Phase 1: docs에서 mermaid 추출 → .drawio 파일 생성 → Cursor에서 편집 |
+| [`drawio-embed`](skills/drawio-embed/) | "다이어그램 docs에 넣어줘", "mermaid를 SVG로 교체해줘" | Phase 2: 편집된 .drawio → SVG export → docs의 mermaid 블록 교체 |
 
 ### 스킬 작성법
 
