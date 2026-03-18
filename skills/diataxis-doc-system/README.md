@@ -34,6 +34,7 @@ diataxis-doc-system/
 ├── README.md             ← 이 파일
 └── references/
     ├── common-rules.md   ← Docs as Code 공통 규칙
+    ├── site-architecture.md ← 문서 사이트 구조 (번호 체계, MkDocs, 거버넌스)
     ├── tutorial-rules.md ← Tutorial 에이전트 상세 규칙
     ├── howto-rules.md    ← How-to Guide 에이전트 상세 규칙
     ├── explain-rules.md  ← Explanation 에이전트 상세 규칙
@@ -51,3 +52,8 @@ diataxis-doc-system/
 
 - `diagram-architect` — 문서 내 아키텍처 다이어그램 생성
 - `diagram-pipeline` — Mermaid → draw.io → docs 삽입
+
+## 관련 커맨드
+
+- `/write-doc [주제]` — 문서 유형 판별 → 에이전트 위임 → 작성
+- `/init-docs [경로]` — 프로젝트에 문서 사이트 구조 초기화 (번호 체계 + MkDocs)

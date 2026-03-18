@@ -18,25 +18,37 @@
 - Word, PDF는 최종 배포물이지, 원본이 아니다
 
 ### 파일 구조 규칙
+
+프로젝트 규모에 따라 두 가지 구조 중 선택한다:
+
+**소규모 (문서 20개 미만) — Diátaxis 유형별 분류:**
 ```
 docs/
 ├── tutorials/           # Tutorial 문서
-│   ├── getting-started.md
-│   └── first-deployment.md
 ├── howto/               # How-to Guide 문서
-│   ├── migrate-database.md
-│   └── rotate-tokens.md
 ├── explanation/         # Explanation 문서
-│   ├── architecture-overview.md
 │   └── adr/
-│       ├── 001-database-choice.md
-│       └── 002-auth-strategy.md
 ├── reference/           # Reference 문서
-│   ├── api.md
-│   ├── config.md
-│   └── cli.md
-└── glossary.md          # 용어 사전 (공유)
+└── glossary.md          # 용어 사전
 ```
+
+**중대규모 (문서 20개 이상) — 번호 체계 + MkDocs:**
+```
+docs/
+├── index.md             # 문서 홈
+├── glossary.md          # 용어 사전
+├── 00_context/          # 맥락: 비즈니스 목표, 요구사항
+├── 10_architecture/     # 설계: 시스템 구조, ADR
+├── 20_implementation/   # 구현: API/Config/CLI 명세
+├── 30_guides/           # 가이드: Tutorial + How-to
+│   ├── tutorials/
+│   └── howto/
+├── 40_operations/       # 운영: 배포, 모니터링, Runbook
+└── 90_archive/          # 보관: deprecated 문서
+```
+
+> 번호 체계의 상세 규칙: `references/site-architecture.md` 참조.
+> `/init-docs` 커맨드가 번호 체계 구조를 자동 생성한다.
 
 ---
 
@@ -93,11 +105,21 @@ title: "문서 제목"
 type: tutorial | howto | explanation | reference
 status: draft | review | published | deprecated
 author: "작성자"
+owner: "유지보수 담당자"       # 정보가 오래되면 이 사람에게 문의
 created: 2025-01-15
 updated: 2025-03-18
+tags: [auth, api]              # 검색용 태그 (허용 목록에서 선택)
 audience: "대상 독자 (예: Backend Engineers)"
 ---
 ```
+
+**status 생명주기:**
+```
+draft → review → published → deprecated → (90_archive/ 이동)
+```
+
+> 거버넌스 5대 규칙(SSOT, 날짜/상태, 태그, 오너십, 가지치기)의 상세:
+> `references/site-architecture.md` 참조.
 
 ---
 
@@ -119,10 +141,18 @@ Tutorial → How-to → Reference → Explanation → Tutorial
 
 문서 PR 시 확인:
 
+### 유형 & 구조
 - [ ] 문서 유형이 명확한가? (Tutorial/How-to/Explanation/Reference 중 하나)
 - [ ] 한 문서에 다른 유형의 내용이 섞이지 않았는가?
-- [ ] 메타데이터(YAML frontmatter)가 완전한가?
+- [ ] 메타데이터(YAML frontmatter)가 완전한가? (title, type, status, author, owner, tags)
 - [ ] 다이어그램이 텍스트 코드(Mermaid/PlantUML)로 작성되었는가?
+
+### 품질 & 일관성
 - [ ] 용어가 glossary와 일치하는가?
 - [ ] 관련 문서로의 상호 참조 링크가 있는가?
 - [ ] 6개월 뒤에도 유효한가? (변하기 쉬운 수치에 하드코딩이 없는가?)
+
+### 거버넌스
+- [ ] `owner` 필드가 지정되어 있는가?
+- [ ] 같은 정보가 다른 문서에 중복되지 않는가? (SSOT)
+- [ ] `tags`가 허용 목록에 있는 태그만 사용하는가?

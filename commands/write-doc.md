@@ -70,8 +70,24 @@ Target: $ARGUMENTS (문서 주제 또는 "review [파일경로]" 형태)
 
 ## Step 4: 파일 저장
 
-에이전트가 작성한 문서를 프로젝트 docs/ 구조에 맞게 저장:
+에이전트가 작성한 문서를 프로젝트 docs/ 구조에 맞게 저장.
 
+**구조 판별:** `docs/00_context/` 디렉토리가 존재하면 번호 체계, 아니면 유형별 구조.
+
+### 번호 체계 구조 (docs/00_context/ 존재 시)
+```
+docs/
+├── 00_context/          ← Explanation(비즈니스), Reference(요구사항)
+├── 10_architecture/     ← Explanation(설계, ADR)
+├── 20_implementation/   ← Reference(API, Config, CLI)
+├── 30_guides/           ← Tutorial, How-to
+│   ├── tutorials/
+│   └── howto/
+├── 40_operations/       ← How-to(배포, Runbook), Reference(SLA)
+└── 90_archive/
+```
+
+### 유형별 구조 (기본)
 ```
 docs/
 ├── tutorials/      ← Tutorial
@@ -82,10 +98,8 @@ docs/
 ```
 
 파일명: kebab-case, 한글 금지.
-- Tutorial: `getting-started.md`, `first-deployment.md`
-- How-to: `migrate-database.md`, `rotate-tokens.md`
-- Explanation: `architecture-overview.md`, `adr/001-database-choice.md`
-- Reference: `api.md`, `config.md`, `cli.md`
+
+> 번호 체계가 아직 없다면 `/init-docs`를 먼저 실행하도록 안내.
 
 ---
 
@@ -100,11 +114,16 @@ docs/
 - [ ] Reference에 의견/추천이 섞이지 않았는가?
 
 ### 공통 품질 검사
-- [ ] YAML frontmatter가 완전한가?
+- [ ] YAML frontmatter가 완전한가? (title, type, status, author, owner, tags)
 - [ ] 다이어그램이 Mermaid/PlantUML로 되어 있는가?
 - [ ] 용어가 glossary와 일치하는가?
 - [ ] 관련 유형 문서로의 상호 참조 링크가 있는가?
 - [ ] 6개월 뒤에도 유효한가?
+
+### 거버넌스 검사
+- [ ] `owner` 필드가 지정되어 있는가?
+- [ ] 같은 정보가 다른 문서에 중복되지 않는가? (SSOT)
+- [ ] `tags`가 프로젝트 허용 목록의 태그만 사용하는가?
 
 위반 항목이 있으면 수정 사항을 제안하고, 사용자 확인 후 적용.
 

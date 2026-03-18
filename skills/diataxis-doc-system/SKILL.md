@@ -8,7 +8,9 @@ description: >
   "문서 작성", "기술 문서", "아키텍처 문서", "API 문서", "가이드 작성", "튜토리얼 작성",
   "설계 문서", "Design Doc", "RFC 작성", "ADR 작성", "README 작성",
   "문서화", "documentation", "technical writing", "how-to 가이드",
-  "레퍼런스 문서", "config reference", "CLI reference" 등의 요청에 트리거.
+  "레퍼런스 문서", "config reference", "CLI reference",
+  "문서 구조", "docs 초기화", "MkDocs", "문서 사이트", "문서 보관서",
+  "information architecture", "문서 체계" 등의 요청에 트리거.
   문서화 관련 요청이면 종류를 불문하고 이 스킬을 먼저 참조할 것.
 ---
 
@@ -104,6 +106,7 @@ description: >
 | "이 문서 유형 판별해줘" | Phase 1만 |
 | "이 문서 검토해줘" | Phase 3만 (기존 문서에 품질 검증) |
 | "Reference만 추가해줘" | Phase 2 바로 진입 (유형 확정) |
+| "문서 구조 잡아줘" | `/init-docs` 커맨드로 안내 |
 
 ---
 
@@ -124,7 +127,16 @@ Explanation 유형은 두 가지 서브타입이 있다:
 
 ---
 
-## 다른 스킬과의 연계
+## 다른 스킬/커맨드와의 연계
 
+- **`/init-docs`**: 프로젝트에 문서 사이트 구조(번호 체계 + MkDocs) 초기화
 - **diagram-architect**: Explanation 문서에 아키텍처 다이어그램이 필요할 때 위임
 - **diagram-pipeline**: 작성된 Mermaid 다이어그램을 draw.io로 변환할 때 위임
+
+## 문서 사이트 아키텍처
+
+개별 문서 작성 전에 프로젝트 전체의 문서 구조가 필요하다면:
+
+> 사이트 구조 규칙: `references/site-architecture.md` 참조.
+> 번호 체계(00-90), MkDocs 설정, 거버넌스 5대 규칙을 정의한다.
+> `/init-docs` 커맨드가 이 규칙에 따라 구조를 자동 생성한다.
