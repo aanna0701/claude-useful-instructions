@@ -131,8 +131,6 @@ Explanation 유형은 두 가지 서브타입이 있다:
 
 - **`/init-docs`**: 프로젝트에 문서 사이트 구조(번호 체계 + MkDocs) 초기화
 - **diagram-architect**: Explanation 문서에 아키텍처 다이어그램이 필요할 때 위임
-- **diagram-pipeline**: 작성된 Mermaid 다이어그램을 draw.io로 변환할 때 위임
-
 ## 문서 사이트 아키텍처
 
 개별 문서 작성 전에 프로젝트 전체의 문서 구조가 필요하다면:

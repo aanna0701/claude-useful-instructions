@@ -20,7 +20,6 @@ claude-useful-instructions/
 ├── skills/                          # Auto-triggered by conversation context
 │   ├── diataxis-doc-system/         # Diátaxis documentation system
 │   ├── diagram-architect/           # C4 Mermaid architecture diagrams
-│   ├── diagram-pipeline/            # mermaid → draw.io → docs pipeline
 │   └── data-pipeline-architect/     # Data pipeline design + subagent generation
 ├── agents/                          # Subagents delegated by Claude
 │   ├── doc-writer-*.md              # Diátaxis doc writers (4 types)
@@ -50,7 +49,6 @@ Auto-triggered by Claude Code based on conversation context. → [Full reference
 |-------|-----------------|
 | `diataxis-doc-system` | "Write docs", "Design doc", "API docs" |
 | `diagram-architect` | "Draw diagram", "System structure", "ERD" |
-| `diagram-pipeline` | "Convert mermaid to drawio", "Embed diagrams" |
 | `data-pipeline-architect` | "Design data pipeline", "ETL architecture" |
 
 ## Agents

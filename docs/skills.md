@@ -50,8 +50,6 @@ Diátaxis Framework-based technical documentation system. Classifies documents i
 - **`/write-doc`** command: Entry point for document writing
 - **`/init-docs`** command: Scaffold docs site structure
 - **`diagram-architect`** skill: Architecture diagrams for Explanation docs
-- **`diagram-pipeline`** skill: Convert Mermaid diagrams to draw.io
-
 ---
 
 ## diagram-architect
@@ -90,46 +88,6 @@ Phase 3 delegates to the **`diagram-writer`** agent for Mermaid code generation.
 Each diagram includes: Mermaid code block + legend table + numbered flow description.
 
 **Hard limit**: 15+ shapes → must split. No exceptions.
-
----
-
-## diagram-pipeline
-
-End-to-end pipeline for converting Mermaid diagrams in Markdown docs to draw.io, editing in Cursor, and reinserting into docs.
-
-**Triggers**: "Convert mermaid to drawio", "Prettier diagrams", "Embed diagrams in docs", "Diagram pipeline"
-
-**Required tool**: [hediet.vscode-drawio](https://marketplace.visualstudio.com/items?itemName=hediet.vscode-drawio) extension for Cursor
-
-### Workflow
-
-```
-Phase 1: extractor agent    Phase 2: generator agent   Phase 3: User edits    Phase 4: inserter agent
-─────────────────────────   ─────────────────────────   ──────────────────────  ─────────────────────────
-Scan docs/**/*.md           Read .mermaid files         Open .drawio in Cursor  Check .drawio.svg files
-Extract mermaid blocks  →   Generate draw.io XML    →   Edit nodes/colors   →  Copy SVG to docs/assets/
-Create manifest.json        Write .drawio files         Convert To SVG          Replace mermaid → ![img]
-Save .mermaid files                                                             Preserve original mermaid
-```
-
-### Partial Execution
-
-| Request | Agents Used |
-|---------|-------------|
-| "Extract mermaid only" | extractor only |
-| "Create drawio files" | generator only |
-| "Insert into docs" | inserter only |
-| "Full pipeline" | Phase 1+2, then guide user for Phase 3 |
-
-### Commit Guide
-
-| File | Commit? | Why |
-|------|---------|-----|
-| `diagrams/*.drawio` | Yes | Editable source |
-| `diagrams/*.drawio.svg` | Yes | Editable + SVG dual-use |
-| `diagrams/*.mermaid` | Yes | Mermaid backup |
-| `diagrams/manifest.json` | Yes | Line tracking |
-| `docs/assets/diagrams/*.drawio.svg` | Yes | MkDocs serving artifact |
 
 ---
 

@@ -51,8 +51,6 @@ diataxis-doc-system/
 ## 관련 스킬
 
 - `diagram-architect` — 문서 내 아키텍처 다이어그램 생성
-- `diagram-pipeline` — Mermaid → draw.io → docs 삽입
-
 ## 관련 커맨드
 
 - `/write-doc [주제]` — 문서 유형 판별 → 에이전트 위임 → 작성
