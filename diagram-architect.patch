@@ -1,0 +1,573 @@
+From b8237cb260500013b875438b02f241a87fcb8c21 Mon Sep 17 00:00:00 2001
+From: patch <patch@local>
+Date: Wed, 18 Mar 2026 00:28:46 +0000
+Subject: [PATCH] feat: add diagram-architect skill and diagram-writer agent
+
+---
+ agents/diagram-writer.md                      |  55 +++++
+ skills/diagram-architect/README.md            |  42 ++++
+ skills/diagram-architect/SKILL.md             | 139 +++++++++++
+ .../diagram-architect/references/checklist.md |  67 ++++++
+ .../references/diagram-rules.md               | 219 ++++++++++++++++++
+ 5 files changed, 522 insertions(+)
+ create mode 100644 agents/diagram-writer.md
+ create mode 100644 skills/diagram-architect/README.md
+ create mode 100644 skills/diagram-architect/SKILL.md
+ create mode 100644 skills/diagram-architect/references/checklist.md
+ create mode 100644 skills/diagram-architect/references/diagram-rules.md
+
+diff --git a/agents/diagram-writer.md b/agents/diagram-writer.md
+new file mode 100644
+index 0000000..b75f5d3
+--- /dev/null
++++ b/agents/diagram-writer.md
+@@ -0,0 +1,55 @@
++---
++name: diagram-writer
++description: "Mermaid 다이어그램 작성 에이전트 — C4 계층화, 텍스트 최소화, 범례 포함 다이어그램 생성"
++tools: Read, Write, Edit
++model: sonnet
++---
++
++# Diagram Writer Agent
++
++Mermaid 다이어그램을 규칙에 따라 생성하는 에이전트.
++
++## 필수 선행 작업
++
++코드 작성 전 반드시 Read:
++1. `skills/diagram-architect/references/diagram-rules.md` — Mermaid 작성 규칙
++
++## 입력
++
++- 다이어그램 제목 + C4 레벨 + 타입 (Phase 2 결과)
++- 포함할 노드/관계 목록
++- 강조 사항 (선택)
++
++## 작성 순서
++
++1. **방향 결정** — 데이터 흐름 LR, 계층 TB
++2. **노드 정의** — 텍스트 5단어 이내, 축약어 사용
++3. **관계 정의** — 선 스타일 의미별 통일 (실선/점선/굵은선)
++4. **색상 적용** — classDef로 역할별 색상, 4색 이내
++5. **subgraph** — 논리 그룹, 중첩 1단계까지
++6. **번호 매기기** — 흐름 순서대로 ①②③
++
++## 출력 규칙
++
++- 도형 15개 초과 → 작성 거부, 분할 요청
++- 범례 없는 출력 금지
++- 흐름 설명 없는 출력 금지
++
++## 출력 형식
++
++```markdown
++## [제목] (L[N] [타입])
++
++[한 줄 설명]
++
++\`\`\`mermaid
++[코드]
++\`\`\`
++
++### 범례
++| 기호 | 의미 |
++|------|------|
++
++### 흐름 설명
++1. ...
++```
+diff --git a/skills/diagram-architect/README.md b/skills/diagram-architect/README.md
+new file mode 100644
+index 0000000..2ee5902
+--- /dev/null
++++ b/skills/diagram-architect/README.md
+@@ -0,0 +1,42 @@
++# diagram-architect
++
++Mermaid 기반 아키텍처 다이어그램 설계 스킬.
++
++## 트리거
++
++- "다이어그램 그려줘", "아키텍처 도식화", "시스템 구조도"
++- "mermaid 다이어그램", "flowchart", "sequence diagram"
++- "데이터 흐름도", "ERD", "컴포넌트 다이어그램"
++
++## 핵심 원칙
++
++1. **C4 계층화** — 한 장에 모든 것 금지
++2. **선 의미 명확화** — 실선(동기), 점선(비동기)
++3. **추상화 수준 유지** — 인프라 ↔ 비즈니스 혼합 금지
++4. **색상 일관성** — 3-4색 + 범례 필수
++5. **텍스트 최소화** — 도형 안 축약, 번호 매기기, 본문 설명
++
++## 워크플로우
++
++```
++사용자 요청
++  → Phase 1: 분석 (복잡도, C4 레벨, 타입 결정)
++  → Phase 2: 분해 (계층/관점/영역별 분할)
++  → Phase 3: 생성 (diagram-writer 에이전트 위임)
++  → Phase 4: 검증 (체크리스트)
++```
++
++## 파일 구조
++
++```
++diagram-architect/
++├── SKILL.md              ← 메인 워크플로우
++├── README.md             ← 이 파일
++└── references/
++    ├── diagram-rules.md  ← Mermaid 작성 규칙 (색상, 선, 텍스트, C4)
++    └── checklist.md      ← 검증 체크리스트
++```
++
++## 관련 에이전트
++
++- `agents/diagram-writer.md` — Mermaid 코드 생성 전담
+diff --git a/skills/diagram-architect/SKILL.md b/skills/diagram-architect/SKILL.md
+new file mode 100644
+index 0000000..4b02a66
+--- /dev/null
++++ b/skills/diagram-architect/SKILL.md
+@@ -0,0 +1,139 @@
++---
++name: diagram-architect
++description: >
++  Mermaid 기반 아키텍처 다이어그램 설계 스킬.
++  복잡한 시스템을 C4 모델 계층(Context/Container/Component)으로 분해하고,
++  도형 내 텍스트 최소화 + 번호 매기기 + 범례로 깔끔한 다이어그램을 생성한다.
++  "다이어그램 그려줘", "아키텍처 도식화", "시스템 구조도", "mermaid 다이어그램",
++  "flowchart 그려줘", "sequence diagram", "구조 시각화", "diagram",
++  "시스템 설계 그림", "데이터 흐름도", "컴포넌트 다이어그램",
++  "ERD 그려줘", "클래스 다이어그램" 등의 요청에 트리거.
++  시스템 설계, 아키텍처 논의, 구조 설명에서 시각화가 도움이 될 때도 이 스킬을 사용할 것.
++---
++
++# Diagram Architect
++
++사용자의 시스템/구조를 분석 → 적절한 계층과 다이어그램 타입 결정 → Mermaid 코드 생성.
++
++```
++[입력] → Phase 1: 분석 → Phase 2: 분해 → Phase 3: 생성 → Phase 4: 검증
++          (구조 파악)     (계층/뷰 분리)   (Mermaid 코드)   (체크리스트)
++```
++
++---
++
++## 핵심 원칙 5가지
++
++> 상세 규칙: `references/diagram-rules.md` 참조. Phase 3 실행 전 반드시 읽을 것.
++
++1. **C4 계층화** — 한 장에 모든 것 금지. Level별로 분리.
++2. **선의 의미 명확화** — 실선(동기), 점선(비동기), 화살표 방향 통일.
++3. **추상화 수준 유지** — 인프라와 비즈니스 로직 혼합 금지.
++4. **색상/형태 일관성** — 3-4색 이내 + 범례 필수.
++5. **텍스트 최소화** — 도형 안은 축약, 번호 매기기, 본문에서 설명.
++
++---
++
++## 워크플로우
++
++### Phase 0: 입력 수집
++
++**필수 (없으면 요청)**
++- 시스템/구조의 개요 (무엇을 시각화할 것인가)
++- 대상 청중 (개발자? 경영진? 신입?)
++- 목적 (설계 문서? 발표? 코드 리뷰?)
++
++**선택 (있으면 더 좋은 결과)**
++- 기존 코드베이스 또는 문서
++- 이미 그린 다이어그램
++- 강조하고 싶은 부분
++
++### Phase 1: 분석
++
++시스템을 파악하고 아래를 결정:
++
++| 판단 항목 | 결과 |
++|-----------|------|
++| 시스템 복잡도 | 단순(도형 ≤10) / 중간(11-15) / 복잡(16+) |
++| 적합한 C4 레벨 | L1 Context / L2 Container / L3 Component |
++| 다이어그램 타입 | flowchart / sequence / class / ER / state / C4 |
++| 분할 필요 여부 | 단일 / 2-3장 분할 / 계층별 분할 |
++
++**도형 15개 초과 → 반드시 분할.** 예외 없음.
++
++### Phase 2: 분해
++
++복잡한 시스템은 아래 전략으로 분해:
++
++**전략 A — C4 계층 분리:**
++- L1: 외부 시스템/사용자와의 관계만 (5개 이내)
++- L2: 내부 컨테이너 구성 (서버, DB, 큐 등)
++- L3: 특정 컨테이너 내부 컴포넌트
++
++**전략 B — 관점(View) 분리:**
++- 데이터 흐름도 vs 배포 구조도 vs 시퀀스 다이어그램
++- 같은 시스템이라도 관점마다 별도 다이어그램
++
++**전략 C — 영역(Domain) 분리:**
++- MSA면 도메인별로 분리
++- 각 다이어그램은 하나의 bounded context만
++
++각 다이어그램에 제목 + 설명 한 줄 부여.
++
++### Phase 3: 생성
++
++**`diagram-writer` 에이전트에게 위임한다.**
++
++> Phase 3 실행 전 반드시 `references/diagram-rules.md`를 Read할 것.
++
++각 다이어그램마다:
++1. Mermaid 코드 생성 (규칙 준수)
++2. 범례(Legend) 추가
++3. 번호별 설명 텍스트 작성
++
++### Phase 4: 검증
++
++> 체크리스트: `references/checklist.md` 참조.
++
++모든 다이어그램에 대해 체크리스트 실행.
++위반 항목이 있으면 Phase 3로 돌아가 수정.
++
++---
++
++## 부분 실행
++
++| 요청 | 실행 범위 |
++|------|-----------|
++| "다이어그램 그려줘" | Phase 0→4 전체 |
++| "이 구조 분석만 해줘" | Phase 1만 |
++| "이 다이어그램 검토해줘" | Phase 4만 (사용자 다이어그램에 체크리스트 적용) |
++| "더 단순하게 쪼개줘" | Phase 2→3 재실행 |
++
++---
++
++## 출력 형식
++
++각 다이어그램은 아래 구조로 출력:
++
++```markdown
++## [다이어그램 제목] (L[N] [타입])
++
++[한 줄 설명]
++
++\`\`\`mermaid
++[Mermaid 코드]
++\`\`\`
++
++### 범례
++| 기호 | 의미 |
++|------|------|
++| 실선 → | 동기 호출 |
++| 점선 --> | 비동기 메시지 |
++| 🔵 파란색 | 데이터 저장소 |
++
++### 흐름 설명
++1. [번호] — [설명]
++2. [번호] — [설명]
++```
++
++여러 장이면 전체 목차를 먼저 출력하고 각 다이어그램을 순서대로 제시.
+diff --git a/skills/diagram-architect/references/checklist.md b/skills/diagram-architect/references/checklist.md
+new file mode 100644
+index 0000000..a5c48cd
+--- /dev/null
++++ b/skills/diagram-architect/references/checklist.md
+@@ -0,0 +1,67 @@
++# Diagram Checklist — 검증 체크리스트
++
++Phase 4에서 모든 다이어그램에 대해 실행하는 검증 항목.
++
++---
++
++## 필수 체크 (하나라도 실패 → 수정 필수)
++
++### 단순성
++- [ ] 도형 15개 이하인가? (초과 → 분할)
++- [ ] 도형 내 텍스트 5단어 이하인가?
++- [ ] subgraph 중첩 1단계 이하인가?
++
++### 방향성
++- [ ] 주 흐름이 한 방향(LR 또는 TB)으로 일관된가?
++- [ ] 역방향 화살표가 전체의 20% 이하인가?
++
++### 추상화
++- [ ] 한 다이어그램 안에 C4 레벨이 혼합되지 않았는가?
++- [ ] 인프라 요소와 비즈니스 로직이 같은 다이어그램에 없는가?
++
++### 선
++- [ ] 모든 선의 스타일(실선/점선/굵은선)에 의미가 부여되었는가?
++- [ ] 선 라벨이 3단어 이내인가?
++
++### 색상
++- [ ] 사용 색상 4개 이하인가?
++- [ ] 같은 역할의 도형이 같은 색인가?
++
++### 범례
++- [ ] 범례가 존재하는가?
++- [ ] 범례에 모든 선 스타일이 설명되었는가?
++- [ ] 범례에 모든 색상이 설명되었는가?
++- [ ] 축약어가 있으면 범례에 포함되었는가?
++
++### 설명
++- [ ] 번호 매기기 또는 흐름 설명이 존재하는가?
++- [ ] 도형 안의 축약어가 본문에서 설명되었는가?
++
++---
++
++## 권장 체크 (위반 시 경고, 강제 아님)
++
++- [ ] 그리드 정렬이 시각적으로 깔끔한가?
++- [ ] 설명 없이 70% 이상 이해 가능한가?
++- [ ] 가장 중요한 흐름이 시각적으로 강조되었는가?
++- [ ] 다이어그램 제목이 내용을 잘 설명하는가?
++
++---
++
++## 검증 출력 형식
++
++```markdown
++### 다이어그램 검증: [제목]
++
++| 항목 | 결과 | 비고 |
++|------|------|------|
++| 도형 수 | ✅ 12개 | |
++| 텍스트 길이 | ⚠️ "Auth Service Manager" 초과 | → "Auth Mgr"로 축약 |
++| 방향 일관성 | ✅ LR 통일 | |
++| 추상화 수준 | ✅ L2 Container | |
++| 색상 수 | ✅ 3색 | |
++| 범례 | ✅ 존재 | |
++| 흐름 설명 | ✅ 6단계 | |
++
++종합: ✅ 통과 / ⚠️ N건 수정 필요
++```
+diff --git a/skills/diagram-architect/references/diagram-rules.md b/skills/diagram-architect/references/diagram-rules.md
+new file mode 100644
+index 0000000..eff0a72
+--- /dev/null
++++ b/skills/diagram-architect/references/diagram-rules.md
+@@ -0,0 +1,219 @@
++# Diagram Rules — Mermaid 작성 규칙
++
++Phase 3에서 Mermaid 코드를 생성할 때 반드시 참조.
++
++---
++
++## 1. 도형 내 텍스트 규칙
++
++### 짧게 (3-5단어 이내)
++```
++✅ A[Auth Svc]
++✅ B[(User DB)]
++✅ C{Rate > 100?}
++
++❌ A[Authentication and Authorization Service Module]
++❌ B[(User Profile and Session Database)]
++```
++
++### 긴 이름 처리
++- **축약어**: Authentication → Auth, Management → Mgmt, Service → Svc
++- **줄바꿈**: `A["Order<br/>Processor"]` (2줄까지만)
++- **번호 매기기**: 도형에 `①`, `②` 넣고 하단에서 설명
++
++### 용어집 (자주 쓰는 축약)
++| 축약 | 원문 |
++|------|------|
++| Svc | Service |
++| DB | Database |
++| MQ | Message Queue |
++| LB | Load Balancer |
++| GW | Gateway |
++| Proc | Processor |
++| Mgr | Manager |
++| Cfg | Config |
++
++프로젝트 특화 축약어는 범례에 추가.
++
++---
++
++## 2. C4 모델 적용
++
++### Level 1: System Context
++- 중심: 우리 시스템 (하나의 박스)
++- 주변: 사용자, 외부 시스템만
++- 도형 5개 이내
++- 선: "사용한다", "데이터를 보낸다" 수준
++
++```mermaid
++graph TB
++    User([User])
++    System[Our System]
++    ExtA[Ext System A]
++    ExtB[Ext System B]
++    User -->|uses| System
++    System -->|calls| ExtA
++    System -->|sends data| ExtB
++```
++
++### Level 2: Container
++- 중심 시스템을 분해: 웹앱, API, DB, MQ 등
++- 실행 단위(deploy unit)별 하나의 도형
++- 도형 10-15개
++- 선: 프로토콜/포맷 표기 (REST, gRPC, SQL)
++
++### Level 3: Component
++- 특정 컨테이너 내부의 모듈/클래스
++- 한 컨테이너당 하나의 다이어그램
++- 도형 10-15개
++- 선: 함수 호출, 이벤트 발행
++
++### 레벨 혼합 금지
++한 다이어그램에 L1 요소(외부 시스템)와 L3 요소(클래스)가 공존하면 안 됨.
++L2 다이어그램에서 하나의 컨테이너를 "확대"하는 형태로 L3를 별도로 그릴 것.
++
++---
++
++## 3. 선(Edge) 규칙
++
++### 스타일 의미 통일
++| Mermaid 문법 | 의미 | 용도 |
++|-------------|------|------|
++| `-->` | 동기 호출/의존 | REST, gRPC, 함수 호출 |
++| `-.->` | 비동기 메시지 | MQ, 이벤트, 웹훅 |
++| `==>` | 데이터 흐름 (대량) | ETL, 배치, 스트림 |
++| `--o` | 읽기 전용 참조 | 조회, 캐시 히트 |
++
++### 라벨 규칙
++- 라벨은 2-3단어: `-->|REST API|`, `-.->|event|`
++- 프로토콜 또는 데이터 포맷만 표기
++- 설명이 길면 번호 매기고 본문에서 설명
++
++### 방향 통일
++- 주 흐름: **왼→오** (LR) 또는 **위→아래** (TB)
++- 역방향 화살표 최소화 (응답은 생략하거나 점선)
++- 한 다이어그램 안에서 방향 혼합 금지
++
++---
++
++## 4. 색상 규칙
++
++### 3-4색 팔레트
++| 역할 | 색상 | Mermaid style |
++|------|------|---------------|
++| 주요 서비스 | 파란색 | `fill:#dae8fc,stroke:#6c8ebf` |
++| 데이터 저장소 | 녹색 | `fill:#d5e8d4,stroke:#82b366` |
++| 외부 시스템 | 회색 | `fill:#f5f5f5,stroke:#666666` |
++| 강조/경고 | 주황색 | `fill:#fff2cc,stroke:#d6b656` |
++
++### 적용 방법
++```mermaid
++graph LR
++    A[API GW]:::svc --> B[(User DB)]:::store
++    C[Ext Pay]:::ext -.-> A
++
++    classDef svc fill:#dae8fc,stroke:#6c8ebf
++    classDef store fill:#d5e8d4,stroke:#82b366
++    classDef ext fill:#f5f5f5,stroke:#666666
++    classDef warn fill:#fff2cc,stroke:#d6b656
++```
++
++### 금지
++- 5색 이상 사용
++- 같은 역할에 다른 색
++- 색상 설명 없이 사용 (범례 필수)
++
++---
++
++## 5. 레이아웃 규칙
++
++### 방향 선택 기준
++| 다이어그램 성격 | 방향 | 이유 |
++|----------------|------|------|
++| 데이터 파이프라인 | LR | 흐름 강조 |
++| 계층 구조 | TB | 상위→하위 |
++| 시퀀스/시간 순서 | TB | 위→아래 시간 |
++| 비교/병렬 | LR | 좌우 대칭 |
++
++### subgraph 사용
++- 논리적 그룹핑에만 사용 (2개 이상 노드)
++- subgraph 안에 subgraph 중첩 1단계까지만
++- subgraph 제목은 3단어 이내
++
++```mermaid
++graph LR
++    subgraph Frontend
++        A[Web] --> B[Mobile]
++    end
++    subgraph Backend
++        C[API] --> D[(DB)]
++    end
++    A --> C
++    B --> C
++```
++
++---
++
++## 6. 번호 매기기 패턴
++
++복잡한 흐름은 도형/선에 번호를 매기고 본문에서 설명:
++
++```mermaid
++sequenceDiagram
++    participant U as User
++    participant A as API
++    participant D as DB
++
++    U->>A: ① Login
++    A->>D: ② Verify
++    D-->>A: ③ Token
++    A-->>U: ④ Session
++```
++
++**흐름 설명:**
++1. ① 사용자가 로그인 요청 (ID + PW)
++2. ② API가 DB에서 자격 증명 검증
++3. ③ DB가 JWT 토큰 반환
++4. ④ API가 세션 쿠키와 함께 응답
++
++---
++
++## 7. 다이어그램 타입별 가이드
++
++### Flowchart — 시스템 구조, 데이터 흐름
++- `graph LR` 또는 `graph TB`
++- 조건 분기: 다이아몬드 `{}`
++- 루프: 점선 역화살표
++
++### Sequence — API 호출, 사용자 인터랙션
++- participant 별칭 짧게: `participant A as Auth Svc`
++- alt/opt/loop 박스로 분기 표현
++- 응답은 점선 `-->>>`
++
++### Class/ER — 데이터 모델
++- 필드는 핵심만 (PK, FK, 주요 속성)
++- 관계선에 카디널리티 표기: `||--o{`
++- 메서드는 public만, 3개 이내
++
++### State — 상태 머신
++- 상태명은 동사가 아닌 명사/형용사: `Idle`, `Processing`, `Failed`
++- 전이 라벨: `이벤트 / [조건] / 액션` 형식
++
++---
++
++## 8. 범례(Legend) 필수 규칙
++
++모든 다이어그램 출력 시 범례를 함께 제공:
++
++```markdown
++### 범례
++| 기호 | 의미 |
++|------|------|
++| ── → | 동기 호출 (REST) |
++| - - → | 비동기 (MQ) |
++| 🔵 | 서비스 |
++| 🟢 | 데이터 저장소 |
++| ⬜ | 외부 시스템 |
++```
++
++범례가 없는 다이어그램은 검증 실패 처리.
+-- 
+2.43.0
+
