@@ -184,6 +184,78 @@ CLI 인터페이스 (필수 지원):
 - 원본과 익명화 데이터 간 매핑 테이블 (별도 보안 저장)
 - 마스킹 정책 config로 관리
 
+### Dead Letter Handler
+
+생성 조건: 스키마 위반이나 비정상 데이터가 유입될 수 있고, 전체 파이프라인 중단 없이 격리해야 하는 경우.
+
+역할:
+- 스키마 검증 실패 레코드를 DLQ(Dead Letter Queue) 디렉토리/테이블로 격리
+- 격리된 레코드에 실패 사유, 원본 단계, 타임스탬프 기록
+- DLQ 재처리 CLI 제공: 수정 후 재투입 또는 영구 폐기
+- DLQ 적재량 모니터링 (임계값 초과 시 경고)
+
+구현 위치: `data/dlq/`
+
+```python
+@dataclass(frozen=True)
+class DeadLetter:
+    record: dict           # 원본 레코드
+    stage: str             # 실패 발생 단계
+    error: str             # 실패 사유
+    timestamp: str         # ISO 8601
+    source_path: str       # 원본 파일/테이블 경로
+```
+
+### Checkpoint Manager
+
+생성 조건: 장시간 배치 처리 또는 스트리밍 처리에서 중간 장애 복구가 필요한 경우.
+
+역할:
+- 각 단계의 처리 진행 상태를 주기적으로 기록 (offset, batch_id, last_processed)
+- 장애 복구 시 마지막 체크포인트부터 재시작
+- Staging area 기반 원자적 쓰기 지원 (임시 공간 → 검증 → atomic rename)
+- 체크포인트 정리: 완료된 배치의 오래된 체크포인트 자동 삭제
+
+구현 위치: `data/checkpoints/`
+
+```python
+@dataclass(frozen=True)
+class Checkpoint:
+    stage: str
+    batch_id: str
+    last_offset: int       # 마지막 처리 위치
+    status: str            # "in_progress" | "completed" | "failed"
+    timestamp: str         # ISO 8601
+    metadata: dict         # 단계별 추가 정보
+```
+
+### Audit Logger
+
+생성 조건: 단계 간 건수 reconciliation, 처리 이력 추적, 또는 운영 가시성이 필요한 경우.
+
+역할:
+- 각 단계의 입력/출력/스킵/에러 건수 기록 및 reconciliation 검증
+- Count reconciliation: `input_count == output_count + skipped_count + error_count`
+- 처리 시간, 처리량(throughput) 기록
+- Health check: 지연(latency) 임계값 초과 또는 에러율 급증 시 경고
+- 배치 간 통계 비교 (이전 대비 급격한 변화 탐지)
+
+구현 위치: `data/audit/`
+
+```python
+@dataclass(frozen=True)
+class AuditRecord:
+    stage: str
+    batch_id: str
+    input_count: int
+    output_count: int
+    skipped_count: int
+    error_count: int
+    duration_seconds: float
+    timestamp: str         # ISO 8601
+    reconciled: bool       # input == output + skipped + error
+```
+
 ---
 
 ## 에이전트 수 가이드라인

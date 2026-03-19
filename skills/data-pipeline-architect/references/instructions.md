@@ -47,14 +47,18 @@
 1. Schema Contract         (모든 후속 작업의 기반)
 2. Integrity Guard         (raw 보호, 이후 변경 감지에 활용)
 3. Schema Migration        (DB 구조 개선, contract 위에서)
-4. Lineage Tracker         (transform 추적, contract + integrity 활용)
-5. Validation Gate         (각 단계 검증, 1~4 위에서)
-6. Idempotent Execution    (재실행 안전성, integrity 활용)
-7. Orchestrator            (1~6 전체 조립)
+4. Dead Letter Queue       (비정상 데이터 격리, contract 위에서)
+5. Lineage Tracker         (transform 추적, contract + integrity 활용)
+6. Audit & Observability   (건수 reconciliation + health check)
+7. Quality Validation      (null/range/consistency 검증, contract 위에서)
+8. Atomicity & Checkpoint  (staging area, 트랜잭션, 체크포인트)
+9. Idempotent Execution    (재실행 안전성, integrity + checkpoint 활용)
+10. Orchestrator           (1~9 전체 조립)
 ```
 
 의존성이 없는 것들은 병렬 가능하다고 명시한다.
-예: 2(Integrity)와 3(Migration)은 서로 독립적이므로 병렬 가능.
+예: 2(Integrity), 3(Migration), 4(DLQ)는 서로 독립적이므로 병렬 가능.
+예: 6(Audit), 7(Quality), 8(Atomicity)도 서로 독립적이므로 병렬 가능.
 
 ### 규칙 5: @멘션 가이드
 각 instruction 앞에 관련 파일 @멘션 가이드를 넣는다:
@@ -138,6 +142,34 @@
 - progress tracker로 완료된 항목 스킵
 - UPSERT로 중복 삽입 방지
 - 같은 입력 → 같은 결과 보장
+
+### Dead Letter Queue 계열
+- DLQ 디렉토리/테이블 구조 정의 (record, stage, error, timestamp)
+- 격리 시 원본 단계와 실패 사유를 반드시 기록
+- 재처리 CLI: 수정 후 재투입 또는 영구 폐기
+- DLQ 적재량 모니터링: 임계값 초과 시 파이프라인 경고
+- 핵심: 비정상 데이터가 정상 흐름을 오염시키지 않도록 격리
+
+### Atomicity 계열
+- Staging area: 임시 공간에서 처리 완료 후 atomic rename/swap으로 최종 반영
+- DB 작업은 트랜잭션으로 묶기 (부분 커밋 방지)
+- Checkpointing: 장시간 배치는 진행 상태를 주기적으로 기록
+- 장애 복구 시 마지막 체크포인트부터 재시작
+- Write-Audit-Publish 패턴: staging 쓰기 → 검증 → 통과 시 publish
+
+### Audit & Observability 계열
+- 각 단계에서 입력/출력/스킵/에러 건수 기록
+- Count reconciliation: input == output + skipped + error 자동 검증
+- 처리 시간, 처리량(throughput) 기록
+- Health check: latency 임계값 초과 또는 에러율 급증 시 경고
+- 배치 간 통계 비교: 이전 대비 급격한 분포 변화 탐지
+
+### Quality Validation 계열
+- Null check: 필수 필드 NULL 비율이 임계값 이하인지 검증
+- Range & format check: 숫자 범위, 날짜 형식, 문자열 패턴 검증
+- Consistency check: 외래키 관계, 비즈니스 룰 일관성 검증
+- Distribution check: 이전 배치 대비 통계적 분포 변화 탐지
+- 핵심: 스키마는 통과하지만 내용이 비정상인 데이터를 잡아낼 것
 
 ### Orchestrator 계열
 - thin wrapper: 각 단계 모듈을 import해서 호출만
