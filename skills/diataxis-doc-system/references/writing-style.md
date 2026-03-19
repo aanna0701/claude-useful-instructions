@@ -6,6 +6,29 @@ Agents must Read this file alongside `common-rules.md` before writing any docume
 
 ---
 
+## Foundation: Authoritative Style Guides
+
+This document is based on two industry-standard developer documentation style guides.
+When this document does not cover a specific case, defer to these references in order:
+
+1. **[Google Developer Documentation Style Guide](https://developers.google.com/style)**
+   — Voice and tone, word list, formatting, API documentation conventions.
+2. **[Microsoft Writing Style Guide](https://learn.microsoft.com/en-us/style-guide/welcome/)**
+   — Accessibility, global-ready writing, bias-free language, UI text patterns.
+
+Key principles adopted from both guides:
+
+| Principle | Google | Microsoft |
+|-----------|--------|-----------|
+| Use second person ("you") | ✅ | ✅ |
+| Use active voice | ✅ | ✅ |
+| Use present tense | ✅ | ✅ |
+| Write short sentences | ✅ | ✅ |
+| Use inclusive language | ✅ (word list) | ✅ (bias-free) |
+| Avoid jargon and slang | ✅ | ✅ (global-ready) |
+
+---
+
 ## 1. Structure and Visual Hierarchy
 
 ### Bullet Points and Indentation

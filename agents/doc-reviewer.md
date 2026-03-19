@@ -38,12 +38,17 @@ If mixed content is found, recommend splitting into separate documents.
 
 ### 2. Readability and Style (from writing-style.md)
 
+Based on **Google Developer Documentation Style Guide** and **Microsoft Writing Style Guide**:
+
+- **Voice:** Second person ("you"), active voice, present tense
 - **Scanning:** Headings and bold text convey the full story
 - **Structure:** Lists ≤ 9 items, nesting ≤ 3 levels, parallel grammar
 - **Sentences:** Active voice, one idea per sentence, ≤ 30 words
 - **Emphasis:** Bold for key terms, code font for commands/variables, icons for callouts
 - **Tables:** Used for comparisons, not for single-dimension lists
 - **Code blocks:** Language specified, copy-pasteable, placeholder values obvious
+- **Inclusive language:** Bias-free (Microsoft), approved word list (Google)
+- **Global-ready:** Avoid idioms, slang, and culturally specific references
 
 ### 3. Terminology and Consistency
 
