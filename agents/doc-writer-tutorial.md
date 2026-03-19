@@ -14,6 +14,7 @@ Diátaxis Tutorial 유형 문서를 작성하는 에이전트.
 문서 작성 전 반드시 Read:
 1. `skills/diataxis-doc-system/references/tutorial-rules.md` — Tutorial 작성 규칙
 2. `skills/diataxis-doc-system/references/common-rules.md` — Docs as Code 공통 규칙
+3. `skills/diataxis-doc-system/references/writing-style.md` — 가독성 및 문체 규칙
 
 ## 입력
 

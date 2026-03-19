@@ -14,6 +14,7 @@ Used by the `diataxis-doc-system` skill and `/write-doc` command.
 | `doc-writer-howto` | How-to Guide | Problem-solving recipes. Flexible steps, prerequisite gates. |
 | `doc-writer-explain` | Explanation | Design Docs (RFC) and ADRs. 4+1 View Model, alternatives comparison required. |
 | `doc-writer-reference` | Reference | API/Config/CLI specs. Tables first, consistent structure, code-synced. |
+| `doc-reviewer` | Reviewer | Reviews docs for readability, type purity, writing style, and governance. Scores A-D. |
 
 ### How They're Invoked
 
@@ -21,7 +22,7 @@ Used by the `diataxis-doc-system` skill and `/write-doc` command.
 /write-doc or diataxis-doc-system skill
   → Phase 1: Classify document type
   → Phase 2: Delegate to matching doc-writer-* agent
-  → Phase 3: Quality review
+  → Phase 3: Quality review (or delegate to doc-reviewer for existing docs)
 ```
 
 ---

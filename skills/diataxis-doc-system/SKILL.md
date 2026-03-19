@@ -84,6 +84,9 @@ description: >
 ### Phase 3: 품질 검증
 
 > 공통 규칙: `references/common-rules.md` 참조.
+> 가독성/문체 규칙: `references/writing-style.md` 참조.
+
+기존 문서 리뷰 요청이면 `doc-reviewer` 에이전트에게 위임할 수 있다.
 
 문서 초안 완성 후 아래를 확인:
 
@@ -131,6 +134,7 @@ Explanation 유형은 두 가지 서브타입이 있다:
 
 - **`/init-docs`**: 프로젝트에 문서 사이트 구조(번호 체계 + MkDocs) 초기화
 - **diagram-architect**: Explanation 문서에 아키텍처 다이어그램이 필요할 때 위임
+- **doc-reviewer**: 기존 문서의 가독성/유형순수성/거버넌스 종합 리뷰
 ## 문서 사이트 아키텍처
 
 개별 문서 작성 전에 프로젝트 전체의 문서 구조가 필요하다면:
