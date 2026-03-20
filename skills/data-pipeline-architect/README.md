@@ -11,10 +11,10 @@
 
 ```
 사용자 데이터 구조 초안
-  → Phase 1: 8 불변 원칙 진단 (references/principles.md)
-  → Phase 2: 파이프라인 단계 경계 식별
-  → Phase 3: 서브에이전트 구조 설계 (references/agents.md)
-  → Phase 4: Claude Code instruction 세트 생성 (references/instructions.md)
+  → Phase 1: 구조(8원칙) + 신뢰성(5원칙) 진단
+  → Phase 2: 파이프라인 단계 경계 식별 + 병렬화 분석
+  → Phase 3: 서브에이전트 구조 설계
+  → Phase 4: Claude Code instruction 세트 생성
   → Phase 5: 자기 검증 체크리스트
 ```
 
@@ -27,7 +27,9 @@ data-pipeline-architect/
 ├── SKILL.md              ← 메인 워크플로우 (항상 로딩)
 ├── README.md             ← 이 파일
 └── references/
-    ├── principles.md     ← 8원칙 상세 정의
-    ├── agents.md         ← 에이전트 설계 규칙
-    └── instructions.md   ← instruction 생성 규칙
+    ├── principles.md     ← 8원칙 상세 정의 (Phase 1)
+    ├── reliability.md    ← 5 신뢰성 원칙 상세 (Phase 1)
+    ├── parallelism.md    ← 병렬화 원칙 (Phase 2, 4)
+    ├── agents.md         ← 에이전트 설계 규칙 (Phase 3)
+    └── instructions.md   ← instruction 생성 규칙 (Phase 4)
 ```

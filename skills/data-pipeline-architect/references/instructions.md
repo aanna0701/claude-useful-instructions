@@ -53,7 +53,8 @@
 7. Quality Validation      (null/range/consistency 검증, contract 위에서)
 8. Atomicity & Checkpoint  (staging area, 트랜잭션, 체크포인트)
 9. Idempotent Execution    (재실행 안전성, integrity + checkpoint 활용)
-10. Orchestrator           (1~9 전체 조립)
+10. Parallelism            (각 단계의 병렬 처리 적용, 모든 단계 구현 후)
+11. Orchestrator           (1~10 전체 조립, 독립 단계 병렬 실행 포함)
 ```
 
 의존성이 없는 것들은 병렬 가능하다고 명시한다.
@@ -110,71 +111,22 @@
 
 ---
 
-## 카테고리별 Instruction 작성 가이드
+## 카테고리별 Instruction 작성 힌트
 
-### Schema Contract 계열
-- 입력: 현재 코드에서 암묵적으로 가정하는 스키마
-- 출력: Pydantic BaseModel 또는 JSON Schema로 명시적 계약
-- 핵심: validate 실패 시 상세 에러 메시지 (어떤 필드, 왜)
-- 주의: 기존 데이터 형태를 먼저 파악하고, 그에 맞는 스키마를 작성할 것
+> 각 카테고리의 원칙 상세는 `reliability.md`, 에이전트 상세는 `agents.md`, 병렬화 상세는 `parallelism.md` 참조.
+> 여기서는 **instruction 작성 시에만 필요한 추가 힌트**만 기록한다.
 
-### Integrity 계열
-- 핵심 함수: seal(checksum 기록 + 권한 변경), verify(checksum 비교)
-- 주의: seal은 ingest 완료 후에만, verify는 read-only
-- idempotent: 이미 sealed된 것을 다시 seal해도 안전
-
-### Migration 계열
-- 반드시 트랜잭션 안에서 실행
-- 롤백 스크립트 동반 필수
-- 마이그레이션 전후 데이터 건수 일치 검증
-
-### Lineage 계열
-- batch insert로 성능 유지
-- 순방향 + 역방향 조회 CLI 제공
-- 기존 테이블 수정하지 않고 별도 테이블
-
-### Validation 계열
-- validator는 데이터를 절대 수정하지 않음 (read-only)
-- 복합 실패 시 모든 실패를 한 번에 리포트 (첫 실패에서 중단하지 않음)
-- 전체 이미지 디코딩 같은 무거운 검증은 피할 것
-
-### Idempotent 계열
-- progress tracker로 완료된 항목 스킵
-- UPSERT로 중복 삽입 방지
-- 같은 입력 → 같은 결과 보장
-
-### Dead Letter Queue 계열
-- DLQ 디렉토리/테이블 구조 정의 (record, stage, error, timestamp)
-- 격리 시 원본 단계와 실패 사유를 반드시 기록
-- 재처리 CLI: 수정 후 재투입 또는 영구 폐기
-- DLQ 적재량 모니터링: 임계값 초과 시 파이프라인 경고
-- 핵심: 비정상 데이터가 정상 흐름을 오염시키지 않도록 격리
-
-### Atomicity 계열
-- Staging area: 임시 공간에서 처리 완료 후 atomic rename/swap으로 최종 반영
-- DB 작업은 트랜잭션으로 묶기 (부분 커밋 방지)
-- Checkpointing: 장시간 배치는 진행 상태를 주기적으로 기록
-- 장애 복구 시 마지막 체크포인트부터 재시작
-- Write-Audit-Publish 패턴: staging 쓰기 → 검증 → 통과 시 publish
-
-### Audit & Observability 계열
-- 각 단계에서 입력/출력/스킵/에러 건수 기록
-- Count reconciliation: input == output + skipped + error 자동 검증
-- 처리 시간, 처리량(throughput) 기록
-- Health check: latency 임계값 초과 또는 에러율 급증 시 경고
-- 배치 간 통계 비교: 이전 대비 급격한 분포 변화 탐지
-
-### Quality Validation 계열
-- Null check: 필수 필드 NULL 비율이 임계값 이하인지 검증
-- Range & format check: 숫자 범위, 날짜 형식, 문자열 패턴 검증
-- Consistency check: 외래키 관계, 비즈니스 룰 일관성 검증
-- Distribution check: 이전 배치 대비 통계적 분포 변화 탐지
-- 핵심: 스키마는 통과하지만 내용이 비정상인 데이터를 잡아낼 것
-
-### Orchestrator 계열
-- thin wrapper: 각 단계 모듈을 import해서 호출만
-- CLI 지원: --all, --stage N, --session ID, --dry-run
-- 실행 로그 타임스탬프별 저장
+| 카테고리 | 작성 시 핵심 힌트 |
+|----------|------------------|
+| Schema Contract | 기존 데이터 형태를 먼저 파악 → Pydantic으로 명시적 계약. validate 실패 시 상세 에러 (어떤 필드, 왜) |
+| Integrity | seal은 ingest 완료 후에만, verify는 read-only. 이미 sealed된 것을 다시 seal해도 안전 |
+| Migration | 트랜잭션 필수, 롤백 스크립트 동반, 전후 건수 일치 검증 |
+| Lineage | batch insert로 성능 유지, 기존 테이블 수정 금지 (별도 테이블), 순방향+역방향 CLI |
+| Validation | read-only (데이터 수정 금지), 복합 실패 시 모든 실패를 한 번에 리포트, 무거운 검증(이미지 디코딩 등) 지양 |
+| DLQ | 재처리 CLI 제공 (재투입 or 영구 폐기), 적재량 모니터링 포함 |
+| Atomicity | Write-Audit-Publish 패턴: staging → 검증 → publish |
+| Parallelism | 상세 규칙: `parallelism.md`. 핵심: 순수 함수 + DLQ 연동 에러 핸들링 |
+| Orchestrator | thin wrapper, CLI: --all/--stage/--session/--dry-run/--workers/--sequential, DAG 기반 inter-stage 병렬 |
 
 ---
 
