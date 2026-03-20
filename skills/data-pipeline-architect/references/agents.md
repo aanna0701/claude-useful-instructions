@@ -30,18 +30,37 @@ manifest 형식:
 }
 ```
 
-### 규칙 3: 공통 인터페이스
-모든 에이전트는 아래 인터페이스를 따른다:
+### 규칙 3: 공통 인터페이스 (병렬 처리 내장)
+모든 에이전트는 아래 인터페이스를 따른다.
+`run()` 내부에서 병렬화 가능하면 자동으로 병렬 실행한다.
 
 ```python
 class BaseAgent:
     def run(self, config: dict) -> Report:
-        """단계 실행. config에 입출력 경로, 옵션 포함."""
-        ...
+        """단계 실행. 병렬화 가능 시 자동 병렬."""
+        items = self.load_items(config)
+        if self.parallelism.intra_stage.applicable and len(items) > 100:
+            results, errors = self._run_parallel(items, config)
+        else:
+            results, errors = self._run_sequential(items, config)
+        return Report(processed=len(results), failed=len(errors), errors=errors, ...)
 
     def validate(self, data_path: str) -> ValidationReport:
-        """출력 데이터 검증. 데이터를 수정하지 않음 (read-only)."""
+        """출력 데이터 검증. read-only."""
         ...
+
+    def _run_parallel(self, items, config):
+        Executor = (ProcessPoolExecutor if self.parallelism.type == "cpu_bound"
+                    else ThreadPoolExecutor)
+        results, errors = [], []
+        with Executor(max_workers=config.get("num_workers", min(os.cpu_count(), 8))) as pool:
+            futures = {pool.submit(self.process_item, item): item for item in items}
+            for future in as_completed(futures):
+                try:
+                    results.append(future.result())
+                except Exception as e:
+                    errors.append({"item": str(futures[future]), "error": str(e)})
+        return results, errors
 
 @dataclass
 class Report:
@@ -49,31 +68,44 @@ class Report:
     skipped: int
     failed: int
     errors: list[dict]      # [{"item": "...", "error": "..."}]
-    manifest_path: str       # 저장된 manifest 경로
+    manifest_path: str
 
-@dataclass  
+@dataclass
 class ValidationReport:
     passed: bool
     checks: list[dict]       # [{"name": "...", "passed": bool, "message": "..."}]
 ```
 
+병렬화 상세 규칙: `parallelism.md` 참조.
+
 ### 규칙 4: Orchestrator는 조율만
 순서 결정, gate 판단(통과/중단), 로그 기록만 수행한다.
 비즈니스 로직은 절대 orchestrator에 넣지 않는다.
+**독립적인 단계는 반드시 병렬로 실행한다** (의존성 그래프 기반).
 
-Orchestrator 판단 로직:
-```
-for stage in stages:
+```python
+async def run_pipeline(stages, config):
+    dag = build_dag(stages)
+    for batch in dag.topological_batches():
+        if len(batch) == 1:
+            await run_single_stage(batch[0], config)
+        else:
+            results = await asyncio.gather(
+                *[run_single_stage(s, config) for s in batch],
+                return_exceptions=True,
+            )
+            for stage, result in zip(batch, results):
+                if isinstance(result, Exception):
+                    handle_stage_failure(stage, result)
+
+async def run_single_stage(stage, config):
     report = stage.agent.run(config)
     validation = stage.agent.validate(stage.output_path)
-    
     if not validation.passed:
-        log_failure(stage, validation)
-        if stage.is_blocking:  # 기본값: True
+        if stage.is_blocking:
             abort_pipeline(validation)
         else:
             warn_and_continue(validation)
-    
     save_manifest(stage, report)
 ```
 
@@ -124,7 +156,7 @@ for stage in stages:
 
 ### Orchestrator
 
-모든 프로젝트에 생성. 전체 파이프라인을 순차 실행한다.
+모든 프로젝트에 생성. 의존성 그래프 기반으로 파이프라인을 실행한다 (독립 단계 병렬).
 
 CLI 인터페이스 (필수 지원):
 ```
@@ -132,6 +164,8 @@ CLI 인터페이스 (필수 지원):
 --stage N          특정 단계만 실행
 --session ID       특정 세션/배치만 처리
 --dry-run          실행 없이 처리 대상 미리보기
+--workers N        intra-stage 병렬 워커 수 (기본: min(cpu_count, 8))
+--sequential       병렬 실행 비활성화 (디버깅용)
 ```
 
 ---

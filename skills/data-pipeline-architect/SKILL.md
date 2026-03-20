@@ -109,7 +109,23 @@ dlq: true/false  # 비정상 데이터 격리 필요 여부
 quality_checks:  # 출력 품질 검증 항목
   - "null_ratio < 0.05"
   - "value_range: 0~150"
+parallelism:  # 병렬 처리 분석
+  intra_stage:
+    applicable: true/false
+    type: "cpu_bound" | "io_bound" | "mixed"
+    unit: "per_file" | "per_record" | "per_batch" | "per_partition"
+    shared_state: true/false  # false = safe to parallelize
+    pattern: "ProcessPoolExecutor" | "ThreadPoolExecutor" | "asyncio"
+  inter_stage:
+    independent_of: ["Stage X"]  # 병렬 실행 가능한 단계
+    depends_on: ["Stage Y"]
+  data_parallelism:
+    applicable: true/false
+    partition_key: "date" | "source_id" | null
 ```
+
+> 병렬화 분석 상세: `references/parallelism.md` 참조.
+> Phase 2 실행 시 각 단계의 병렬화 가능 여부를 반드시 분석할 것.
 
 ---
 
@@ -123,13 +139,14 @@ quality_checks:  # 출력 품질 검증 항목
 - 에이전트 간 통신 = JSON manifest 파일
 - 공통 인터페이스: `run(config) → Report`, `validate(path) → ValidationReport`
 - Orchestrator는 조율만, 비즈니스 로직 금지
+- 병렬화 가능한 단계는 Orchestrator가 동시 실행 (dependency graph 기반)
 
 **공통 에이전트** (모든 프로젝트에 생성):
 | 에이전트 | 역할 |
 |----------|------|
 | Schema Validator | 단계 간 입출력 계약 검증 |
 | Quality Gate | 최종 출력물 통계 품질 검증 |
-| Orchestrator | 순차 실행 + gate 판단 + 로그 |
+| Orchestrator | 의존성 그래프 기반 실행 (독립 단계 병렬) + gate 판단 + 로그 |
 
 **조건부 에이전트** (프로젝트 특성에 따라 생성):
 | 에이전트 | 생성 조건 |
@@ -195,6 +212,14 @@ instruction 세트 완성 후, 아래 체크리스트를 반드시 실행한다.
 □ 추적 가능성: 특정 데이터의 오류를 발견했을 때 소스까지 역추적이 가능한가? (R4: 가시성)
 □ 품질 검증: 형식은 맞지만 내용이 비정상인 데이터를 걸러낼 수 있는가? (R5: 품질 검증)
 □ 확장성: 데이터 양이 늘어나도 무결성 검증 로직이 병목이 되지 않는가?
+
+# 병렬화
+□ 각 단계의 병렬화 가능 여부가 분석되었는가? (Phase 2 parallelism 필드)
+□ CPU-bound 단계에 ProcessPoolExecutor가, I/O-bound 단계에 ThreadPoolExecutor/asyncio가 지정되었는가?
+□ 병렬화 대상 함수가 순수 함수(pure function)인가? (공유 상태 없음)
+□ 독립적인 단계 간 inter-stage 병렬 실행이 Orchestrator에 반영되었는가?
+□ 병렬 처리 시 에러 핸들링이 DLQ와 연동되는가? (worker 실패 → DLQ 격리)
+□ num_workers가 설정 가능하고, 기본값이 min(cpu_count(), 8)인가?
 
 # 공통
 □ instruction 간 순환 의존이 없는가?
