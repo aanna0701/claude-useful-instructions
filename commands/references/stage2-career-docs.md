@@ -32,9 +32,4 @@ nlm source add "자소서" --text "..." --title "경력_기술서_YYYYMMDD_HHMM"
 nlm source add "자소서" --text "..." --title "인사관점_에세이_YYYYMMDD_HHMM"
 ```
 
-**반드시 아래 메시지 출력:**
-> ✅ Stage 1/2 완료 — 컨텍스트 정리, 경력 기술서, 인사 관점 에세이가 NotebookLM에 저장되었습니다.
->
-> 📌 **자소서 작성(Stage 3)은 새 채팅에서 시작해주세요.**
-> 새 채팅에서 "자소서 써줘"라고 입력하면, NotebookLM에서 저장된 결과를 불러와 바로 시작합니다.
-> (같은 채팅에서 이어가면 컨텍스트가 길어져 자소서 품질이 떨어질 수 있습니다)
+**세션 분리 메시지 출력** (cover-letter.md "Session Split" 섹션 참조).
