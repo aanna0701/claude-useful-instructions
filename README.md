@@ -31,6 +31,7 @@ claude-useful-instructions/
 │   ├── init-docs.md                 # /init-docs
 │   ├── sync-docs.md                 # /sync-docs
 │   ├── cover-letter.md              # /cover-letter
+│   ├── optimize-tokens.md           # /optimize-tokens
 │   └── smart-git-commit-push.md     # /smart-git-commit-push
 ├── rules/                           # Shared code standards
 │   ├── coding-style.md              # English-only, immutability, file size
@@ -73,6 +74,7 @@ User-invocable slash commands. → [Full reference](docs/commands.md)
 | `/sync-docs` | Sync docs to current codebase state |
 | `/cover-letter` | Multi-agent cover letter pipeline (Korean) |
 | `/smart-git-commit-push` | Auto-split commits by feature and push |
+| `/optimize-tokens` | Analyze and reduce token waste in instructions |
 
 ## Rules
 

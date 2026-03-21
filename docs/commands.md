@@ -155,6 +155,39 @@ Upload resume/portfolio to the "Cover Letter" notebook in NotebookLM before star
 
 ---
 
+## /optimize-tokens
+
+Analyze and reduce token waste in Claude Code instruction files (commands, agents, skills, rules).
+
+**Usage**:
+```
+/optimize-tokens              # Scan all .claude/ files
+/optimize-tokens cover-letter # Scan specific command and its dependencies
+```
+
+### Analysis Dimensions
+
+| Check | What It Detects |
+|-------|----------------|
+| Cross-file duplication | Command ↔ Agent, Reference ↔ Agent, Rule ↔ Agent overlap |
+| MCP call efficiency | Redundant queries, missing batches, upload-then-requery |
+| Session token load | Total lines loaded per execution path, files loaded twice |
+| Intra-file repetition | Same rule in multiple sections, verbose examples |
+
+### Workflow
+
+| Step | Action |
+|------|--------|
+| 1 | Inventory all instruction files with line counts |
+| 2 | Cross-file duplication detection (>70% overlap) |
+| 3 | MCP call mapping and efficiency analysis |
+| 4 | Session load simulation per execution path |
+| 5 | Prioritized report (critical / moderate / low) |
+| 6 | Apply fixes with user confirmation |
+| 7 | Summary with before/after metrics |
+
+---
+
 ## /smart-git-commit-push
 
 Analyze changes, auto-split by feature into separate commits, and push.
