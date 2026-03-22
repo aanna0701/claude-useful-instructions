@@ -1,6 +1,8 @@
 # VasInt 코드 표준
 
-이 파일은 모든 에이전트(메인/서브)가 반드시 따라야 하는 코드 규칙이다.
+> Extends coding-style.md. For shared rules (immutability, file size, error handling), see coding-style.md.
+
+이 파일은 모든 에이전트(메인/서브)가 반드시 따라야 하는 Python 전용 코드 규칙이다.
 서브에이전트는 코드 수정 전 이 파일을 반드시 Read해야 한다.
 
 ## 1. 설정값 vs 내부 DTO
@@ -62,48 +64,34 @@ class StateRegion:
 | 함수 간 전달 | `@dataclass(frozen=True)` | 가벼움, 검증 불필요 |
 | DB 쿼리 결과 래핑 | `@dataclass(frozen=True)` | 가벼움 |
 
-## 2. 불변 객체 패턴
+## 2. Python 불변 패턴
 
-모든 데이터 클래스는 불변이어야 한다:
+> 불변 원칙 자체는 coding-style.md 참조. 여기서는 Python 구현 패턴만 정의.
+
 - pydantic: `class Config(BaseModel, frozen=True)`
 - dataclass: `@dataclass(frozen=True)`
+- 업데이트: `config.model_copy(update={...})` (pydantic) / `replace(obj, field=val)` (dataclass)
 
-원본을 수정하지 말고 새 객체를 반환하라:
-
-```python
-# CORRECT
-new_config = config.model_copy(update={"robot_id": "v2"})  # pydantic
-new_region = replace(region, state=9)                       # dataclass
-
-# WRONG
-config.robot_id = "v2"  # frozen이면 에러, 아니면 사이드이펙트
-```
-
-## 3. 파일/함수 크기 제한
-
-- 파일당 800줄 이하
-- 함수당 50줄 이하
-- 초과 시 분리하라
-
-## 4. 테스트 (TDD)
+## 3. 테스트 (TDD)
 
 - 구현 전 테스트를 먼저 작성 (RED → GREEN → REFACTOR)
 - 커버리지 80% 이상
 - `uv run pytest` 으로 실행 (pip 금지)
 
-## 5. 의존성 관리
+## 4. 의존성 관리
 
 - Python 패키지는 `uv`로만 관리 (`pip install` 금지)
 - 새 의존성 추가 순서: `docs/TECH_STACK.md` → 해당 `docs/stack/*.md` → `pyproject.toml`
 - pydantic은 이미 `host` 그룹에 포함됨 (`pydantic>=2.0`)
 
-## 6. 에러 처리
+## 5. 에러 처리 (Python 전용)
 
-- 에러를 삼키지 마라 (bare `except:` 금지)
-- 시스템 경계(외부 입력, 파일 I/O, API)에서 검증하라
+> 일반 에러 처리 원칙은 coding-style.md 참조.
+
+- bare `except:` 금지 — 항상 구체적 예외 타입 지정
 - 내부 코드는 타입을 믿어라 (과도한 방어 코딩 금지)
 
-## 7. Import 순서
+## 6. Import 순서
 
 ```python
 # 1. 표준 라이브러리

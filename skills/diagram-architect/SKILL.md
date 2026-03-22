@@ -22,15 +22,11 @@ description: >
 
 ---
 
-## 핵심 원칙 5가지
+## 핵심 원칙
 
 > 상세 규칙: `references/diagram-rules.md` 참조. Phase 3 실행 전 반드시 읽을 것.
 
-1. **C4 계층화** — 한 장에 모든 것 금지. Level별로 분리.
-2. **선의 의미 명확화** — 실선(동기), 점선(비동기), 화살표 방향 통일.
-3. **추상화 수준 유지** — 인프라와 비즈니스 로직 혼합 금지.
-4. **색상/형태 일관성** — 3-4색 이내 + 범례 필수.
-5. **텍스트 최소화** — 도형 안은 축약, 번호 매기기, 본문에서 설명.
+Apply the 5 core principles from diagram-rules.md: C4 layering, line semantics, abstraction levels, color consistency, text minimization.
 
 ---
 

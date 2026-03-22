@@ -148,7 +148,7 @@ parallelism:  # 병렬 처리 분석
 | Quality Gate | 최종 출력물 통계 품질 검증 |
 | Orchestrator | 의존성 그래프 기반 실행 (독립 단계 병렬) + gate 판단 + 로그 |
 
-**조건부 에이전트** (프로젝트 특성에 따라 생성):
+**조건부 에이전트** (프로젝트 특성에 따라 생성; for full specifications, see agents.md):
 | 에이전트 | 생성 조건 |
 |----------|-----------|
 | Integrity Guard | raw/원본 데이터가 존재하는 경우 |
@@ -201,25 +201,16 @@ instruction 세트 완성 후, 아래 체크리스트를 반드시 실행한다.
 
 ```
 # 구조 원칙 (8원칙)
-□ 8개 구조 원칙이 모두 최소 1개 instruction에 반영되었는가?
-□ 모든 단계 경계에 schema contract가 있는가?
-□ raw 데이터가 있다면 불변성이 보장되는가?
+□ All 8 structure principles reflected in at least 1 instruction (see principles.md)
+□ Schema contracts exist at all stage boundaries
+□ Raw data immutability guaranteed (if applicable)
 
 # 신뢰성 원칙 (5원칙)
-□ 재시도 가능성: 실패 시 동일 시점에서 재시작해도 데이터가 중복되지 않는가? (R1: 멱등성)
-□ 격리성: 비정상 데이터가 유입되었을 때 DLQ로 격리되고 전체 파이프라인이 중단되지 않는가? (R2: 데이터 계약)
-□ 원자성: 각 단계가 중간 실패 시 불완전 결과를 남기지 않는가? (R3: 원자성)
-□ 추적 가능성: 특정 데이터의 오류를 발견했을 때 소스까지 역추적이 가능한가? (R4: 가시성)
-□ 품질 검증: 형식은 맞지만 내용이 비정상인 데이터를 걸러낼 수 있는가? (R5: 품질 검증)
-□ 확장성: 데이터 양이 늘어나도 무결성 검증 로직이 병목이 되지 않는가?
+□ All 5 reliability principles met (see reliability.md): idempotency, data contracts/DLQ, atomicity, observability, quality validation
+□ Scalability: validation logic does not become a bottleneck
 
 # 병렬화
-□ 각 단계의 병렬화 가능 여부가 분석되었는가? (Phase 2 parallelism 필드)
-□ CPU-bound 단계에 ProcessPoolExecutor가, I/O-bound 단계에 ThreadPoolExecutor/asyncio가 지정되었는가?
-□ 병렬화 대상 함수가 순수 함수(pure function)인가? (공유 상태 없음)
-□ 독립적인 단계 간 inter-stage 병렬 실행이 Orchestrator에 반영되었는가?
-□ 병렬 처리 시 에러 핸들링이 DLQ와 연동되는가? (worker 실패 → DLQ 격리)
-□ num_workers가 설정 가능하고, 기본값이 min(cpu_count(), 8)인가?
+□ All parallelism criteria met (see parallelism.md): stage analysis, executor types, pure functions, inter-stage parallelism, DLQ integration, configurable num_workers
 
 # 공통
 □ instruction 간 순환 의존이 없는가?
