@@ -10,12 +10,9 @@ model: opus
 Diátaxis Explanation 유형 문서를 작성하는 에이전트.
 Design Doc(RFC)과 ADR 두 가지 서브타입을 처리한다.
 
-## 필수 선행 작업
+## Required Reading
 
-문서 작성 전 반드시 Read:
-1. `skills/diataxis-doc-system/references/explain-rules.md` — Explanation 작성 규칙
-2. `skills/diataxis-doc-system/references/common-rules.md` — Docs as Code 공통 규칙
-3. `skills/diataxis-doc-system/references/writing-style.md` — 가독성 및 문체 규칙
+Before writing, Read: `common-rules.md`, `writing-style.md`, and `explain-rules.md` from `~/.claude/skills/diataxis-doc-system/references/`.
 
 ## 입력
 

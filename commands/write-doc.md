@@ -34,12 +34,7 @@ Target: $ARGUMENTS (문서 주제 또는 "review [파일경로]" 형태)
 
 ## Step 2: 유형 판별 (Router)
 
-| 질문 | Yes → 유형 |
-|------|-----------|
-| 독자가 처음 접하고, 끝까지 따라하면 무언가를 만드는가? | **Tutorial** |
-| 독자가 기본은 알고, 특정 문제를 해결하려 하는가? | **How-to Guide** |
-| 독자가 "왜 이렇게 설계했는가"를 이해하려 하는가? | **Explanation** |
-| 독자가 정확한 스펙/파라미터/타입을 찾으려 하는가? | **Reference** |
+See SKILL.md for type definitions and discrimination questions.
 
 판별이 어려우면 사용자에게 질문:
 > "이 문서의 주요 독자는 누구이고, 읽은 뒤 어떤 행동을 하길 바라시나요?"
@@ -57,13 +52,7 @@ Target: $ARGUMENTS (문서 주제 또는 "review [파일경로]" 형태)
 
 ## Step 3: 에이전트 위임
 
-유형에 따라 해당 에이전트에게 위임:
-
-- **Tutorial** → `doc-writer-tutorial` 에이전트에게 위임
-- **How-to Guide** → `doc-writer-howto` 에이전트에게 위임
-- **Explanation** → `doc-writer-explain` 에이전트에게 위임
-- **Reference** → `doc-writer-reference` 에이전트에게 위임
-
+Agent delegation follows SKILL.md Phase 2.
 위임 시 Step 1에서 수집한 정보를 함께 전달.
 
 ---
@@ -110,23 +99,8 @@ docs/
 > **Review 모드 위임:** `review` 모드에서는 `doc-reviewer` 에이전트에게 위임하여
 > 가독성/유형순수성/거버넌스를 종합 리뷰받을 수 있다.
 
-### 유형 순수성 검사
-- [ ] Tutorial에 Reference 표가 끼어 있지 않은가?
-- [ ] How-to에 기초 설명이 들어가 있지 않은가?
-- [ ] Explanation에 단계별 절차가 있지 않은가?
-- [ ] Reference에 의견/추천이 섞이지 않았는가?
-
-### 공통 품질 검사
-- [ ] YAML frontmatter가 완전한가? (title, type, status, author, owner, tags)
-- [ ] 다이어그램이 Mermaid/PlantUML로 되어 있는가?
-- [ ] 용어가 glossary와 일치하는가?
-- [ ] 관련 유형 문서로의 상호 참조 링크가 있는가?
-- [ ] 6개월 뒤에도 유효한가?
-
-### 거버넌스 검사
-- [ ] `owner` 필드가 지정되어 있는가?
-- [ ] 같은 정보가 다른 문서에 중복되지 않는가? (SSOT)
-- [ ] `tags`가 프로젝트 허용 목록의 태그만 사용하는가?
+Quality validation: follow SKILL.md Phase 3 checklist.
+Apply longevity test (see common-rules.md).
 
 위반 항목이 있으면 수정 사항을 제안하고, 사용자 확인 후 적용.
 

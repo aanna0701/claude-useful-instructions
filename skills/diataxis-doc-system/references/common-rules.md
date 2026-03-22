@@ -21,34 +21,11 @@
 
 프로젝트 규모에 따라 두 가지 구조 중 선택한다:
 
-**소규모 (문서 20개 미만) — Diátaxis 유형별 분류:**
-```
-docs/
-├── tutorials/           # Tutorial 문서
-├── howto/               # How-to Guide 문서
-├── explanation/         # Explanation 문서
-│   └── adr/
-├── reference/           # Reference 문서
-└── glossary.md          # 용어 사전
-```
+- **소규모 (문서 20개 미만):** Diátaxis 유형별 분류 (tutorials/, howto/, explanation/, reference/)
+- **중대규모 (문서 20개 이상):** 번호 체계 + MkDocs (00_context ~ 90_archive)
 
-**중대규모 (문서 20개 이상) — 번호 체계 + MkDocs:**
-```
-docs/
-├── index.md             # 문서 홈
-├── glossary.md          # 용어 사전
-├── 00_context/          # 맥락: 비즈니스 목표, 요구사항
-├── 10_architecture/     # 설계: 시스템 구조, ADR
-├── 20_implementation/   # 구현: API/Config/CLI 명세
-├── 30_guides/           # 가이드: Tutorial + How-to
-│   ├── tutorials/
-│   └── howto/
-├── 40_operations/       # 운영: 배포, 모니터링, Runbook
-└── 90_archive/          # 보관: deprecated 문서
-```
-
-> 번호 체계의 상세 규칙: `references/site-architecture.md` 참조.
-> `/init-docs` 커맨드가 번호 체계 구조를 자동 생성한다.
+For directory structure templates, see init-docs.md.
+번호 체계의 상세 규칙: `references/site-architecture.md` 참조.
 
 ---
 
@@ -79,14 +56,7 @@ docs/
 
 ### Glossary 파일 유지
 프로젝트 루트에 `glossary.md`를 유지한다.
-
-```markdown
-| 용어 | 정의 | 동의어 (사용 금지) |
-|------|------|-------------------|
-| User | 서비스에 가입한 최종 사용자 | Member, Customer, Client |
-| Workspace | 하나의 조직이 소유한 격리된 환경 | Tenant, Organization, Team |
-| Token | 인증에 사용되는 JWT 문자열 | Key, Secret, Credential |
-```
+For glossary table template, see init-docs.md Step 5.
 
 ### 규칙
 - 새 용어 도입 → glossary에 먼저 추가

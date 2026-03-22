@@ -25,30 +25,12 @@ Before reviewing any document, Read these reference files:
 
 ### 1. Type Purity
 
-Verify the document stays within its declared Diátaxis type:
-
-| Type | Must NOT contain |
-|------|------------------|
-| Tutorial | Reference tables, design rationale |
-| How-to | Introductory explanations, background theory > 3 sentences |
-| Explanation | Step-by-step procedures, parameter tables |
-| Reference | Opinions, recommendations, narrative |
-
+Type purity: verify against common-rules.md type constraints.
 If mixed content is found, recommend splitting into separate documents.
 
-### 2. Readability and Style (from writing-style.md)
+### 2. Readability and Style
 
-Based on **Google Developer Documentation Style Guide** and **Microsoft Writing Style Guide**:
-
-- **Voice:** Second person ("you"), active voice, present tense
-- **Scanning:** Headings and bold text convey the full story
-- **Structure:** Lists ≤ 9 items, nesting ≤ 3 levels, parallel grammar
-- **Sentences:** Active voice, one idea per sentence, ≤ 30 words
-- **Emphasis:** Bold for key terms, code font for commands/variables, icons for callouts
-- **Tables:** Used for comparisons, not for single-dimension lists
-- **Code blocks:** Language specified, copy-pasteable, placeholder values obvious
-- **Inclusive language:** Bias-free (Microsoft), approved word list (Google)
-- **Global-ready:** Avoid idioms, slang, and culturally specific references
+Style evaluation: apply writing-style.md criteria.
 
 ### 3. Terminology and Consistency
 

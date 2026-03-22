@@ -94,7 +94,7 @@ description: >
    - Tutorial에 Reference 표가 끼어 있으면 분리한다.
    - Explanation에 단계별 절차가 들어가면 How-to로 분리한다.
 2. **독자 적합성**: 설정한 독자가 이 문서를 받아들고 목적을 달성할 수 있는가?
-3. **6개월 테스트**: 6개월 뒤에도 유효한가? 변하기 쉬운 수치에 하드코딩이 없는가?
+3. **6개월 테스트**: Apply longevity test (see common-rules.md).
 4. **용어 일관성**: 같은 대상을 다른 이름으로 부르지 않았는가?
 5. **상호 참조**: 관련 유형 문서로의 링크가 있는가?
 6. **Diagrams as Code**: 다이어그램이 Mermaid/PlantUML로 작성되었는가?
