@@ -1,70 +1,70 @@
 
-# Cover Letter Agent (자소서 작성 멀티 에이전트)
+# Cover Letter Agent (자소서 Multi-Agent Pipeline)
 
 3-stage pipeline for career-level (경력직) Korean cover letters using NotebookLM as an AI reasoning engine.
 
 ```
-[Stage 1/2] Context & Career Docs  ──→  세션 분리  ──→  [Stage 3] 자소서 작성
-  NLM 합성 쿼리로 추출/분석           NLM 업로드        Writer-Reviewer 루프
+[Stage 1/2] Context & Career Docs  ──→  Session Split  ──→  [Stage 3] Cover Letter Writing
+  NLM synthesis queries for extraction/analysis    NLM upload        Writer-Reviewer loop
 ```
 
 ## Prerequisites
 - NotebookLM MCP connected (`https://github.com/jacob-bd/notebooklm-mcp-cli`)
-- "자소서" notebook with CV, 포트폴리오, 프로젝트기술서, 논문 등 업로드 완료
+- "자소서" notebook with CV, portfolio, project descriptions, papers, etc. uploaded
 
-## NLM 연결 실패 대응
+## NLM Connection Failure Fallback
 
-NLM MCP 호출 실패 시:
-1. `⚠️ NotebookLM 연결이 끊어졌습니다 (토큰 만료 가능성). nlm login으로 재인증하면 품질이 올라갑니다.`
-2. 사용자 제공 텍스트 + 대화 컨텍스트 기반으로 AI 자체 판단으로 진행. NLM 단계 건너뜀.
-3. 중간에 NLM 복구되면 즉시 활용 모드로 전환.
+If NLM MCP call fails:
+1. Output: `⚠️ NotebookLM 연결이 끊어졌습니다 (토큰 만료 가능성). nlm login으로 재인증하면 품질이 올라갑니다.`
+2. Proceed using user-provided text + conversation context. Skip NLM steps.
+3. If NLM recovers mid-session, switch to NLM-assisted mode immediately.
 
 ---
 
-## Session Split (필수)
+## Session Split (Required)
 
-**Stage 1/2와 Stage 3는 반드시 별도 채팅에서 실행한다.**
+**Stage 1/2 and Stage 3 must run in separate chat sessions.**
 
-Stage 1/2의 긴 컨텍스트가 Stage 3 품질을 떨어뜨리므로, 결과를 NLM에 업로드하고 새 채팅에서 Stage 3 실행.
+Stage 1/2's long context degrades Stage 3 quality. Upload results to NLM and start Stage 3 in a new chat.
 
-**Stage 1/2 완료 후 출력:**
+**Output after Stage 1/2 completion:**
 > ✅ Stage 1/2 완료 — 컨텍스트 정리, 경력 기술서, 인사 관점 에세이가 NotebookLM에 저장되었습니다.
 >
 > 📌 **자소서 작성(Stage 3)은 새 채팅에서 시작해주세요.**
 > 새 채팅에서 "자소서 써줘"라고 입력하면 바로 시작합니다.
 
-같은 채팅에서 요청해도 위 안내 재출력. 사용자가 고집하면 품질 저하 고지 후 진행.
+If user requests Stage 3 in the same chat, re-output the above notice. Proceed if user insists, with a quality warning.
 
-## Reuse Guard (필수 — Stage 1/2 시작 전)
+## Reuse Guard (Required — before Stage 1/2)
 
-**Stage 1 또는 Stage 2 실행 전, 항상 NLM 소스 목록을 먼저 조회한다.**
+**Before running Stage 1 or Stage 2, always check the NLM source list first.**
 
 ```
 nlm source list "자소서"
 ```
 
-| 발견된 소스 | 처리 |
-|------------|------|
-| `컨텍스트_정리_*` | Stage 1 건너뜀 — "기존 컨텍스트 정리 문서를 재사용합니다 (YYYYMMDD_HHMM). 다시 생성하려면 '재생성'이라고 입력하세요." |
-| `경력_기술서_*` + `인사관점_에세이_*` | Stage 2 건너뜀 — "기존 경력 기술서/에세이를 재사용합니다 (YYYYMMDD_HHMM). 다시 생성하려면 '재생성'이라고 입력하세요." |
-| 없음 | 해당 Stage 정상 실행 |
+| Found source | Action |
+|-------------|--------|
+| `컨텍스트_정리_*` | Skip Stage 1 — "기존 컨텍스트 정리 문서를 재사용합니다 (YYYYMMDD_HHMM). 다시 생성하려면 '재생성'이라고 입력하세요." |
+| `경력_기술서_*` + `인사관점_에세이_*` | Skip Stage 2 — "기존 경력 기술서/에세이를 재사용합니다 (YYYYMMDD_HHMM). 다시 생성하려면 '재생성'이라고 입력하세요." |
+| None found | Run the stage normally |
 
-**사용자가 '재생성' 입력 시**: 기존 소스 삭제 후 새로 생성.
+**If user inputs '재생성'**: delete existing source, then regenerate.
 
 ```
 nlm source delete "자소서" --title "컨텍스트_정리_YYYYMMDD_HHMM"
 ```
 
-여러 개 존재 시: 가장 최근 날짜 기준으로 재사용 여부 확인.
+If multiple exist: use the most recent date as the reuse candidate.
 
 ---
 
-## Stage Gate (필수)
+## Stage Gate (Required)
 
-Stage 3 진입 전, NLM에서 확인:
+Before entering Stage 3, verify in NLM:
 - `컨텍스트_정리_*` (Stage 1) / `경력_기술서_*` (Stage 2) / `인사관점_에세이_*` (Stage 2)
 
-**하나라도 없으면 Stage 3 진입 불가 → 누락된 Stage부터 실행.**
+**If any is missing: block Stage 3 entry → run the missing stage first.**
 
 ---
 
@@ -83,38 +83,38 @@ Read `~/.claude/commands/references/stage2-career-docs.md` for full instructions
 # Stage 3: Cover Letter Writing (Multi-Agent Loop)
 
 ### 3.0 User Input
-1. 자소서 항목 + JD + 강조 사항 + 글자수 제한 + 지원 회사/직무
-2. (선택) 사용자 초안 — Mode B: 초안 제공 / Mode C: 이전 결과 수정 후 재요청
+1. Cover letter items + JD + emphasis points + character limit + target company/role
+2. (Optional) User draft — Mode B: draft provided / Mode C: revised draft for re-evaluation
 
-**Mode B/C**: 사용자 초안 있으면 Writer 건너뛰고 Reviewer 먼저 평가. Writer는 에디터 역할.
+**Mode B/C**: If user draft is provided, skip Writer and run Reviewer first. Writer acts as editor.
 
-### 3.1 Writer → `cover-letter-writer` 에이전트에 위임
+### 3.1 Writer → delegate to `cover-letter-writer` agent
 
-### 3.2 Reviewer → `cover-letter-reviewer` 에이전트에 위임
+### 3.2 Reviewer → delegate to `cover-letter-reviewer` agent
 
 ### 3.3 Iteration Loop
 
-**⚠️ 무조건 3회 반복. 예외 없음. 최대 5회.**
+**⚠️ Always run exactly 3 iterations. No exceptions. Max 5.**
 
 ```
 iteration = 0, best_score = 0, no_improve_streak = 0
 
 WHILE iteration < 5:
-    iteration 0: Writer 초안 (Mode B/C면 사용자 초안으로 대체)
-    iteration 1+: 점수 하락 시 best_draft에서 재시작
+    iteration 0: Writer draft (replace with user draft if Mode B/C)
+    iteration 1+: restart from best_draft if score drops
 
-    Reviewer 평가 (7차원, 0-100 연속)
-    best 갱신 또는 no_improve_streak++
+    Reviewer evaluation (7 dimensions, 0-100 continuous)
+    update best or no_improve_streak++
     iteration++
 
-    IF iteration < 3: CONTINUE          # 무조건 3회 실행
-    IF all dimensions ≥ 90: BREAK       # 목표 달성
-    IF no_improve_streak ≥ 3: BREAK     # 정체 → best 버전 사용
+    IF iteration < 3: CONTINUE          # always run 3 times
+    IF all dimensions ≥ 90: BREAK       # goal achieved
+    IF no_improve_streak ≥ 3: BREAK     # plateau → use best version
 ```
 
 ### 3.4 Output
-- 최종 자소서 (best 버전)
-- 개선 기록 `.md` (각 회차별 자소서 전문 + 점수표 + 피드백)
+- Final cover letter (best version)
+- Improvement log `.md` (full cover letter text + score table + feedback per iteration)
 
 ---
 
@@ -122,6 +122,6 @@ WHILE iteration < 5:
 
 | Rule | Detail |
 |------|--------|
-| **언어** | 스킬 문서 = 영어, 모든 출력물 = 한글 |
-| **NLM 활용** | Stage 1: 합성 쿼리 → AI 비판적 처리, Stage 3 Writer: JD 맞춤 1회 쿼리 → 4단계 판단 후 작성, 나머지: AI 자체 판단 |
-| **팩트** | Stage 1/2 문서 기반 AI 자체 대조, 날조 금지, 부족하면 사용자에게 질문 |
+| **Language** | Skill/command files = English, all user-facing output = Korean |
+| **NLM usage** | Stage 1: synthesis queries → AI critical processing. Stage 3 Writer: 1 JD-tailored query → 4-step judgment then write. All other stages: AI judgment only |
+| **Facts** | AI self-checks against Stage 1/2 documents. No fabrication. Ask user if information is insufficient |

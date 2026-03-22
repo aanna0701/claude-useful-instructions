@@ -1,52 +1,52 @@
 # Stage 2: Career Description & Essay
 
-> **Reuse Guard**: cover-letter.md Reuse Guard 섹션 참조.
+> **Reuse Guard**: see Reuse Guard section in cover-letter.md.
 
-Stage 1 컨텍스트 기반으로 AI가 직접 작성. **Stage 2에서는 NLM 추가 쿼리 없음** (Stage 1에서 이미 충분히 추출/분석).
+AI writes directly based on Stage 1 context. **No additional NLM queries in Stage 2** (Stage 1 already extracted and analyzed sufficiently).
 
-> **핵심 원칙**: Stage 1 문서의 데이터는 참고 재료다. 데이터를 재나열하지 말고,
-> 어떤 경험을 어떤 순서로 어떤 각도로 쓸지 **설계 먼저** → 작성 순으로 진행한다.
+> **Core principle**: Stage 1 document data is source material, not output. Don't re-list data.
+> **Design first** — decide which experiences to use, in what order, from what angle — then write.
 
-## 2.0 작성 전 설계 (필수)
+## 2.0 Pre-Writing Design (Required)
 
-작성 시작 전 아래 세 가지를 먼저 결정하고 한 문단으로 정리한다 (출력에 포함):
+Before writing, decide these three things and summarize them in one paragraph (include in output):
 
-1. **성장 서사 설계** — 경력 전체를 한 줄로 요약할 수 있는 성장 궤적은 무엇인가?
-   예: "도메인 전문가 → 시스템 설계자 → 조직 리더"처럼 각 회사가 챕터 역할을 하도록 배열.
-2. **핵심 사례 선택** — 인사 관점 에세이에 쓸 사례 2-3개를 미리 결정. 기준: 구체성 > 규모 > 감동.
-   NLM이 제안한 사례를 그대로 쓰지 말고 "이 사례가 왜 다른 것보다 강한가"를 AI가 판단.
-3. **차별화 포인트** — 비슷한 경력의 타 지원자와 다른 점은 무엇인가? 경력 기술서 전체에서 이를 일관되게 부각.
+1. **Growth narrative design** — What is the single-line growth trajectory that summarizes the entire career?
+   Example: "Domain expert → System architect → Organization leader" — arrange so each company is a chapter.
+2. **Key case selection** — Pre-select 2-3 cases for the HR perspective essay. Criteria: specificity > scale > emotional resonance.
+   Don't use NLM-suggested cases as-is — AI judges "why is this case stronger than the others?"
+3. **Differentiation point** — What distinguishes this candidate from others with similar careers? Consistently highlight this throughout the career description.
 
-## 2.1 상세 경력 기술서
+## 2.1 Detailed Career Description
 
-연도순 (oldest → newest). 2.0 설계를 기반으로 작성.
+Chronological (oldest → newest). Write based on the 2.0 design.
 
-**항목 형식:**
+**Item format:**
 ```markdown
-### [회사명] — [직책] (YYYY.MM ~ YYYY.MM)
-[역할 범위 2-3문장 — 성장 서사에서 이 회사가 어떤 챕터인지 드러나도록]
+### [Company] — [Title] (YYYY.MM ~ YYYY.MM)
+[Role scope in 2-3 sentences — reveal what chapter this company represents in the growth narrative]
 **주요 프로젝트 및 성과:**
-- [프로젝트명]: [구체적 기여] → [수치 성과]
-**핵심 역량:** [키워드]
+- [Project name]: [specific contribution] → [quantified outcome]
+**핵심 역량:** [keywords]
 ```
 
-**톤 규칙:** 사실적, 수치 기반, 본인 기여 특정, 과장 금지.
+**Tone rules:** factual, data-driven, specific to personal contribution, no exaggeration.
 
-## 2.2 인사 관점 에세이
+## 2.2 HR Perspective Essay
 
-에세이 형태 (800-1500자). 2.0에서 선택한 사례 기반으로 작성.
+Essay format (800-1500 characters). Write based on cases selected in 2.0.
 
-**다룰 주제:** 협업, 리더십/멘토링, 커뮤니케이션, 문제해결 접근법, 조직 기여
-**규칙:**
-- 모든 주장에 구체적 사례 근거, 빈 성격 묘사 금지 ("성실합니다" X), show don't tell
-- Stage 1 컨텍스트의 사례를 그대로 붙여넣지 말 것 — AI가 서사 흐름에 맞게 재구성
+**Topics to cover:** collaboration, leadership/mentoring, communication, problem-solving approach, organizational contribution
+**Rules:**
+- All claims backed by concrete examples. No empty character descriptions ("I am diligent" ✗). Show don't tell.
+- Don't paste Stage 1 context cases directly — AI reconstructs them to fit the narrative flow.
 
 ## 2.3 Upload & Session Split
 
-업로드:
+Upload:
 ```
 nlm source add "자소서" --text "..." --title "경력_기술서_YYYYMMDD_HHMM"
 nlm source add "자소서" --text "..." --title "인사관점_에세이_YYYYMMDD_HHMM"
 ```
 
-**세션 분리 메시지 출력** (cover-letter.md "Session Split" 섹션 참조).
+**Output session split message** (see "Session Split" section in cover-letter.md).
