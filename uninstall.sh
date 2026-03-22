@@ -21,6 +21,35 @@ echo "────────────────────────�
 
 removed=0
 
+# ── Legacy cleanup: files removed from this repo but may still be installed ──
+LEGACY_FILES=(
+  "commands/cover-letter.md"
+  "commands/references/stage1-context-extraction.md"
+  "commands/references/stage2-career-docs.md"
+  "agents/cover-letter-writer.md"
+  "agents/cover-letter-reviewer.md"
+)
+LEGACY_DIRS=(
+  "skills/cover-letter"
+)
+
+for lf in "${LEGACY_FILES[@]}"; do
+  target="$CLAUDE_DIR/$lf"
+  if [ -f "$target" ]; then
+    rm -v "$target"
+    removed=$((removed + 1))
+  fi
+done
+for ld in "${LEGACY_DIRS[@]}"; do
+  target="$CLAUDE_DIR/$ld"
+  if [ -d "$target" ]; then
+    rm -rv "$target"
+    removed=$((removed + 1))
+  fi
+done
+
+# ── Current repo files ──
+
 # commands/ — remove only files that exist in this repo
 if [ -d "$REPO_DIR/commands" ]; then
   find "$REPO_DIR/commands" -name "*.md" | while read -r file; do
