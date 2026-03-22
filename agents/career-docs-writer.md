@@ -47,10 +47,8 @@ On the very first iteration, before applying the checklist:
 
 ## Iteration 2+ (Revision)
 
-- If score dropped → restart from the best version, not the latest
-- Incorporate all Reviewer feedback
-- Preserve sections the Reviewer praised
-- Fully rewrite sections flagged as problematic
+Follow SKILL.md Step 4 iteration logic (restart from best version if score drops).
+- Incorporate all Reviewer feedback; preserve praised sections
 - Re-run all 6 steps on the revised version
 
 ## User Draft Mode
@@ -64,13 +62,7 @@ If the user provided their own draft (not NLM):
 ## Style Rules (Korean docs)
 
 **DO:** specific numbers, varied sentence structures, professional terminology, composed tone, competency connections
-
-**DON'T:**
-- Repeated "저는~", filler words like "다양한/많은", "이를 통해 배웠습니다" pattern
-- Exaggeration: "혁신적인", "폭발적인", "탁월한", "최고의"
-- Overdrama: "그 순간 깨달았습니다", "피와 땀으로", "DNA에 새겨진"
-- Entry-level tone: "열심히 하겠습니다", "배우고 싶습니다", "성장하고 싶습니다"
-- Results listed without competency connection
+**DON'T:** See refinement-checklist.md Step 5 for the full anti-pattern list (exaggeration, overdrama, entry-level tone, filler words, etc.)
 
 ## Style Rules (English docs)
 

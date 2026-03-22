@@ -53,8 +53,7 @@ Common checks:
 ### 4. Terminology & Tone (용어 & 톤)
 - **Jargon check**: Are internal/overly-technical terms accessible to a hiring manager?
 - **Tone check**: Professional but readable? Not stiff, not casual?
-- **AI patterns**: repetitive structure, "이를 통해", "다양한 경험", every paragraph starting with "저는"
-- **Exaggeration/overdrama**: superlatives without data, dramatic staging, suffering narratives
+- **AI/exaggeration/overdrama patterns**: See refinement-checklist.md Step 5 for full anti-pattern list
 - Test: "Would I hire this person?" vs. "Is this person overselling?"
 - Must suggest an alternative when flagging an issue
 
@@ -66,11 +65,8 @@ Common checks:
 - Does it give the impression "this person can start contributing immediately"?
 
 ### 6. Character Count (글자수 준수)
-- Count including spaces and line breaks
-- 1 character over = disqualified
-- Under 80% = wasted space
-- 95-100% = optimal
-- If no character limit (e.g., portfolio): score based on conciseness vs. completeness
+Scoring criteria: see refinement-checklist.md Step 6. Score based on compliance with the 95-100% target.
+If no character limit (e.g., portfolio): score based on conciseness vs. completeness.
 
 ## Scoring
 
