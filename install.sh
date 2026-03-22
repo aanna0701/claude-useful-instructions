@@ -28,6 +28,7 @@ if [ -d "$REPO_DIR/commands" ]; then
   find "$REPO_DIR/commands" -name "*.md" | while read -r file; do
     relative="${file#$REPO_DIR/}"
     cp -v "$file" "$CLAUDE_DIR/$relative"
+    chmod 644 "$CLAUDE_DIR/$relative"
   done
 fi
 
@@ -35,6 +36,7 @@ fi
 if [ -d "$REPO_DIR/agents" ]; then
   mkdir -p "$CLAUDE_DIR/agents"
   cp -v "$REPO_DIR/agents/"*.md "$CLAUDE_DIR/agents/"
+  chmod 644 "$CLAUDE_DIR/agents/"*.md
 fi
 
 # rules/
@@ -46,6 +48,7 @@ if [ -d "$REPO_DIR/rules" ]; then
   find "$REPO_DIR/rules" -name "*.md" | while read -r file; do
     relative="${file#$REPO_DIR/}"
     cp -v "$file" "$CLAUDE_DIR/$relative"
+    chmod 644 "$CLAUDE_DIR/$relative"
   done
 fi
 
@@ -64,6 +67,7 @@ if [ -d "$REPO_DIR/skills" ]; then
     find "$skill_dir" -type f | while read -r file; do
       relative="${file#$skill_dir}"
       cp -v "$file" "$target/$relative"
+      chmod 644 "$target/$relative"
     done
   done
 fi
