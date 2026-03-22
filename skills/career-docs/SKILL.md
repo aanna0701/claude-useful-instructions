@@ -1,0 +1,162 @@
+---
+name: career-docs
+description: >
+  Korean career document generation & refinement skill.
+  Supports cover letters (자소서), career descriptions (경력기술서),
+  portfolios (포트폴리오), cover letters (커버레터), and HR essays (인사관점 에세이).
+  NotebookLM drafts; AI refines through a 6-step checklist and iterative review loop.
+  Triggers: "자소서 써줘", "경력기술서 작성", "포트폴리오 정리", "커버레터 작성",
+  "cover letter", "career description", "portfolio", "자소서 다듬어줘",
+  "자소서 검토", "자기소개서", "이력서 정리"
+---
+
+# Career Document Pipeline
+
+NotebookLM writes the initial draft; AI agents refine and evaluate it.
+Supports multiple document types with shared refinement process and type-specific rules.
+
+```
+User Input (doc type + JD/context + constraints)
+  → [Optional] Context Update (new CV/info → NLM merge)
+  → NLM Draft Request (type-specific prompt)
+  → 6-Step AI Refinement (career-docs-writer agent)
+  → Reviewer Evaluation (career-docs-reviewer agent)
+  → Iteration Loop (min 3, max 5)
+  → Final Output
+```
+
+---
+
+## Supported Document Types
+
+| Type | Korean | Key Structure |
+|------|--------|---------------|
+| `cover-letter` | 자소서 (자기소개서) | 기승전결, competency framing |
+| `career-desc` | 경력기술서 | Chronological, per-company chapters |
+| `portfolio` | 포트폴리오 | Per-project, challenge→solution→impact |
+| `cover-letter-en` | 커버레터 (영문/국문) | Hook → Value Prop → Fit → Close |
+| `hr-essay` | 인사관점 에세이 | Soft-skill claims backed by cases |
+
+> Full type definitions, NLM prompts, and structure rules: `references/doc-types.md`
+
+---
+
+## Prerequisites
+
+- NotebookLM MCP connected (`https://github.com/jacob-bd/notebooklm-mcp-cli`)
+- "자소서" notebook with CV, portfolio, project descriptions, papers, etc. uploaded
+- Context documents (컨텍스트 정리, 경력 기술서, 인사관점 에세이) already in NLM
+
+## NLM Connection Failure Fallback
+
+If NLM MCP call fails:
+1. Output: `⚠️ NotebookLM 연결이 끊어졌습니다 (토큰 만료 가능성). nlm login으로 재인증하면 품질이 올라갑니다.`
+2. Ask user to paste their draft manually. Skip NLM draft step.
+3. If NLM recovers mid-session, switch to NLM-assisted mode immediately.
+
+---
+
+## Context Update (Conditional)
+
+**Trigger**: User provides new CV, portfolio update, or new project info alongside their request.
+
+When new material is provided:
+1. Query NLM to cross-reference new info against existing context
+2. Generate an updated context/career doc incorporating the delta
+3. Upload the updated version to NLM (overwrite old source)
+4. Proceed with draft request using the refreshed context
+
+When no new material is provided: skip — use existing NLM sources as-is.
+
+---
+
+## Step 0: User Input
+
+Collect from user:
+1. **문서 유형** — which document type? (auto-detect from request if obvious)
+2. **항목/주제** — specific question, section, or topic to address
+3. **JD / 지원 직무** — target company, role, job description
+4. **강조 포인트** — emphasis points (optional)
+5. **글자수 제한** — character limit, spaces included (optional for portfolio)
+6. **User draft** — if provided, skip NLM draft and go straight to refinement
+7. **Language** — Korean (default) or English (for `cover-letter-en`)
+
+---
+
+## Step 1: NLM Draft Request
+
+Query NotebookLM with a **type-specific prompt** (see `references/doc-types.md` for templates).
+
+Common pattern:
+```
+nlm query "자소서" "{type-specific prompt with user inputs}"
+```
+
+**If user provided their own draft**: skip this step, use the user draft as input to Step 2.
+
+---
+
+## Step 2: 6-Step AI Refinement → delegate to `career-docs-writer` agent
+
+Pass the NLM draft (or user draft) to the career-docs-writer agent along with:
+- Document type + type-specific structure rules
+- JD, item, emphasis points, character limit
+- NLM context (agent queries as needed)
+
+The writer agent applies the 6-step refinement checklist:
+1. **비문 체크** — Sentence-level grammar
+2. **문장 간 흐름** — Inter-sentence flow
+3. **문단 구조** — Paragraph-level logic (type-specific rules apply)
+4. **용어 일반화** — Terminology simplification
+5. **톤 조정** — Readability & tone
+6. **글자수 체크** — Character count compliance
+
+> Full checklist: `references/refinement-checklist.md`
+
+---
+
+## Step 3: Reviewer Evaluation → delegate to `career-docs-reviewer` agent
+
+---
+
+## Step 4: Iteration Loop
+
+**Always run at least 3 iterations. Max 5.**
+
+```
+iteration = 0, best_score = 0, no_improve_streak = 0
+
+WHILE iteration < 5:
+    iteration 0: NLM draft → Refiner (Step 2)
+    iteration 1+: restart from best_draft if score drops
+
+    Reviewer evaluation (6 dimensions, 0-100 continuous)
+    update best or no_improve_streak++
+    iteration++
+
+    IF iteration < 3: CONTINUE          # always run 3 times
+    IF all dimensions >= 90: BREAK      # goal achieved
+    IF no_improve_streak >= 3: BREAK    # plateau → use best version
+```
+
+---
+
+## Step 5: Final Output
+
+- Final document (best version)
+- `글자수: [N]자 / [limit]자 (공백 포함)` (if character limit applies)
+- Improvement log `.md`:
+  - Full text per iteration
+  - Score table per iteration
+  - Feedback and changes per iteration
+
+---
+
+## Global Rules
+
+| Rule | Detail |
+|------|--------|
+| **Language** | Skill files = English. User-facing output = Korean (default) or English (if `cover-letter-en`) |
+| **NLM usage** | Step 1: draft generation. Context Update: delta merge. All other steps: AI judgment only |
+| **Facts** | AI self-checks against NLM context docs. No fabrication. Ask user if information is insufficient |
+| **Character count** | Always count including spaces and line breaks |
