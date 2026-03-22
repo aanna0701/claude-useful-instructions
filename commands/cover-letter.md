@@ -123,5 +123,5 @@ WHILE iteration < 5:
 | Rule | Detail |
 |------|--------|
 | **언어** | 스킬 문서 = 영어, 모든 출력물 = 한글 |
-| **NLM 활용** | Stage 1: 합성 쿼리, Stage 3 Writer: JD 맞춤 1회만, 나머지: AI 자체 판단 |
+| **NLM 활용** | Stage 1: 합성 쿼리 → AI 비판적 처리, Stage 3 Writer: JD 맞춤 1회 쿼리 → 4단계 판단 후 작성, 나머지: AI 자체 판단 |
 | **팩트** | Stage 1/2 문서 기반 AI 자체 대조, 날조 금지, 부족하면 사용자에게 질문 |

@@ -1,7 +1,6 @@
 # Stage 2: Career Description & Essay
 
-> **Reuse Guard**: 실행 전 `nlm source list "자소서"`로 `경력_기술서_*` + `인사관점_에세이_*` 소스 존재 여부 확인.
-> 둘 다 존재하면 재사용 제안 → 사용자가 '재생성' 입력 시에만 아래 진행.
+> **Reuse Guard**: cover-letter.md Reuse Guard 섹션 참조.
 
 Stage 1 컨텍스트 기반으로 AI가 직접 작성. **Stage 2에서는 NLM 추가 쿼리 없음** (Stage 1에서 이미 충분히 추출/분석).
 

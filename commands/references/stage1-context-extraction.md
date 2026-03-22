@@ -1,7 +1,6 @@
 # Stage 1: Context Extraction
 
-> **Reuse Guard**: 실행 전 `nlm source list "자소서"`로 `컨텍스트_정리_*` 소스 존재 여부 확인.
-> 존재하면 재사용 제안 → 사용자가 '재생성' 입력 시에만 아래 진행.
+> **Reuse Guard**: cover-letter.md Reuse Guard 섹션 참조.
 
 NLM을 **추론 엔진**으로 활용. 단순 추출이 아니라 교차 분석 합성 질문.
 
