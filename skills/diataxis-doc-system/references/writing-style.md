@@ -31,6 +31,23 @@ Key principles adopted from both guides:
 
 ## 1. Structure and Visual Hierarchy
 
+### Chunking: Break Content into Scannable Blocks
+
+The brain processes information in **chunks**. Dense paragraphs force linear reading; chunked content enables skimming.
+
+- **Paragraph limit:** Max 3-4 sentences per paragraph. If longer, split at the next topic shift.
+- **3-line rule:** If a sentence list exceeds 3 items, convert to bullet points or numbered list.
+- **Breathing room:** Always insert a blank line between paragraphs, before/after code blocks, and before/after headings.
+- **One concept per section:** Each H3 section should cover exactly one idea. If you need "also" or "additionally", it's a new section.
+
+### Heading Hierarchy and Spacing
+
+Headings are the skeleton of the document — they must work standalone.
+
+- **Self-contained headings:** A reader scanning only H2/H3 headings should understand the document's structure. Avoid generic headings like "Overview", "Details", "Notes".
+- **Heading depth:** Use H2 for major sections, H3 for subsections. Avoid H4+ — restructure into separate H2 sections instead.
+- **Section separators:** Use `---` between H2 sections to create clear visual breaks. Do not use `---` between H3 subsections.
+
 ### Bullet Points and Indentation
 
 - **7 +/- 2 rule:** Keep 5-9 items per list. Beyond 9 items, split into sub-lists or use a table.
@@ -77,9 +94,10 @@ Apply emphasis **functionally**, not for decoration:
 
 ### Rules
 
-- Use **bold** sparingly — if everything is bold, nothing stands out.
+- **Bold budget:** Max 2-3 bold terms per paragraph. If everything is bold, nothing stands out.
 - Do not combine bold and italic together (`***text***`) — choose one.
 - Always use `code font` for anything the reader types, copies, or references in code.
+- **First-mention rule:** Bold a key term on first use only. Subsequent mentions use normal weight.
 
 ---
 
@@ -154,11 +172,18 @@ Apply this checklist during Phase 3 (quality review) alongside the common-rules 
 
 ### Scanning Test
 - [ ] Can a reader grasp the main points by reading only headings and bold text?
-- [ ] Are headings descriptive (not generic like "Overview" or "Details")?
-- [ ] Is there a clear visual hierarchy (H2 → H3 → content)?
+- [ ] Are headings self-contained and descriptive (not "Overview", "Details", "Notes")?
+- [ ] Is there a clear visual hierarchy (H2 → H3 → content, no H4+)?
+- [ ] Are H2 sections separated by `---`?
+
+### Chunking Test
+- [ ] Are paragraphs 4 sentences or fewer?
+- [ ] Are inline lists of 3+ items converted to bullet points?
+- [ ] Is there a blank line before/after code blocks and headings?
+- [ ] Does each H3 section cover exactly one concept?
 
 ### Objectivity Test
-- [ ] Are vague qualifiers ("fairly", "quite", "somewhat", "appropriately") replaced with specifics?
+- [ ] Are vague qualifiers ("fairly", "quite", "somewhat") replaced with specifics?
 - [ ] Are claims backed by numbers, examples, or references?
 
 ### Simplicity Test
@@ -168,6 +193,7 @@ Apply this checklist during Phase 3 (quality review) alongside the common-rules 
 - [ ] Is nesting within 3 levels?
 
 ### Emphasis Test
-- [ ] Is bold used for key terms only (not entire paragraphs)?
+- [ ] Is bold limited to 2-3 terms per paragraph?
+- [ ] Are key terms bolded only on first mention?
 - [ ] Is code font used for all commands, variables, and file names?
 - [ ] Do callout blocks have an appropriate icon/signal?
