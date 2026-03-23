@@ -232,6 +232,116 @@ Begin implementation.
 EOF
 }
 
+# ─── Resolve parallel groups ──────────────────────────────────────────────────
+
+# Read parallel_groups from work/dispatch.json if it exists, otherwise treat all as one group
+resolve_groups() {
+  local feat_ids=("$@")
+  local manifest="work/dispatch.json"
+
+  if [ -f "$manifest" ] && command -v jq &>/dev/null; then
+    local num_groups
+    num_groups=$(jq '.parallel_groups | length' "$manifest" 2>/dev/null || echo 0)
+
+    if [ "$num_groups" -gt 0 ]; then
+      # Filter groups to only include requested FEAT IDs
+      for ((g=0; g<num_groups; g++)); do
+        local group_items=()
+        while IFS= read -r item; do
+          for fid in "${feat_ids[@]}"; do
+            if [[ "$item" == "$fid"* || "$fid" == "$item"* ]]; then
+              group_items+=("$fid")
+              break
+            fi
+          done
+        done < <(jq -r ".parallel_groups[$g][]" "$manifest")
+
+        if [ ${#group_items[@]} -gt 0 ]; then
+          echo "${group_items[*]}"
+        fi
+      done
+      return 0
+    fi
+  fi
+
+  # Fallback: all in one group
+  echo "${feat_ids[*]}"
+}
+
+# ─── Spawn and monitor a group ────────────────────────────────────────────────
+
+dispatch_group() {
+  local group_ids=("$@")
+  local -A pids=()
+
+  mkdir -p "$LOG_DIR"
+
+  for fid in "${group_ids[@]}"; do
+    local wdir
+    wdir=$(resolve_work_dir "$fid")
+    local slug
+    slug=$(basename "$wdir")
+    local log_file="$LOG_DIR/${slug}.log"
+    local prompt
+    prompt=$(build_codex_prompt "$fid")
+
+    # Initialize status
+    sed -i 's/| Status | .*/| Status | in-progress |/' "$wdir/status.md"
+    sed -i 's/| Agent | .*/| Agent | Codex |/' "$wdir/status.md"
+    sed -i "s/^updated: .*/updated: $(date '+%Y-%m-%d %H:%M')/" "$wdir/status.md"
+
+    if command -v codex &>/dev/null; then
+      echo "  Spawning: $slug → $log_file"
+      codex exec --sandbox workspace-write -a auto-edit "$prompt" > "$log_file" 2>&1 &
+      pids["$fid"]=$!
+    else
+      echo "  [manual] $slug → $log_file"
+      echo "$prompt" > "$log_file"
+    fi
+  done
+
+  # If no codex CLI, just return
+  if ! command -v codex &>/dev/null; then
+    return 0
+  fi
+
+  # Monitor until all done
+  local all_done=false
+  while ! $all_done; do
+    sleep 10
+    all_done=true
+    local done_count=0
+
+    for fid in "${group_ids[@]}"; do
+      local pid="${pids[$fid]:-}"
+      local wdir
+      wdir=$(resolve_work_dir "$fid")
+      local slug
+      slug=$(basename "$wdir")
+      local status
+      status=$(get_item_status "$wdir")
+
+      if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+        all_done=false
+        printf "  %-40s %s (pid %s)\n" "$slug" "$status" "$pid"
+      else
+        if [[ "$status" == "done" ]]; then
+          ((done_count++)) || true
+          printf "  %-40s ✓ done\n" "$slug"
+        else
+          printf "  %-40s ✗ exited (status: %s)\n" "$slug" "$status"
+          ((done_count++)) || true
+        fi
+      fi
+    done
+
+    if ! $all_done; then
+      echo "  ... ($done_count/${#group_ids[@]} complete, checking again in 10s)"
+      echo ""
+    fi
+  done
+}
+
 # ─── Dispatch ─────────────────────────────────────────────────────────────────
 
 cmd_dispatch() {
@@ -252,50 +362,59 @@ cmd_dispatch() {
   auto_link_worktrees
   echo "Done."
 
-  # Step 3: Spawn Codex processes
+  # Step 3: Resolve groups and dispatch
   echo ""
   echo "Step 3/4: Dispatching ${#feat_ids[@]} Codex instance(s)"
   echo "──────────────────────────────────────────────"
 
-  mkdir -p "$LOG_DIR"
-  local -A pids=()
+  local groups=()
+  while IFS= read -r group_line; do
+    [ -n "$group_line" ] && groups+=("$group_line")
+  done < <(resolve_groups "${feat_ids[@]}")
 
-  for fid in "${feat_ids[@]}"; do
-    local wdir
-    wdir=$(resolve_work_dir "$fid")
-    local slug
-    slug=$(basename "$wdir")
-    local log_file="$LOG_DIR/${slug}.log"
-    local prompt
-    prompt=$(build_codex_prompt "$fid")
+  local num_groups=${#groups[@]}
+  local group_num=0
 
-    # Initialize status
-    sed -i 's/| Status | .*/| Status | in-progress |/' "$wdir/status.md"
-    sed -i 's/| Agent | .*/| Agent | Codex |/' "$wdir/status.md"
-    sed -i "s/^updated: .*/updated: $(date '+%Y-%m-%d %H:%M')/" "$wdir/status.md"
+  for group_line in "${groups[@]}"; do
+    ((group_num++)) || true
+    IFS=' ' read -ra group_ids <<< "$group_line"
 
-    if command -v codex &>/dev/null; then
-      echo "  Spawning: $slug → $log_file"
-      codex exec --sandbox workspace-write -a auto-edit "$prompt" > "$log_file" 2>&1 &
-      pids["$fid"]=$!
-    else
-      echo "  [codex CLI not found] Manual execution required for $slug"
-      echo "  Prompt saved to: $log_file"
-      echo "$prompt" > "$log_file"
+    if [ "$num_groups" -gt 1 ]; then
+      echo ""
+      echo "═══ Group $group_num/$num_groups: ${group_ids[*]} (parallel) ═══"
+    fi
+
+    dispatch_group "${group_ids[@]}"
+
+    if [ "$group_num" -lt "$num_groups" ] && command -v codex &>/dev/null; then
+      echo ""
+      echo "  Group $group_num complete. Starting group $((group_num+1))..."
     fi
   done
 
   echo "──────────────────────────────────────────────"
 
-  # If no codex CLI, print manual instructions and exit
+  # If no codex CLI, print manual instructions
   if ! command -v codex &>/dev/null; then
     echo ""
     echo "codex CLI not found. Run manually in separate terminals:"
     echo ""
-    for fid in "${feat_ids[@]}"; do
-      local wdir
-      wdir=$(resolve_work_dir "$fid")
-      echo "  codex exec --sandbox workspace-write -a auto-edit < $LOG_DIR/$(basename "$wdir").log"
+    local gn=0
+    for group_line in "${groups[@]}"; do
+      ((gn++)) || true
+      IFS=' ' read -ra gids <<< "$group_line"
+      if [ "$num_groups" -gt 1 ]; then
+        echo "  # Group $gn (run in parallel):"
+      fi
+      for fid in "${gids[@]}"; do
+        local wdir
+        wdir=$(resolve_work_dir "$fid")
+        echo "  codex exec --sandbox workspace-write -a auto-edit < $LOG_DIR/$(basename "$wdir").log"
+      done
+      if [ "$gn" -lt "$num_groups" ]; then
+        echo "  # Wait for group $gn to finish before starting group $((gn+1))"
+        echo ""
+      fi
     done
     echo ""
     echo "After all complete, run:"
@@ -303,53 +422,9 @@ cmd_dispatch() {
     exit 0
   fi
 
-  # Step 4: Monitor completion
+  # Step 4: Collect results
   echo ""
-  echo "Step 4/4: Monitoring progress"
-  echo "──────────────────────────────────────────────"
-
-  local all_done=false
-  while ! $all_done; do
-    sleep 10
-    all_done=true
-    local done_count=0
-    local total=${#feat_ids[@]}
-
-    for fid in "${feat_ids[@]}"; do
-      local pid="${pids[$fid]:-}"
-      local wdir
-      wdir=$(resolve_work_dir "$fid")
-      local slug
-      slug=$(basename "$wdir")
-      local status
-      status=$(get_item_status "$wdir")
-
-      if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
-        # Process still running
-        all_done=false
-        printf "  %-40s %s (pid %s)\n" "$slug" "$status" "$pid"
-      else
-        # Process exited
-        if [[ "$status" == "done" ]]; then
-          ((done_count++)) || true
-          printf "  %-40s ✓ done\n" "$slug"
-        else
-          printf "  %-40s ✗ exited (status: %s)\n" "$slug" "$status"
-          ((done_count++)) || true  # Count as done even if failed
-        fi
-      fi
-    done
-
-    if ! $all_done; then
-      echo "  ... ($done_count/$total complete, checking again in 10s)"
-      echo ""
-    fi
-  done
-
-  echo "──────────────────────────────────────────────"
-  echo ""
-
-  # Collect results
+  echo "Step 4/4: Results"
   local success=0 failed=0
   local review_ids=()
   for fid in "${feat_ids[@]}"; do
