@@ -2,14 +2,10 @@
 
 Rules that `doc-writer-tutorial` agent must Read before writing.
 
----
-
 ## Identity
 
 Tutorial = document for **Learning**.
 Reader is a **beginner**. By the end, they have a **working result**.
-
----
 
 ## DO / DON'T
 
@@ -20,8 +16,6 @@ Reader is a **beginner**. By the end, they have a **working result**.
 | Provide **verifiable results** at each step | List 10 steps with no checkpoints |
 | Keep explanations **minimal** | Lengthy background theory (-> Explanation) |
 | Give concrete **example values** | Leave `<your-value-here>` placeholders |
-
----
 
 ## Document Structure Template
 
@@ -53,40 +47,17 @@ concrete_command --with=real_value
 - [Explanation link]: Learn why [what you just did] works this way.
 ```
 
----
-
 ## Core Rules
 
-### 1. Golden Path
-- Remove choices. Never ask the reader to decide.
-- OS-specific branches: use tabs/toggles, expand only the default.
-- "It depends on your situation" is forbidden in Tutorials.
-
-### 2. Checkpoint Pattern
-- End every step with a `✅ Check:` block.
-- Example: "You should see `Server running on port 3000` in your terminal."
-
-### 3. Code Blocks
-- Must be copy-pasteable. Minimize placeholders.
-- Unavoidable placeholders: `YOUR_API_KEY` (UPPER_SNAKE_CASE).
-- Distinguish terminal input from output (`$` prompt or separate blocks).
-
-### 4. Failure Paths
-- Cover 1-2 common errors in a `⚠️ Troubleshooting:` box.
-- Rare errors go in a separate Troubleshooting How-to Guide.
-
-### 5. Length
-- Target 10 steps max. Split into Part 1/2 if exceeded.
-- Each step contains exactly one action.
-
----
+1. **Golden Path** — Remove choices. Never ask the reader to decide. OS branches: tabs/toggles, one default expanded. "It depends" is forbidden.
+2. **Checkpoint Pattern** — End every step with `✅ Check:`. E.g., "You should see `Server running on port 3000`."
+3. **Code Blocks** — Must be copy-pasteable. Unavoidable placeholders: `YOUR_API_KEY` (UPPER_SNAKE_CASE). Separate input from output.
+4. **Failure Paths** — 1-2 common errors in `⚠️ Troubleshooting:` box. Rare errors -> separate How-to Guide.
+5. **Length** — 10 steps max (split into parts if exceeded). One action per step.
 
 ## Tone & Style
 
-- Second person, present tense: "Install X" not "The user should install X."
-- Encouraging tone: "Looking good. One last step."
-
----
+- Second person, present tense. Encouraging: "Looking good. One last step."
 
 ## Anti-Patterns
 

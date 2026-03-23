@@ -17,8 +17,6 @@ Reader wants to understand **"why is it built this way?"**
 | Include **historical background** | Describe only the current state |
 | Explain from multiple **viewpoints** | Present only one perspective |
 
----
-
 ## Subtype A: Design Doc (RFC) Template
 
 ```markdown
@@ -132,8 +130,7 @@ Choose views based on audience and purpose. Delegate diagrams to diagram-archite
 - Include at least 1 rejected alternative. "Why not X" matters as much as "why Y."
 
 ### 4. Non-Goals Section
-- State what is out of scope -> prevents scope creep.
-- Distinguish "deferred" from "intentionally excluded."
+- State what is out of scope -> prevents scope creep. Distinguish "deferred" from "intentionally excluded."
 
 ### 5. Open Questions
 - Never hide unresolved questions. Track as checklist; record conclusions when resolved.

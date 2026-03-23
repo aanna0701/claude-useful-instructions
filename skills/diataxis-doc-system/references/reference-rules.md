@@ -32,7 +32,7 @@ Not teaching (Tutorial), problem-solving (How-to), or explaining rationale (Expl
 
 ## Endpoints
 
-## # `POST /api/v1/resources`
+### `POST /api/v1/resources`
 [One-sentence description]
 
 **Request**
@@ -86,7 +86,7 @@ Not teaching (Tutorial), problem-solving (How-to), or explaining rationale (Expl
 
 ## Commands
 
-## # `tool create <name>`
+### `tool create <name>`
 [Description]
 
 | Arg/Option | Type | Required | Description |
@@ -102,33 +102,16 @@ tool create my-service --dry-run
 
 ## Core Rules
 
-## # 1. Consistency Is Everything
-- Every item uses the **same structure**. One inconsistency erodes trust in the whole doc.
-
-## # 2. Tables First
-- Parameters, options, error codes -> **tables**, not prose.
-- Required columns: `Name`, `Type`, `Required`, `Default`, `Description`.
-- Description must include **constraints** (range, length, pattern).
-
-## # 3. Defaults and Types Are Mandatory
-- No default -> `—`. Never blank. Types match code: `string`, `integer`, `boolean`, `enum`.
-- Enums: list all possible values.
-
-## # 4. Examples: Minimal
-- At least **1 example** per endpoint/command, simplest form only.
-- Complex usage -> separate How-to Guide.
-
-## # 5. Version and Date
-- Header: **target version + last updated date**. Use `Added in v1.3` / `Deprecated in v2.0` badges.
-
-## # 6. Code Sync
-- Prefer **auto-generated** References (JSDoc, OpenAPI, TypeDoc).
-- Manual docs: add "Update Reference" to PR checklist.
+1. **Consistency** — Every item uses the same structure. One inconsistency erodes trust in the whole doc.
+2. **Tables First** — Parameters, options, error codes -> tables. Required columns: Name, Type, Required, Default, Description (with constraints).
+3. **Defaults & Types Mandatory** — No default -> `—`, never blank. Types match code. Enums: list all values.
+4. **Minimal Examples** — 1+ example per endpoint/command, simplest form. Complex usage -> How-to Guide.
+5. **Version & Date** — Header: target version + last updated. Use `Added in v1.3` / `Deprecated in v2.0` badges.
+6. **Code Sync** — Prefer auto-generated (JSDoc, OpenAPI, TypeDoc). Manual docs: add "Update Reference" to PR checklist.
 
 ## Tone & Style
 
-- Dry, factual, no emotional language. Third person or passive voice.
-- "We recommend" and "usually" are forbidden -> move to How-to.
+- Dry, factual. Third person or passive. "We recommend" / "usually" forbidden -> How-to.
 
 ## Anti-Patterns
 

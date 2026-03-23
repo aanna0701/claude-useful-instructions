@@ -2,15 +2,11 @@
 
 Rules that `doc-writer-howto` agent must Read before writing.
 
----
-
 ## Identity
 
 How-to Guide = document for **Problem-solving**.
 Reader already knows the basics and wants to **solve a specific problem**.
 Not hand-holding like a Tutorial, not exhaustive like a Reference.
-
----
 
 ## DO / DON'T
 
@@ -21,8 +17,6 @@ Not hand-holding like a Tutorial, not exhaustive like a Reference.
 | State **prerequisites** explicitly | Teach from scratch (-> Tutorial) |
 | Keep procedures **concise** | Explain "why" at length (-> Explanation) |
 | Production-ready examples | Toy/educational examples |
-
----
 
 ## Document Structure Template
 
@@ -55,45 +49,18 @@ command or code
 - [Related Explanation link]
 ```
 
----
-
 ## Core Rules
 
-### 1. Title Pattern: "How to ~"
-- "How to refresh authentication tokens"
-- "How to rollback a production migration"
-- Reader must judge from the title alone whether this solves their problem.
-
-### 2. Prerequisite Gate
-- Redirect unqualified readers to the Tutorial.
-- "This guide assumes you have completed [Tutorial title]."
-
-### 3. Flexibility (Key Difference from Tutorials)
-- Tutorials remove choices. How-to Guides **acknowledge choices**.
-- "For PostgreSQL use `pg_dump`; for MySQL use `mysqldump`."
-- More than 3 options: use a table.
-
-### 4. Minimal Explanation
-- "Why" in 1 sentence max. Deep background -> link to Explanation.
-- Most common mistake: inserting architecture discussion mid-procedure.
-
-### 5. Production-Oriented
-- Examples must be production-ready. Include error handling.
-- Use realistic values, not `foo` / `bar`.
-
-### 6. Scope
-- One How-to = one problem.
-- "Set up auth and configure monitoring" -> split into 2 guides.
-- Ideal: 5-8 steps. Consider splitting above 12 steps.
-
----
+1. **Title: "How to ~"** — Reader must judge from the title alone if this solves their problem.
+2. **Prerequisite Gate** — Redirect unqualified readers to the Tutorial: "This guide assumes you completed [Tutorial title]."
+3. **Flexibility** (key difference from Tutorials) — Acknowledge choices. "PostgreSQL: `pg_dump`; MySQL: `mysqldump`." 3+ options -> table.
+4. **Minimal Explanation** — "Why" in 1 sentence max. Deep background -> Explanation link. Never insert architecture discussion mid-procedure.
+5. **Production-Oriented** — Production-ready examples with error handling. Realistic values, not `foo`/`bar`.
+6. **Scope** — One How-to = one problem. Ideal 5-8 steps; split above 12.
 
 ## Tone & Style
 
-- Direct and practical: "Run X", "Set Y to Z."
-- Trust the reader's competence. No re-explaining basics.
-
----
+- Direct and practical. Trust the reader's competence.
 
 ## Anti-Patterns
 
