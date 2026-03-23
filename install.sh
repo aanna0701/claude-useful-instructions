@@ -10,6 +10,7 @@
 #   --data-pipeline Data pipeline architect skill
 #   --career        Career document tools (career-docs skill, career agents)
 #   --vla           VLA robotics project (vla-code-standards, vla agents)
+#   --collab        Claude-Codex collaboration (work items, AGENTS.md, CLAUDE.md)
 #   --exclude NAME  Exclude a bundle (repeatable, e.g. --exclude vla --exclude career)
 #   --interactive   Interactive mode: choose bundles from a menu
 #   --list          List available bundles and exit
@@ -72,13 +73,29 @@ BUNDLE_VLA=(
   "agents:vla-train.md"
 )
 
-BUNDLE_NAMES=("core" "docs" "data-pipeline" "career" "vla")
+BUNDLE_COLLAB=(
+  "rules:collab-workflow.md"
+  "commands:work-plan.md"
+  "commands:work-review.md"
+  "commands:work-status.md"
+  "skills:collab-workflow"
+  "templates:work-item"
+  "root-file:AGENTS.md"
+  "root-file:CLAUDE.md"
+  "script:codex-implement.sh"
+  "script:codex-setup.sh"
+  "script:gemini-setup.sh"
+  "mcp:gemini-review"
+)
+
+BUNDLE_NAMES=("core" "docs" "data-pipeline" "career" "vla" "collab")
 BUNDLE_DESCRIPTIONS=(
   "Core utilities (coding-style, smart-git-commit-push, optimize-tokens)"
   "Documentation & diagrams (diataxis framework, doc agents, diagram-architect)"
   "Data pipeline architect"
   "Career document tools (cover letters, Korean)"
   "VLA robotics project (vla agents, code standards)"
+  "Claude-Codex collaboration (work items, AGENTS.md, CLAUDE.md)"
 )
 
 # ── Parse arguments ─────────────────────────────────────────────────────────
@@ -96,6 +113,7 @@ while [[ $# -gt 0 ]]; do
     --data-pipeline) SELECTED_BUNDLES+=("data-pipeline"); shift ;;
     --career)        SELECTED_BUNDLES+=("career"); shift ;;
     --vla)           SELECTED_BUNDLES+=("vla"); shift ;;
+    --collab)        SELECTED_BUNDLES+=("collab"); shift ;;
     --exclude)       shift; EXCLUDED_BUNDLES+=("$1"); shift ;;
     --interactive)   INTERACTIVE=true; shift ;;
     --list)          LIST_ONLY=true; shift ;;
@@ -183,6 +201,7 @@ get_bundle_items() {
     data-pipeline) printf '%s\n' "${BUNDLE_DATA_PIPELINE[@]}" ;;
     career)        printf '%s\n' "${BUNDLE_CAREER[@]}" ;;
     vla)           printf '%s\n' "${BUNDLE_VLA[@]}" ;;
+    collab)        printf '%s\n' "${BUNDLE_COLLAB[@]}" ;;
   esac
 }
 
@@ -210,12 +229,65 @@ install_skill_dir() {
   mkdir -p "$dst"
   find "$src" -type d | while read -r dir; do
     relative="${dir#$src}"
-    [ -n "$relative" ] && mkdir -p "$dst/$relative"
+    [ -n "$relative" ] && mkdir -p "$dst/$relative" || true
   done
   find "$src" -type f | while read -r file; do
     relative="${file#$src}"
     install_file "$file" "$dst/$relative"
   done
+}
+
+install_template_dir() {
+  local tpl_name="$1"
+  local src="$REPO_DIR/templates/$tpl_name"
+  local dst="$CLAUDE_DIR/templates/$tpl_name"
+
+  [ -d "$src" ] || return 0
+
+  mkdir -p "$dst"
+  find "$src" -type f | while read -r file; do
+    relative="${file#$src}"
+    install_file "$file" "$dst/$relative"
+  done || true
+}
+
+install_root_file() {
+  local filename="$1"
+  local src=""
+  local dst="$PROJECT_ROOT/$filename"
+
+  # Resolve source: check templates/codex/ then templates/claude/
+  if [ -f "$REPO_DIR/templates/codex/$filename" ]; then
+    src="$REPO_DIR/templates/codex/$filename"
+  elif [ -f "$REPO_DIR/templates/claude/$filename" ]; then
+    src="$REPO_DIR/templates/claude/$filename"
+  else
+    echo "WARNING: Template not found for root-file: $filename" >&2
+    return 0
+  fi
+
+  # Backup existing file
+  if [ -f "$dst" ]; then
+    local backup="$dst.backup.$(date +%Y%m%d%H%M%S)"
+    echo "  Backing up existing $filename → $(basename "$backup")"
+    cp "$dst" "$backup"
+  fi
+
+  install_file "$src" "$dst"
+}
+
+install_mcp_dir() {
+  local mcp_name="$1"
+  local src="$REPO_DIR/mcp/$mcp_name"
+  local dst="$PROJECT_ROOT/mcp/$mcp_name"
+
+  [ -d "$src" ] || return 0
+
+  mkdir -p "$dst"
+  find "$src" -type f | while read -r file; do
+    relative="${file#$src}"
+    install_file "$file" "$dst/$relative"
+  done || true
 }
 
 # ── Execute installation ───────────────────────────────────────────────────
@@ -239,6 +311,19 @@ for entry in "${INSTALL_LIST[@]}"; do
       ;;
     skills)
       install_skill_dir "$path"
+      ;;
+    templates)
+      install_template_dir "$path"
+      ;;
+    root-file)
+      install_root_file "$path"
+      ;;
+    script)
+      install_file "$REPO_DIR/$path" "$PROJECT_ROOT/$path"
+      chmod +x "$PROJECT_ROOT/$path"
+      ;;
+    mcp)
+      install_mcp_dir "$path"
       ;;
   esac
 done
