@@ -59,20 +59,9 @@ If the user provided their own draft (not NLM):
 - Modify only what the checklist and Reviewer feedback require
 - Full rewrite only when score is below 30
 
-## Style Rules (Korean docs)
+## Style Rules
 
-**DO:** specific numbers, varied sentence structures, professional terminology, composed tone, competency connections
-**DON'T:** See refinement-checklist.md Step 5 for the full anti-pattern list (exaggeration, overdrama, entry-level tone, filler words, etc.)
-
-## Style Rules (English docs)
-
-**DO:** active voice, concrete metrics, varied sentence length, professional register
-
-**DON'T:**
-- Buzzword chains ("leveraged synergies to drive innovation")
-- Passive voice when active is clearer
-- "I am confident that..." / "I would be honored to..."
-- Vague claims without evidence
+See `refinement-checklist.md` Step 5 for the full style guide (Korean and English anti-patterns, tone targets, rhythm rules).
 
 ## Output
 

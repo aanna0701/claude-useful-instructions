@@ -130,23 +130,7 @@ Route to the matching agent, passing all Phase 0 context:
 
 For existing doc review requests, delegate to `doc-reviewer` agent.
 
-After draft completion, verify:
-
-**Universal checks:**
-1. **Type purity**: No mixed-type content (e.g., Reference tables in Tutorial → split)
-2. **Audience fit**: Can the target audience achieve their goal with this doc?
-3. **6-month test**: Still valid in 6 months? No hardcoded volatile values?
-4. **Term consistency**: Same concept never called by different names?
-5. **Cross-references**: Links to related docs (including cross-axis)?
-6. **Diagrams as Code**: Mermaid/PlantUML only?
-
-**Delivery-axis additional checks:**
-7. **Source link**: Brief/Task has RFC/ADR or Contract link?
-8. **Acceptance criteria**: Completion criteria are verifiable?
-9. **ID consistency**: Work Item files reference correct FEAT-NNN / T-NNN?
-10. **Invariants**: Contract has at least 1 invariant?
-11. **Boundaries**: Contract specifies allowed/forbidden modification zones?
-12. **Status currency**: Status.md reflects actual state? (Work Item only)
+After draft completion, run the full review checklist from `references/common-rules.md` §6 (type & structure, quality & consistency, readability, governance).
 
 ---
 
