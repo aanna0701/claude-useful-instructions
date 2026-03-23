@@ -48,11 +48,39 @@ Headings are the skeleton of the document — they must work standalone.
 - **Heading depth:** Use H2 for major sections, H3 for subsections. Avoid H4+ — restructure into separate H2 sections instead.
 - **Heading icons by level:** Use distinct icon styles per heading level for instant visual differentiation:
 
-  | Level | Icon style | Example |
-  |-------|-----------|---------|
-  | H1 | No icon (title stands alone) | `# Writing Style Guide` |
-  | H2 | Arrow marker `▸` or numbered | `## ▸ Structure and Visual Hierarchy` |
-  | H3 | Emoji icon as topic anchor | `### 📌 Key Decisions` |
+  | Level | Format | Icon rule | Example |
+  |-------|--------|-----------|---------|
+  | H1 | `# {type-emoji} Title` | Doc-type icon (fixed per type) | `# 🔧 카메라 캡처 설정하는 방법` |
+  | H2 | `## {role-emoji}{N} Title` | Section-role icon + number (no §) | `## 🎯1 사전 조건` |
+  | H3 | `### 🔹 Title` | Always 🔹 (uniform, no variation) | `### 🔹 Key Decisions` |
+
+  **H1 doc-type icons** (determined by frontmatter `type` field):
+
+  | `type` | Icon |
+  |--------|------|
+  | tutorial | 🎓 |
+  | howto | 🔧 |
+  | explanation | 💡 |
+  | reference | 📖 |
+  | plan | 📋 |
+
+  **H2 section-role icons** (assigned by section content — emoji replaces `§`):
+
+  | Role | Icon | Keywords |
+  |------|------|----------|
+  | Goal / Prerequisites | 🎯 | 개요, 사전 조건, 목적, 범위 |
+  | Setup / Config | ⚙️ | 설정, 환경, 구성, 설치 |
+  | Step / Procedure | 📍 | N단계, 절차, 실행, 방법 |
+  | Architecture / Structure | 🏗️ | 아키텍처, 구조, 설계, 계층 |
+  | Analysis / Background | 🔍 | 배경, 이유, 비교, 한계 |
+  | Troubleshooting | 🔥 | 트러블슈팅, FAQ, 에러, 문제 |
+  | Wrap-up / Summary | ✅ | 요약, 다음 단계, 정리 |
+  | Data / Schema | 🗂️ | 스키마, 테이블, 데이터 구조 |
+  | CLI / Commands | 💻 | CLI, 명령어, 옵션 |
+  | Comparison | ⚖️ | 대안 비교, 트레이드오프 |
+  | General (catch-all) | 📌 | use sparingly |
+
+  **H3 rule:** Always `🔹` — no semantic variation at H3 level. Semantic signals belong in body text (admonitions, inline icons), not in headings.
 
 - **Section separators:** Use `---` between H2 sections to create clear visual breaks. Do not use `---` between H3 subsections.
 
@@ -68,7 +96,12 @@ Headings are the skeleton of the document — they must work standalone.
 
 Emojis serve as **functional icons** — visual anchors that let readers identify content type at a glance.
 
-**Standard icon mapping** (use consistently across all documents):
+**Two contexts for emoji usage:**
+
+1. **Headings** — follow the heading icon rules in "Heading Hierarchy" above (H1 type-icon, H2 role-icon+number, H3 always 🔹).
+2. **Body text** — use the semantic icon mapping below for inline emphasis and admonition blocks.
+
+**Body text icon mapping** (use consistently across all documents):
 
 | Signal | Icon | Usage |
 |--------|------|-------|
@@ -76,7 +109,7 @@ Emojis serve as **functional icons** — visual anchors that let readers identif
 | Caution | ⚡ | Performance impact, deprecation |
 | Tip / Best practice | 💡 | Helpful hints, recommendations |
 | Success / Verified | ✅ | Confirmed steps, passing checks |
-| Key point / Anchor | 📌 | Section summaries, important callouts |
+| Key point / Anchor | 📌 | Important callouts |
 | Prerequisite | 📋 | Required setup, dependencies |
 
 **Placement rules:**
@@ -86,7 +119,7 @@ Emojis serve as **functional icons** — visual anchors that let readers identif
   - Bad: `Never commit secrets to source code. ⚠️`
 - **Density limit:** Max **2 icons per paragraph**. If everything has an icon, nothing stands out.
 - **Consistency:** Once you assign an icon to a meaning (e.g., ⚠️ = warning), use it the same way throughout the entire document. Never reuse the same icon for different meanings.
-- **Heading icons:** Follow the heading icon rules in the "Heading Hierarchy" section — H1 no icon, H2 `▸` or number, H3 emoji anchor.
+- **Do NOT use semantic emojis in H3 headings.** H3 is always `🔹`. Use admonition blocks (`!!! warning`, `!!! tip`) or inline icons for semantic signals.
 
 ### Color and Highlighting
 
