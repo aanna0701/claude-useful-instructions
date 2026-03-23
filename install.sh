@@ -34,7 +34,6 @@ REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
 # Format: "type:relative_path" where type is rules|commands|agents|skills
 
 BUNDLE_CORE=(
-  "rules:coding-style.md"
   "commands:smart-git-commit-push.md"
   "commands:optimize-tokens.md"
 )
@@ -95,7 +94,7 @@ BUNDLE_COLLAB=(
 
 BUNDLE_NAMES=("core" "docs" "data-pipeline" "career" "vla" "collab")
 BUNDLE_DESCRIPTIONS=(
-  "Core utilities (coding-style, smart-git-commit-push, optimize-tokens)"
+  "Core utilities (smart-git-commit-push, optimize-tokens)"
   "Documentation & diagrams (diataxis framework, doc agents, diagram-architect)"
   "Data pipeline architect"
   "Career document tools (cover letters, Korean)"
