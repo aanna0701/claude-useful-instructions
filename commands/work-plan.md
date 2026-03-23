@@ -211,7 +211,7 @@ Parallel groups: 2
 
 Next step — run this single command:
 
-  bash codex-dispatch.sh FEAT-001 FEAT-002 FEAT-003 FEAT-004
+  bash codex-run.sh FEAT-001 FEAT-002 FEAT-003 FEAT-004
 
 It will: check boundaries → link worktrees → run Codex in parallel (respecting dependencies) → monitor → print review command.
 ```

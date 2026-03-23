@@ -82,7 +82,7 @@ BUNDLE_COLLAB=(
   "templates:work-item"
   "root-file:AGENTS.md"
   "root-file:CLAUDE.md"
-  "script:codex-dispatch.sh"
+  "script:codex-run.sh"
   "script:gemini-setup.sh"
   "script:link-work.sh"
   "hook:post-checkout-work-link"

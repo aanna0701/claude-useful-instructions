@@ -22,7 +22,7 @@ Human intervention is minimized to exactly **2 points**:
 Claude: /work-plan topic1, topic2, topic3
   → parallel agent generation + boundary check + dispatch manifest
                                           ↓
-TOUCH 1 — Human: bash codex-dispatch.sh FEAT-001 FEAT-002 FEAT-003
+TOUCH 1 — Human: bash codex-run.sh FEAT-001 FEAT-002 FEAT-003
   → auto: boundary check → link worktrees → parallel codex exec → monitor
   → Codex implements per contract, records doc changes in status.md
   → prints: /work-review FEAT-001 FEAT-002 FEAT-003
@@ -41,7 +41,7 @@ graph LR
         A -.->|no Gemini| B
     end
 
-    subgraph "2 codex-dispatch.sh"
+    subgraph "2 codex-run.sh"
         B --> BC["boundary check\n+ worktree link"]
         BC --> D["codex exec ×N\n(parallel)"]
         D --> E["code +\nstatus.md"]
@@ -68,7 +68,7 @@ graph LR
 ./install.sh --collab /path/to/project
 ```
 
-This installs everything: `.claude/` artifacts, `AGENTS.md`, `CLAUDE.md`, scripts (`codex-dispatch.sh`, `link-work.sh`), and the Gemini MCP server. Creates `work/items/` directory.
+This installs everything: `.claude/` artifacts, `AGENTS.md`, `CLAUDE.md`, scripts (`codex-run.sh`, `link-work.sh`), and the Gemini MCP server. Creates `work/items/` directory.
 
 ### Step 2: Set up Gemini MCP (optional)
 
@@ -116,7 +116,7 @@ bash link-work.sh --init VasIntelli-Eval feature-eval
 project/
 ├── AGENTS.md                          # Codex reads this
 ├── CLAUDE.md                          # Claude reads this
-├── codex-dispatch.sh                  # Codex dispatch (single + parallel + boundary check)
+├── codex-run.sh                       # Codex runner (single + parallel + boundary check)
 ├── gemini-setup.sh                    # Gemini MCP setup script
 ├── link-work.sh                       # Worktree symlink manager
 ├── mcp/gemini-review/                 # Gemini MCP server
@@ -201,16 +201,16 @@ workspace/
 
 ```bash
 # Check boundaries + print parallel dispatch commands
-bash codex-dispatch.sh FEAT-001 FEAT-002 FEAT-003
+bash codex-run.sh FEAT-001 FEAT-002 FEAT-003
 
 # Boundary check only (dry run)
-bash codex-dispatch.sh --check FEAT-001 FEAT-002
+bash codex-run.sh --check FEAT-001 FEAT-002
 
 # Dispatch from manifest (respects parallel groups)
-bash codex-dispatch.sh --from-manifest
+bash codex-run.sh --from-manifest
 
 # Show all open work items
-bash codex-dispatch.sh --status
+bash codex-run.sh --status
 ```
 
 ### Boundary matrix example
@@ -234,13 +234,13 @@ Each Codex instance runs in its own terminal. With worktrees, each can also use 
 
 ```bash
 # Terminal 1 (VasIntelli-Training):
-bash codex-dispatch.sh FEAT-001
+bash codex-run.sh FEAT-001
 
 # Terminal 2 (VasIntelli-Inference):
-bash codex-dispatch.sh FEAT-002
+bash codex-run.sh FEAT-002
 
 # Terminal 3 (after 1 & 2 complete — boundary overlap):
-bash codex-dispatch.sh FEAT-003
+bash codex-run.sh FEAT-003
 ```
 
 ---
@@ -286,13 +286,13 @@ Created work/items/FEAT-001-jwt-auth-middleware/
   status.md      — status: open
 
 Codex Command:
-  bash codex-dispatch.sh FEAT-001
+  bash codex-run.sh FEAT-001
 ```
 
 ### Phase 2 — Implement (Codex)
 
 ```
-[Codex] bash codex-dispatch.sh FEAT-001
+[Codex] bash codex-run.sh FEAT-001
 ```
 
 The script auto-reads brief, contract, checklist and initializes status:
@@ -303,7 +303,7 @@ sequenceDiagram
     participant X as Codex
     participant W as work/items/FEAT-001/
 
-    U->>X: bash codex-dispatch.sh FEAT-001
+    U->>X: bash codex-run.sh FEAT-001
     X->>W: Read brief.md → contract.md → checklist.md
     X->>W: Update status.md (in-progress, Agent: Codex)
     X->>X: git checkout -b feat/FEAT-001-jwt-auth-middleware
@@ -402,8 +402,8 @@ If **REVISE**, Claude outputs specific fix items and a new Codex prompt. Codex a
 | `/work-plan [topic(s)]` | Claude | Create work item(s) — single or batch with boundary check |
 | `/work-status [FEAT-NNN]` | Claude | Check progress (summary table or detail view) |
 | `/work-review [FEAT-NNN]` | Claude | Review implementation against contract |
-| `bash codex-dispatch.sh FEAT-IDs` | User | Boundary check + parallel dispatch (single or multi) |
-| `bash codex-dispatch.sh --check` | User | Boundary overlap check only (dry run) |
+| `bash codex-run.sh FEAT-IDs` | User | Boundary check + parallel dispatch (single or multi) |
+| `bash codex-run.sh --check` | User | Boundary overlap check only (dry run) |
 | `bash link-work.sh [filter]` | User | Manage work/ symlinks across worktrees |
 | `git work-link` | User | Same as link-work.sh (after --self-install) |
 | `gemini_summarize_design_pack` | Gemini (MCP) | Compress design docs into summary |

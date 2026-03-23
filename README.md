@@ -185,7 +185,7 @@ claude-useful-instructions/
 ├── mcp/gemini-review/               # Gemini MCP server
 ├── install.sh                       # Bundle-based installer
 ├── uninstall.sh                     # Clean uninstaller
-├── codex-dispatch.sh                # Codex dispatch (single + parallel + boundary check)
+├── codex-run.sh                     # Codex runner (single + parallel + boundary check)
 ├── link-work.sh                     # Worktree symlink manager
 └── gemini-setup.sh                  # Gemini MCP setup
 ```

@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# codex-dispatch.sh — Boundary check + parallel Codex execution + completion monitoring
+# codex-run.sh — Boundary check + parallel Codex execution + completion monitoring
 #
 # Usage:
-#   bash codex-dispatch.sh FEAT-001 FEAT-002 FEAT-003   # Run all in parallel
-#   bash codex-dispatch.sh --check FEAT-001 FEAT-002     # Boundary check only (dry run)
-#   bash codex-dispatch.sh --status                      # Show all work item statuses
+#   bash codex-run.sh FEAT-001 FEAT-002 FEAT-003   # Run all in parallel
+#   bash codex-run.sh --check FEAT-001 FEAT-002     # Boundary check only (dry run)
+#   bash codex-run.sh --status                      # Show all work item statuses
 #
 # What it does:
 #   1. Validates boundary overlaps between contracts
@@ -14,7 +14,7 @@
 #   5. Prints the /work-review command for Claude
 #
 # Human touches the workflow exactly twice:
-#   After /work-plan:  bash codex-dispatch.sh FEAT-001 FEAT-002
+#   After /work-plan:  bash codex-run.sh FEAT-001 FEAT-002
 #   After completion:  /work-review FEAT-001 FEAT-002
 
 set -euo pipefail
@@ -471,7 +471,7 @@ case "${1:-}" in
     ;;
   --help|-h)
     cat << 'HELP'
-Usage: codex-dispatch.sh [options] FEAT-ID [FEAT-ID ...]
+Usage: codex-run.sh [options] FEAT-ID [FEAT-ID ...]
 
   FEAT-001 FEAT-002 ...    Boundary check + parallel dispatch + monitor
   --check, -c  FEAT-IDs    Boundary check only (dry run)
@@ -492,9 +492,9 @@ HELP
     ;;
   *)
     if [ $# -eq 0 ]; then
-      echo "Usage: codex-dispatch.sh FEAT-ID [FEAT-ID ...]" >&2
-      echo "       codex-dispatch.sh --check FEAT-ID [FEAT-ID ...]" >&2
-      echo "       codex-dispatch.sh --status" >&2
+      echo "Usage: codex-run.sh FEAT-ID [FEAT-ID ...]" >&2
+      echo "       codex-run.sh --check FEAT-ID [FEAT-ID ...]" >&2
+      echo "       codex-run.sh --status" >&2
       exit 1
     fi
     cmd_dispatch "$@"

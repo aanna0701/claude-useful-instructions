@@ -3,7 +3,7 @@
 ## 2-Touch Workflow
 
 ```
-/work-plan → codex-dispatch.sh (TOUCH 1) → /work-review (TOUCH 2)
+/work-plan → codex-run.sh (TOUCH 1) → /work-review (TOUCH 2)
 ```
 
 ## Roles
@@ -30,7 +30,7 @@
 
 - `/work-plan` auto-splits topics into parallelizable FEATs with disjoint boundaries
 - Boundary overlap check runs before dispatch — overlapping items grouped sequentially
-- `codex-dispatch.sh` handles: boundary check → worktree link → parallel `codex exec` → monitor → output `/work-review`
+- `codex-run.sh` handles: boundary check → worktree link → parallel `codex exec` → monitor → output `/work-review`
 
 ## Worktree Convention
 

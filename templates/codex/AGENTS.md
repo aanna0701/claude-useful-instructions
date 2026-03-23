@@ -6,7 +6,7 @@ You are an **implementation agent**. You receive work items designed by Claude a
 
 ## Finding Work
 
-You are dispatched via `codex-dispatch.sh` which provides your work item context. If reading manually:
+You are dispatched via `codex-run.sh` which provides your work item context. If reading manually:
 
 1. Check `work/items/` for directories matching `FEAT-NNN-*`
 2. Read `status.md` in each — look for `Status: open` and `Agent: Codex`

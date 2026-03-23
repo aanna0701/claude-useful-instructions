@@ -93,7 +93,7 @@ Print the decision with details:
 
 **REVISE**: List specific items Codex must fix. Output a re-dispatch command:
 ```
-bash codex-dispatch.sh FEAT-NNN
+bash codex-run.sh FEAT-NNN
 ```
 
 **REJECT**: State reason clearly. Suggest whether to rework or abandon the work item.
@@ -114,7 +114,7 @@ Doc changes needed (from Codex status.md):
   FEAT-002: Add API auth section to docs/api.md
 
 Revisions needed:
-  bash codex-dispatch.sh FEAT-003
+  bash codex-run.sh FEAT-003
 ──────────────────────────────────────────────
 ```
 

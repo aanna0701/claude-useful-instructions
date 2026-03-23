@@ -16,7 +16,7 @@ description: >
 | Plan work item(s) | `/work-plan` |
 | Check status | `/work-status` |
 | Review implementation | `/work-review` |
-| Boundary check / dispatch | `codex-dispatch.sh` (suggest command) |
+| Boundary check / dispatch | `codex-run.sh` (suggest command) |
 | Link worktrees | `link-work.sh` (suggest command) |
 | Gemini tools | Corresponding `gemini_*` MCP tool |
 
@@ -24,7 +24,7 @@ description: >
 
 ```
 /work-plan [topic(s)] → auto-split + boundary check + dispatch manifest
-  TOUCH 1: bash codex-dispatch.sh FEAT-001 FEAT-002 ...
+  TOUCH 1: bash codex-run.sh FEAT-001 FEAT-002 ...
     → boundary check → link worktrees → parallel codex exec → monitor
   TOUCH 2: /work-review FEAT-001 FEAT-002 ...
     → parallel review → handle doc changes → MERGE/REVISE/REJECT
@@ -34,6 +34,6 @@ description: >
 
 - Rule: `.claude/rules/collab-workflow.md`
 - Docs: `docs/collab-workflow.md` (full setup guide + walkthrough)
-- Scripts: `codex-dispatch.sh`, `link-work.sh`
+- Scripts: `codex-run.sh`, `link-work.sh`
 - Templates: `.claude/templates/work-item/`
 - Gemini MCP: `mcp/gemini-review/`
