@@ -85,6 +85,8 @@ BUNDLE_COLLAB=(
   "script:codex-implement.sh"
   "script:codex-setup.sh"
   "script:gemini-setup.sh"
+  "script:link-work.sh"
+  "hook:post-checkout-work-link"
   "mcp:gemini-review"
 )
 
@@ -290,6 +292,53 @@ install_mcp_dir() {
   done || true
 }
 
+install_hook() {
+  local hook_name="$1"
+  local src="$REPO_DIR/templates/hooks/$hook_name"
+
+  [ -f "$src" ] || { echo "WARNING: Hook template not found: $hook_name" >&2; return 0; }
+
+  # Find git common dir (shared hooks dir for worktrees)
+  local git_common_dir
+  git_common_dir=$(git -C "$PROJECT_ROOT" rev-parse --git-common-dir 2>/dev/null || true)
+  if [ -z "$git_common_dir" ]; then
+    echo "  Skip hook $hook_name: not a git repository"
+    return 0
+  fi
+
+  local hooks_dir="$git_common_dir/hooks"
+  mkdir -p "$hooks_dir"
+
+  # Derive target hook name (e.g., "post-checkout-work-link" -> "post-checkout")
+  local target_hook="${hook_name%%-work-link}"
+  target_hook="${target_hook%%-*-*}"
+  # More precise: extract up to "post-checkout" or "pre-commit" pattern
+  if [[ "$hook_name" == post-checkout* ]]; then
+    target_hook="post-checkout"
+  elif [[ "$hook_name" == pre-commit* ]]; then
+    target_hook="pre-commit"
+  fi
+
+  local dst="$hooks_dir/$target_hook"
+
+  if [ -f "$dst" ]; then
+    # Check if snippet is already installed
+    if grep -q "Auto-link work/ from docs worktree" "$dst" 2>/dev/null; then
+      echo "  Skip hook $target_hook: work-link snippet already present"
+      return 0
+    fi
+    # Append snippet (skip shebang line from template)
+    echo "" >> "$dst"
+    echo "# ─── work-link snippet (installed by claude-useful-instructions) ───" >> "$dst"
+    tail -n +2 "$src" >> "$dst"
+    echo "  Appended work-link snippet to existing $target_hook hook"
+  else
+    cp "$src" "$dst"
+    chmod +x "$dst"
+    echo "  Installed hook: $target_hook"
+  fi
+}
+
 # ── Execute installation ───────────────────────────────────────────────────
 echo "Installing Claude settings from $REPO_DIR → $CLAUDE_DIR"
 echo "Bundles: ${SELECTED_BUNDLES[*]}"
@@ -321,6 +370,9 @@ for entry in "${INSTALL_LIST[@]}"; do
     script)
       install_file "$REPO_DIR/$path" "$PROJECT_ROOT/$path"
       chmod +x "$PROJECT_ROOT/$path"
+      ;;
+    hook)
+      install_hook "$path"
       ;;
     mcp)
       install_mcp_dir "$path"

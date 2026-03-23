@@ -30,6 +30,50 @@
 - Files: `brief.md`, `contract.md`, `checklist.md`, `status.md`, `review.md`, `review-gemini.md`
 - ID format: `FEAT-NNN` (3-digit, zero-padded, monotonic)
 
+## Worktree Layout (optional)
+
+When the project uses **git worktrees** for feature isolation, each worktree maps to a collaboration role.
+
+```
+workspace/
+├── <Project>-Docs       (feature-docs)          ← Claude plans here
+│   └── work/items/FEAT-NNN-slug/                ← source of truth
+├── <Project>-Training   (feature-training)       ← Codex implements here
+│   └── work/ -> ../<Project>-Docs/work (symlink) ← reads plans via symlink
+├── <Project>-Inference  (feature-inference)
+└── <Project>-UI         (feature-ui)
+```
+
+### work/ Symlink Convention
+
+- The **docs worktree** owns `work/items/` (real directory, committed to git)
+- All other worktrees get `work/` as a **symlink** pointing to the docs worktree's `work/`
+- Symlinks are `.gitignore`d — they never get committed to feature branches
+- Codex can read `work/items/FEAT-NNN/contract.md` from any worktree
+
+### Managing Links
+
+```bash
+link-work.sh                            # Link all worktrees
+link-work.sh training                   # Link specific worktree
+link-work.sh --status                   # Show link status
+link-work.sh --init <name> <branch>     # Create worktree + link + gitignore
+link-work.sh --self-install             # Install as: git work-link
+```
+
+### End-to-End Handoff Flow
+
+```
+1. Claude (Docs)       /work-plan [topic]         → creates work/items/FEAT-NNN/
+2. Gemini (MCP)        gemini_derive_contract      → drafts contract.md
+3. Claude (Docs)       signs contract.md           → work item ready
+4. User                link-work.sh                → symlinks work/ to impl worktrees
+5. Codex (Training)    reads work/items/FEAT-NNN/  → implements on worktree branch
+6. Codex (Training)    updates status.md           → marks done
+7. Gemini (MCP)        gemini_audit_implementation → writes review-gemini.md
+8. Claude (Docs)       /work-review FEAT-NNN       → writes review.md, merge decision
+```
+
 ## Principles
 
 - Contract is the single source of truth for implementation boundaries
@@ -39,3 +83,5 @@
 - Ambiguities are recorded in `status.md`, never resolved by the implementer
 - No feature implementation without a work item when delegating
 - `review.md` required before merge
+- In worktree setups: Codex commits directly on the worktree branch, no sub-branches
+- `work/` symlinks keep all worktrees in sync without cross-branch cherry-picks

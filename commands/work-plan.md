@@ -109,7 +109,28 @@ Implement only what is required. Update status.md on every state change.
 Branch: feat/FEAT-NNN-slug
 ```
 
-### Step 9: Summary
+### Step 9: Worktree Link Hint (if applicable)
+
+Check if the project uses git worktrees:
+
+```bash
+git worktree list 2>/dev/null | wc -l
+```
+
+If more than 1 worktree exists, print:
+
+```
+## Worktree Setup
+
+If Codex runs in a different worktree, ensure work/ is linked:
+
+  link-work.sh                    # Link all worktrees
+  link-work.sh <worktree-name>    # Link specific worktree
+
+Or use: git work-link (if alias installed via link-work.sh --self-install)
+```
+
+### Step 10: Summary
 
 Print a table of created files and next steps:
 

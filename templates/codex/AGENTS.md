@@ -56,7 +56,7 @@ This script reads the work item, initializes status, and prints structured conte
 
 Update `work/items/FEAT-NNN-slug/status.md` on **every state change**:
 
-1. **Starting work**: Set `Status: in-progress`, `Agent: Codex`, `Branch: feat/FEAT-NNN-slug`
+1. **Starting work**: Set `Status: in-progress`, `Agent: Codex`, `Worktree: <current worktree>`
 2. **Progress**: Check off completed items in Progress section
 3. **Changed files**: List every file you modify with a brief description
 4. **Blocked**: Set `Status: blocked`, describe in Blockers section
@@ -64,10 +64,13 @@ Update `work/items/FEAT-NNN-slug/status.md` on **every state change**:
 
 ## Git Workflow
 
-- **Branch**: `feat/FEAT-NNN-slug` (create from main)
+If this repo uses **git worktrees**, you are already on the correct branch for your worktree. Do NOT create sub-branches.
+
+- **Branch**: Use the current worktree branch (or `feat/FEAT-NNN-slug` if not using worktrees)
 - **Commits**: `feat(FEAT-NNN): description` (conventional commit format)
 - **One concern per commit**: separate logical changes into distinct commits
 - Do NOT force push or rewrite history
+- `work/` may be a symlink to the planning worktree — treat it as read-only
 
 ## What You Must NOT Do
 
