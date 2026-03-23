@@ -74,7 +74,7 @@ echo ""
 echo "Installing Python dependencies..."
 cd "$MCP_DST"
 uv sync 2>/dev/null || uv pip install -r <(echo "mcp>=1.0
-google-generativeai>=0.8") --python python3
+google-genai>=1.0") --python python3
 cd "$PROJECT_DIR"
 echo "Dependencies installed."
 
