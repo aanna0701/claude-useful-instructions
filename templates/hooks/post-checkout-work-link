@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# post-checkout hook snippet — auto-link work/ from docs worktree
+#
+# Append this to your existing post-checkout hook, or use as-is.
+# Triggers on branch switch (flag=$3 == 1). If work/ doesn't exist
+# in the current worktree, finds the docs worktree and symlinks it.
+
+prev_ref="$1"
+new_ref="$2"
+flag="$3"
+
+# Only run on branch switch, not file checkout
+[[ "$flag" != "1" ]] && exit 0
+
+# ─── Auto-link work/ from docs worktree ──────────────────────────────────────
+wt_root="$(git rev-parse --show-toplevel 2>/dev/null)"
+if [[ -n "$wt_root" && ! -e "$wt_root/work" ]]; then
+    docs_wt=""
+    while IFS= read -r line; do
+        p="${line#worktree }"
+        if [[ -d "$p/work/items" && ! -L "$p/work" && "$p" != "$wt_root" ]]; then
+            docs_wt="$p"
+            break
+        fi
+    done < <(git worktree list --porcelain | grep "^worktree ")
+
+    if [[ -n "$docs_wt" ]]; then
+        ln -s "$docs_wt/work" "$wt_root/work"
+        if ! grep -qx "work/" "$wt_root/.gitignore" 2>/dev/null; then
+            printf '\n# Symlinked work plans from docs worktree\nwork/\n' >> "$wt_root/.gitignore"
+        fi
+        echo "Auto-linked: work/ -> $docs_wt/work"
+    fi
+fi
