@@ -51,6 +51,23 @@ cui-codex-setup /path/to/my-project
 cui-gemini-setup /path/to/my-project      # optional
 ```
 
+### Gemini MCP Prerequisites
+
+`cui-gemini-setup` requires `GEMINI_API_KEY` in your shell environment:
+
+```bash
+# 1. Get a key at https://aistudio.google.com/apikey
+
+# 2. Add to shell profile
+echo 'export GEMINI_API_KEY="your-key-here"' >> ~/.bashrc  # or ~/.zshrc
+source ~/.bashrc
+
+# 3. (Optional) Override default model (gemini-2.5-pro)
+export GEMINI_MODEL="gemini-2.5-flash"  # cheaper, faster
+```
+
+Without this, the MCP server will fail to start with `EnvironmentError`.
+
 ---
 
 ## Bundles
