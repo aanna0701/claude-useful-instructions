@@ -17,20 +17,24 @@ cd claude-useful-instructions
 
 ### Aliases (optional)
 
+Replace `<CUI_DIR>` with your clone path (e.g., `~/claude-useful-instructions`).
+
 ```bash
 # bash (~/.bashrc)
-cat >> ~/.bashrc << 'EOF'
-alias cui-install='~/workspace/claude-useful-instructions/install.sh'
-alias cui-codex-setup='bash ~/workspace/claude-useful-instructions/codex-setup.sh'
-alias cui-gemini-setup='bash ~/workspace/claude-useful-instructions/gemini-setup.sh'
+CUI_DIR=~/claude-useful-instructions  # ← adjust to your clone path
+cat >> ~/.bashrc << EOF
+alias cui-install='$CUI_DIR/install.sh'
+alias cui-codex-setup='bash $CUI_DIR/codex-setup.sh'
+alias cui-gemini-setup='bash $CUI_DIR/gemini-setup.sh'
 EOF
 source ~/.bashrc
 
 # zsh (~/.zshrc)
-cat >> ~/.zshrc << 'EOF'
-alias cui-install='~/workspace/claude-useful-instructions/install.sh'
-alias cui-codex-setup='bash ~/workspace/claude-useful-instructions/codex-setup.sh'
-alias cui-gemini-setup='bash ~/workspace/claude-useful-instructions/gemini-setup.sh'
+CUI_DIR=~/claude-useful-instructions  # ← adjust to your clone path
+cat >> ~/.zshrc << EOF
+alias cui-install='$CUI_DIR/install.sh'
+alias cui-codex-setup='bash $CUI_DIR/codex-setup.sh'
+alias cui-gemini-setup='bash $CUI_DIR/gemini-setup.sh'
 EOF
 source ~/.zshrc
 ```
