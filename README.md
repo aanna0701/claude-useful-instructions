@@ -66,14 +66,13 @@ export GEMINI_API_KEY="your-key-here"
 cui-gemini-setup /path/to/my-project
 ```
 
-The key is written directly into `~/.claude/settings.json` (global), so it works across all projects and git worktrees.
+The script uses `claude mcp add -s user` to register the server in `~/.claude.json` (user scope), which works across all projects and git worktrees.
 
-> **Why global `settings.json` instead of per-project or env vars?**
-> - `.bashrc` has a non-interactive shell guard — Claude Code's MCP processes are non-interactive, so exports below the guard are never loaded.
-> - `.profile` is only sourced for login shells, which Claude Code may not use.
-> - Claude Code does **not** perform `${VAR}` substitution in MCP config `env` fields.
-> - Per-project `settings.local.json` doesn't work with git worktrees (Claude Code may resolve to the main repo root).
-> - Global `~/.claude/settings.json` is the only reliable approach.
+> **Why `claude mcp add` instead of editing config files?**
+> - `~/.claude/settings.json`'s `mcpServers` field is **not** where Claude Code reads MCP servers.
+> - Per-project `settings.local.json` doesn't work with git worktrees.
+> - Shell env vars (`.bashrc`/`.profile`) are unreliable for non-interactive MCP processes.
+> - `claude mcp add -s user` writes to `~/.claude.json`, the correct location Claude Code reads.
 
 After setup, **restart Claude Code** for the MCP server to connect.
 
