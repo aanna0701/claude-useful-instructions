@@ -15,9 +15,7 @@ tools:
 
 ## Required Reading
 
-Read before writing:
-1. `skills/diataxis-doc-system/references/execution-rules.md` — Checklist template, linking rules
-2. `skills/diataxis-doc-system/references/common-rules.md` — Metadata
+Read `skills/diataxis-doc-system/references/` — `execution-rules.md`, `common-rules.md`.
 
 ## Modes
 

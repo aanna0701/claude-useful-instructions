@@ -1,6 +1,6 @@
 # write-doc — Diátaxis + Work Item Documentation
 
-Write high-quality documents by determining type via the Diátaxis + Work Item framework and delegating to specialized agents.
+Thin routing wrapper around `diataxis-doc-system` SKILL.md. This command handles mode detection, file paths, and work-item bundling. The SKILL.md handles the actual workflow logic (axis determination, type routing, agent delegation, quality validation).
 
 Target: $ARGUMENTS (doc topic, or "review [filepath]")
 
@@ -12,68 +12,43 @@ Analyze `$ARGUMENTS`:
 
 | Pattern | Mode | Action |
 |---------|------|--------|
-| `review [filepath]` | Review existing doc | → Step 5 |
+| `review [filepath]` | Review existing doc | → SKILL.md Phase 3 |
 | `work-item [topic]` | Work Item bundle | → Step 3-WI |
-| `task [topic]` | Task creation | → Step 3 (Delivery, Task) |
-| `contract [topic]` | Contract creation | → Step 3 (Delivery, Contract) |
-| `checklist [T-NNN]` | Checklist creation | → Step 3 (Delivery, Checklist) |
-| `review-doc [T-NNN]` | Review creation | → Step 3 (Delivery, Review) |
+| `task [topic]` | Task creation | → Step 2 (Delivery, Task) |
+| `contract [topic]` | Contract creation | → Step 2 (Delivery, Contract) |
+| `checklist [T-NNN]` | Checklist creation | → Step 2 (Delivery, Checklist) |
+| `review-doc [T-NNN]` | Review creation | → Step 2 (Delivery, Review) |
 | Other | New document | → Step 1 |
 
 ---
 
 ## Step 1: Input Gathering
 
-Confirm with user (skip if already in conversation):
-
-**Required:** Document topic/scope, target audience (newcomer? peer dev? management?)
-
-**Optional:** Codebase path, glossary path, existing reference docs
+Gather required and optional inputs per SKILL.md Phase 0. Confirm topic, audience, and purpose with user (skip if already in conversation).
 
 ---
 
 ## Step 1.5: Axis Determination
 
-Apply axis determination routing from SKILL.md Phase 0.5.
-
-Show determination result to user for confirmation:
+Apply SKILL.md Phase 0.5. Show result to user for confirmation:
 ```
 Axis: [Diátaxis / Delivery]
 ```
 
 ---
 
-## Step 2: Diátaxis Type Routing
+## Step 2: Type Routing & Agent Delegation
 
-Apply Diátaxis type routing from SKILL.md Phase 1.
+Apply SKILL.md Phase 1 (or Phase 1-D for Delivery axis) to determine type, then Phase 2 to delegate to the matching agent.
 
-Show result to user:
+Show determination to user before delegating:
 ```
-Axis:   Diátaxis
-Type:   [Tutorial / How-to Guide / Explanation / Reference]
-Reader: [target audience]
-Outcome: [what reader can do after reading]
-```
-
----
-
-## Step 2-D: Delivery Subtype Routing
-
-If entering from Step 0 with explicit keyword, subtype is already determined. Otherwise apply Delivery subtype routing from SKILL.md Phase 1-D.
-
-Show result to user:
-```
-Axis:    Delivery (Execution Artifact)
-Type:    [Task / Contract / Checklist / Review]
-Target:  [assignee or contracting party]
-Purpose: [assignment / agreement / verification / assessment]
+Axis:   [Diátaxis / Delivery]
+Type:   [Tutorial / How-to Guide / Explanation / Reference / Task / Contract / Checklist / Review]
+Agent:  [doc-writer-*]
 ```
 
----
-
-## Step 3: Agent Delegation
-
-Delegate to the matching agent per SKILL.md Phase 2, passing Step 1 context.
+→ After agent completes, go to Step 4.
 
 ---
 
@@ -94,14 +69,14 @@ Show to user:
 ```
 Work Item FEAT-NNN created
   work/items/FEAT-NNN-slug/
-    brief.md      ✓
-    contract.md   ✓
-    checklist.md  ✓
-    status.md     ✓ (initialized)
+    brief.md      done
+    contract.md   done
+    checklist.md  done
+    status.md     done (initialized)
     review.md     — (post-implementation)
 ```
 
-→ Skip to Step 5.
+→ Quality validation per SKILL.md Phase 3, then Step 5.
 
 ---
 
@@ -109,7 +84,7 @@ Work Item FEAT-NNN created
 
 Save the agent's output to the appropriate project location.
 
-### Diátaxis docs → `docs/`
+### Diataxis docs → `docs/`
 
 **Structure detection:** If `docs/00_context/` exists, use numbered hierarchy; otherwise use type-based layout.
 
@@ -159,71 +134,20 @@ work/
 
 If `work/` does not exist, prompt user to run `/init-docs` first.
 
-### Common rules
-
-Filenames: kebab-case only. If numbered hierarchy is missing, suggest `/init-docs`.
+Filenames: kebab-case only.
 
 ---
 
-## Step 5: Quality Validation (includes review mode)
-
-For existing doc review or new doc validation.
-
-> **Review mode:** Delegate to `doc-reviewer` agent for comprehensive readability/type-purity/governance review.
-
-### Type purity (Diátaxis)
-- [ ] No Reference tables inside Tutorial?
-- [ ] No beginner explanations inside How-to?
-- [ ] No step-by-step procedures inside Explanation?
-- [ ] No opinions/recommendations inside Reference?
-
-### Type purity (Delivery)
-- [ ] No design discussion in Brief/Task? (→ split to Explanation)
-- [ ] No procedural guides in Contract? (→ split to How-to)
-- [ ] No background explanations in Checklist?
-- [ ] No new requirements in Review? (→ split to new Work Item)
-
-### Common quality
-- [ ] Complete YAML frontmatter? (title, type, status + type-specific fields)
-- [ ] Diagrams in Mermaid/PlantUML?
-- [ ] Terms match glossary?
-- [ ] Cross-reference links present (including cross-axis)?
-- [ ] Valid in 6 months?
-
-### Delivery-axis additional
-- [ ] Brief/Task has source link (RFC/ADR or Contract)?
-- [ ] Completion criteria are verifiable?
-- [ ] Work Item files reference correct FEAT-NNN / T-NNN?
-- [ ] Contract has at least 1 invariant?
-- [ ] Contract specifies allowed/forbidden modification zones?
-- [ ] Review has at least 1 lesson learned?
-
-### Work Item bundle additional
-- [ ] All 5 files present in `work/items/FEAT-NNN-slug/`?
-- [ ] Status.md reflects actual state?
-- [ ] Brief → Contract → Checklist are internally consistent?
-
-### Governance
-- [ ] `owner` field set?
-- [ ] No duplicate info across docs (SSOT)?
-- [ ] `tags` use only project-allowed values?
-
-Fix violations, confirm with user, then apply.
-
----
-
-## Step 6: Completion Report
+## Step 5: Completion Report
 
 ```
 Document complete
 ─────────────────────────────────
-Axis:     [Diátaxis / Delivery]
-Type:     [Tutorial / How-to / Explanation / Reference / Work Item / Task / Contract / Checklist / Review]
-File:     [docs/ or work/][path]/[filename].md
-Audience: [reader or assignee or implementing agent]
-Quality:  PASS (or WARN N items fixed)
+Axis:     [Diataxis / Delivery]
+Type:     [specific type]
+File:     [full path]
+Audience: [reader or assignee]
 ─────────────────────────────────
 Suggested related docs:
-  - [missing related doc type suggestions]
-  - [cross-axis link suggestions (e.g., Brief → related RFC)]
+  - [cross-axis link suggestions]
 ```

@@ -87,16 +87,7 @@ Numbering = **topic (domain)** classification. Diataxis = **purpose** classifica
 
 Diataxis type is specified via the `type` field in YAML frontmatter.
 
-### 3-Axis Model: Domain x Purpose x Execution
-
-| Axis | Classification | Physical Location |
-|------|---------------|-------------------|
-| **Domain** (numbering) | By topic: context, architecture, implementation... | `docs/00-90_*/` |
-| **Diataxis** (purpose) | By reader goal: Tutorial, How-to, Explanation, Reference | within `docs/` categories |
-| **Delivery** (execution) | By workflow: Work Item bundles + standalone Task/Contract/Checklist/Review | `work/` |
-
-Domain and Diataxis axes intersect within `docs/`. Delivery axis lives in a separate root (`work/`).
-**Same repo, different roots** — separates concerns while maintaining traceability.
+Three orthogonal axes: **Domain** (numbered folders `00-90`), **Diataxis** (reader goal: Tutorial/How-to/Explanation/Reference), **Delivery** (execution artifacts in `work/`). Domain and Diataxis intersect within `docs/`; Delivery lives in a separate root — same repo, different concerns.
 
 ---
 
@@ -112,7 +103,7 @@ Domain and Diataxis axes intersect within `docs/`. Delivery axis lives in a sepa
 
 **Nav structure** mirrors the numbered folder hierarchy: Home, Glossary, Context, Architecture (with ADR sub-section), Implementation, Guides (Tutorials + How-to), Operations, Archive.
 
-### index.md Template
+### Category index.md Template
 
 Each category `index.md` serves as a **document map**:
 
@@ -132,6 +123,8 @@ tags: []
 |----------|------|-------------|-------------|
 | [System Overview](system-overview.md) | Explanation | Full architecture description | 2025-03-18 |
 ```
+
+> **Tip:** Add `Status` and `Owner` columns when your team needs governance tracking per document.
 
 ---
 
@@ -168,60 +161,17 @@ Every document has an `owner` (GitHub handle or team). Owners: quarterly review 
 
 ---
 
-## 4. Category index.md Template
-
-```markdown
----
-title: "[NN_CategoryName]"
----
-
-# [Category Name]
-
-[2-3 sentences describing this category's scope.]
-
-## Document List
-
-| Document | Type | Status | Owner | Last Updated |
-|----------|------|--------|-------|-------------|
-| [Title](filename.md) | [Type] | [Status] | [@name] | [Date] |
-
-## Related Categories
-
-- [Previous: XX_Category](../XX_Category/index.md)
-- [Next: XX_Category](../XX_Category/index.md)
-```
-
----
-
-## 5. Archive Rules
+## 4. Archive Rules
 
 `90_archive/` is a **reference library**, not a graveyard.
 
-### archive/index.md Template
+The `archive/index.md` tracks all archived documents in a table with columns: **Document** (link), **Original Location**, **Reason**, **Date**, **Replacement** (link to successor). Each archived document must have `status: deprecated` in frontmatter plus a warning admonition block stating the replacement link, reason, and archive date.
 
-```markdown
----
-title: "Archive"
----
-
-# Archive
-
-Documents no longer valid but preserved for reference.
-
-## Archive List
-
-| Document | Original Location | Reason | Date | Replacement |
-|----------|------------------|--------|------|-------------|
-| [v1 API Spec](v1-api.md) | 20_implementation/ | Replaced by v2 | 2025-03 | [v2 API](../20_implementation/api-reference.md) |
-```
-
-### Archived Document Header
-
-Add `status: deprecated` to frontmatter and a warning block: replacement link, reason, archive date.
+> Canonical templates for archive index and deprecated headers: see `init-docs.md`.
 
 ---
 
-## 6. CI/CD Automation (Optional)
+## 5. CI/CD Automation (Optional)
 
 **Deploy workflow** (`.github/workflows/docs.yml`): On push to `main` (paths: `docs/**`, `mkdocs.yml`), checkout with `fetch-depth: 0`, install `mkdocs-material` + `mkdocs-git-revision-date-localized-plugin`, run `mkdocs gh-deploy --force`.
 
@@ -229,7 +179,7 @@ Add `status: deprecated` to frontmatter and a warning block: replacement link, r
 
 ---
 
-## 7. Execution Document Directory (`work/`)
+## 6. Execution Document Directory (`work/`)
 
 `docs/` contains **reader-facing documentation**. `work/` contains **execution artifacts for assigning, tracking, and verifying work**.
 `work/` sits outside the `00-90` numbering scheme and operates independently of Diataxis classification.
@@ -256,39 +206,4 @@ work/
     └── T-001-review.md
 ```
 
-### Multi-Agent Workflow
-
-```mermaid
-flowchart LR
-    RFC["RFC/ADR<br/>(docs/10_architecture/)"] --> WI["Work Item<br/>(work/items/FEAT-NNN/)"]
-    WI --> |"Claude writes"| B["brief + contract<br/>+ checklist"]
-    B --> |"Codex reads"| Impl["Implementation<br/>(code)"]
-    Impl --> |"Codex updates"| Status["status.md"]
-    Impl --> |"Claude writes"| Review["review.md"]
-    Review --> Docs["Docs Update<br/>(docs/)"]
-```
-
-### Source of Truth Hierarchy
-
-The source of truth is **RFC/ADR + Contract**:
-
-1. **RFC/ADR** (`docs/10_architecture/`) — Why, alternatives, tradeoffs
-2. **Contract** (`work/items/FEAT-NNN/contract.md`) — What is guaranteed
-3. **Brief** (`work/items/FEAT-NNN/brief.md`) — What to do (derived)
-4. **Checklist** (`work/items/FEAT-NNN/checklist.md`) — How to verify
-5. **Review** (`work/items/FEAT-NNN/review.md`) — Result evaluation
-
-### MkDocs nav Integration
-
-To include `work/` docs in the MkDocs site:
-
-```yaml
-nav:
-  # ... existing docs/ entries ...
-  - Work Items:
-    - work/index.md
-    - FEAT-001:
-      - work/items/FEAT-001-slug/brief.md
-```
-
-> Detailed rules (templates, naming, multi-agent workflow, linking): see `references/execution-rules.md`.
+For templates, naming conventions, multi-agent workflow, source of truth hierarchy, and linking rules: see `references/execution-rules.md`.

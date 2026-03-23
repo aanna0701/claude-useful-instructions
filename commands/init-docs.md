@@ -1,6 +1,6 @@
 # init-docs — Initialize Project Documentation Structure
 
-Create MkDocs-based doc site structure (numbered hierarchy + Diátaxis) and work item structure (`work/`), with auto-generated mkdocs.yml and category index files.
+Create MkDocs-based doc site structure (numbered hierarchy + Diataxis) and work item structure (`work/`), with auto-generated mkdocs.yml and category index files.
 
 Target: $ARGUMENTS (project root path; defaults to current directory)
 
@@ -45,61 +45,23 @@ Use its folder structure, mkdocs.yml template, and index.md templates as the bas
 
 ## Step 3: Create Folder Structure
 
-Per `site-architecture.md` "Hierarchical folder structure" section:
+Per `site-architecture.md` §1. Create folders:
 
 ```bash
 mkdir -p docs/{00_context,10_architecture/{adr,rfc},20_implementation,30_guides/{tutorials,howto},40_operations,90_archive}
 ```
 
-Create `index.md` per category using templates from `site-architecture.md`.
+Create `index.md` per category using templates from `site-architecture.md` §4.
 
 ### Work item structure (when work/ included)
 
-```bash
-mkdir -p work/{items,tasks,contracts,checklists,reviews}
-```
-
-Create `work/index.md`:
-
-```markdown
----
-title: "Work Items"
----
-
-# Work Items & Execution Artifacts
-
-Documents for assigning, tracking, and verifying work across agents (Claude, Codex, human).
-
-## Multi-Agent Workflow
-
-RFC/ADR (docs/10_architecture/) → Work Item (work/items/FEAT-NNN/) → Claude writes brief+contract+checklist → Codex implements+updates status → Claude writes review → Docs Update (docs/)
-
-## Directories
-
-| Directory | Purpose | Naming |
-|-----------|---------|--------|
-| [items/](items/) | Work Item bundles (multi-agent) | `FEAT-NNN-slug/` with 5 fixed files |
-| [tasks/](tasks/) | Standalone work orders | `T-NNN-slug.md` |
-| [contracts/](contracts/) | Standalone contracts | `{domain}-contract.md` |
-| [checklists/](checklists/) | Standalone checklists | `T-NNN.md` |
-| [reviews/](reviews/) | Standalone reviews | `T-NNN-review.md` |
-
-## Work Item Bundle Files
-
-| File | Author | Phase | Purpose |
-|------|--------|-------|---------|
-| `brief.md` | Claude | Design | Scope, objectives, dependencies |
-| `contract.md` | Claude | Design | Interfaces, boundaries, invariants |
-| `checklist.md` | Claude | Design | Verification items (Yes/No) |
-| `status.md` | Codex | Impl | Progress, blockers, changed files |
-| `review.md` | Claude | Review | Compliance, lessons, merge decision |
-```
+Per `site-architecture.md` §7. Create directories and `work/index.md` with overview, workflow diagram, and directory table.
 
 ---
 
 ## Step 4: Generate mkdocs.yml
 
-Based on `site-architecture.md` "mkdocs.yml base structure" section, using Step 1 project info:
+Per `site-architecture.md` §2, using Step 1 project info:
 
 - `site_name` ← project name
 - `site_description` ← project description
@@ -120,77 +82,24 @@ updated: [today's date]
 
 # Glossary
 
-Single Source of Truth for all project terminology.
+Single Source of Truth for all project terminology. Add terms here before using in docs; link here instead of defining inline.
 
 | Term | Definition | Synonyms (do not use) |
 |------|------------|----------------------|
 | | | |
-
-## Rules
-
-1. Add new terms here before using them in docs
-2. Words in "Synonyms" column must not appear in docs
-3. Other docs link here instead of defining terms inline
 ```
 
 ---
 
 ## Step 6: Create docs/index.md
 
-```markdown
----
-title: "Home"
----
-
-# [Project Name] Documentation
-
-[One-line description]
-
-## Document Map
-
-| Category | Description |
-|----------|-------------|
-| [Context](00_context/index.md) | Business goals, requirements, glossary |
-| [Architecture](10_architecture/index.md) | System design, tech stack, ADR |
-| [Implementation](20_implementation/index.md) | API/Config/CLI specs |
-| [Guides](30_guides/index.md) | Tutorials, How-to guides |
-| [Operations](40_operations/index.md) | Deployment, monitoring, runbooks |
-| [Archive](90_archive/index.md) | Archived documents |
-
-## Quick Start
-
-- New team member → [Getting Started](30_guides/tutorials/getting-started.md)
-- Need to do something → [How-to Guides](30_guides/howto/)
-- Understand design decisions → [Architecture](10_architecture/index.md)
-- Looking for API specs → [API Reference](20_implementation/api-reference.md)
-```
+Per `site-architecture.md` §2 index.md template, using Step 1 project info for title and description. Include document map table and quick-start links.
 
 ---
 
 ## Step 7: Create 90_archive/index.md
 
-```markdown
----
-title: "Archive"
----
-
-# Archive
-
-Documents no longer current, preserved for reference.
-
-## Archive List
-
-| Document | Original Location | Reason | Date | Replacement |
-|----------|-------------------|--------|------|-------------|
-| (none yet) | | | | |
-
-## Archive Procedure
-
-1. Set `status: deprecated` on the document
-2. Move to this folder
-3. Record reason in the table above
-4. Optionally link replacement doc at original location
-```
+Per `site-architecture.md` §5 archive rules and template.
 
 ---
 
@@ -199,42 +108,28 @@ Documents no longer current, preserved for reference.
 Ask user:
 > "Set up GitHub Actions for auto-deploy (gh-pages) and link checking?"
 
-If yes, create `.github/workflows/docs.yml` and `.github/workflows/docs-lint.yml` per `site-architecture.md` "CI/CD automation" section.
+If yes, create `.github/workflows/docs.yml` and `.github/workflows/docs-lint.yml` per `site-architecture.md` §6.
 
 ---
 
 ## Step 9: Completion Report
 
+List created items:
+
 ```
 Documentation structure initialized
 ─────────────────────────────────
 Project:  [project name]
-Structure:
-  docs/                             (Diátaxis - informational docs)
-  ├── index.md
-  ├── glossary.md
-  ├── 00_context/       (index.md)
-  ├── 10_architecture/  (index.md + adr/ + rfc/)
-  ├── 20_implementation/(index.md)
-  ├── 30_guides/        (index.md + tutorials/ + howto/)
-  ├── 40_operations/    (index.md)
-  └── 90_archive/       (index.md)
-
-  work/                             (Delivery - execution docs)
-  ├── index.md
-  ├── items/            (Work Item bundles)
-  ├── tasks/            (Standalone)
-  ├── contracts/
-  ├── checklists/
-  └── reviews/
-
-  mkdocs.yml            CREATED
-  CI/CD                 [CREATED / SKIPPED]
+Created:
+  docs/           index.md, glossary.md, category indexes
+  work/           index.md + subdirectories (if included)
+  mkdocs.yml      CREATED
+  CI/CD           [CREATED / SKIPPED]
 ─────────────────────────────────
 Next steps:
   pip install mkdocs-material       # Install MkDocs
   mkdocs serve                      # Local preview
-  /write-doc [topic]                # Write Diátaxis doc
+  /write-doc [topic]                # Write Diataxis doc
   /write-doc work-item [topic]      # Create Work Item bundle
   /write-doc task [topic]           # Write standalone Task
   /write-doc contract [topic]       # Write standalone Contract

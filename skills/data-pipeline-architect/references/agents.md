@@ -36,38 +36,14 @@ manifest 형식:
 
 ```python
 class BaseAgent:
-    def run(self, config: dict) -> Report:
-        """단계 실행. 병렬화 가능 시 자동 병렬."""
-        items = self.load_items(config)
-        if self.parallelism.intra_stage.applicable and len(items) > 100:
-            results, errors = self._run_parallel(items, config)
-        else:
-            results, errors = self._run_sequential(items, config)
-        return Report(processed=len(results), failed=len(errors), errors=errors, ...)
-
-    def validate(self, data_path: str) -> ValidationReport:
-        """출력 데이터 검증. read-only."""
-        ...
-
-    def _run_parallel(self, items, config):
-        Executor = (ProcessPoolExecutor if self.parallelism.type == "cpu_bound"
-                    else ThreadPoolExecutor)
-        results, errors = [], []
-        with Executor(max_workers=config.get("num_workers", min(os.cpu_count(), 8))) as pool:
-            futures = {pool.submit(self.process_item, item): item for item in items}
-            for future in as_completed(futures):
-                try:
-                    results.append(future.result())
-                except Exception as e:
-                    errors.append({"item": str(futures[future]), "error": str(e)})
-        return results, errors
+    def run(self, config: dict) -> Report: ...          # 단계 실행. 병렬화 가능 시 자동 병렬.
+    def validate(self, data_path: str) -> ValidationReport: ...  # 출력 데이터 검증. read-only.
+    def process_item(self, item) -> Any: ...             # 개별 항목 처리 (병렬 단위)
 
 @dataclass
 class Report:
-    processed: int
-    skipped: int
-    failed: int
-    errors: list[dict]      # [{"item": "...", "error": "..."}]
+    processed: int; skipped: int; failed: int
+    errors: list[dict]       # [{"item": "...", "error": "..."}]
     manifest_path: str
 
 @dataclass
@@ -76,38 +52,14 @@ class ValidationReport:
     checks: list[dict]       # [{"name": "...", "passed": bool, "message": "..."}]
 ```
 
-병렬화 상세 규칙: `parallelism.md` 참조.
+병렬화 핵심: `_run_parallel`은 `ProcessPoolExecutor`(CPU bound) 또는 `ThreadPoolExecutor`(IO bound)를 자동 선택. 상세 규칙: `parallelism.md` 참조.
 
 ### 규칙 4: Orchestrator는 조율만
 순서 결정, gate 판단(통과/중단), 로그 기록만 수행한다.
 비즈니스 로직은 절대 orchestrator에 넣지 않는다.
 **독립적인 단계는 반드시 병렬로 실행한다** (의존성 그래프 기반).
 
-```python
-async def run_pipeline(stages, config):
-    dag = build_dag(stages)
-    for batch in dag.topological_batches():
-        if len(batch) == 1:
-            await run_single_stage(batch[0], config)
-        else:
-            results = await asyncio.gather(
-                *[run_single_stage(s, config) for s in batch],
-                return_exceptions=True,
-            )
-            for stage, result in zip(batch, results):
-                if isinstance(result, Exception):
-                    handle_stage_failure(stage, result)
-
-async def run_single_stage(stage, config):
-    report = stage.agent.run(config)
-    validation = stage.agent.validate(stage.output_path)
-    if not validation.passed:
-        if stage.is_blocking:
-            abort_pipeline(validation)
-        else:
-            warn_and_continue(validation)
-    save_manifest(stage, report)
-```
+실행 흐름: dependency graph → topological batches → 배치 내 병렬 `asyncio.gather` → 각 stage 후 `validate()` → blocking stage 실패 시 abort, 아니면 warn & continue → manifest 저장.
 
 ---
 
@@ -172,122 +124,36 @@ CLI 인터페이스 (필수 지원):
 
 ## 조건부 에이전트 상세
 
-### Integrity Guard
+| Agent | 생성 조건 | 역할 | 핵심 기능 | 구현 위치 |
+|-------|----------|------|----------|----------|
+| **Integrity Guard** | raw/원본 데이터가 존재 | 파일 무결성 보장 | seal (checksum → MANIFEST → read-only), verify (MANIFEST vs 실제 비교), ingest 후 auto-seal | `data/integrity/` |
+| **Lineage Tracker** | transform 단계에서 원본-결과 매핑이 끊어질 수 있음 | 데이터 계보 추적 | 순방향 추적 (출력→원본), 역방향 추적 (원본→모든 출력), CLI 조회 | `data/lineage/` |
+| **Migration Manager** | DB 스키마가 있고 진화 가능성 있음 | 스키마 마이그레이션 관리 | 마이그레이션 스크립트 관리, 롤백 스크립트 동반, 트랜잭션 내 실행 | `data/migrations/` |
+| **Deduplicator** | 여러 소스에서 데이터가 합쳐짐 | 중복 제거 | exact/fuzzy match 탐지, 해소 전략 (최신/소스 우선순위), 중복 리포트 | `data/dedup/` |
+| **Anonymizer** | PII/민감정보 포함 데이터 | 개인정보 보호 | PII 필드 마스킹/해싱, 매핑 테이블 (별도 보안 저장), 마스킹 정책 config | `data/anonymize/` |
+| **Dead Letter Handler** | 스키마 위반/비정상 데이터 유입, 파이프라인 중단 없이 격리 필요 | 실패 레코드 격리 | DLQ 디렉토리/테이블로 격리, 재처리 CLI (재투입/폐기), 적재량 모니터링 | `data/dlq/` |
+| **Checkpoint Manager** | 장시간 배치/스트리밍에서 중간 장애 복구 필요 | 처리 진행 상태 관리 | 주기적 상태 기록 (offset, batch_id), 마지막 체크포인트부터 재시작, atomic write, 오래된 체크포인트 자동 삭제 | `data/checkpoints/` |
+| **Audit Logger** | 단계 간 건수 reconciliation, 처리 이력 추적, 운영 가시성 필요 | 처리 이력 및 정합성 검증 | count reconciliation (`in == out + skip + err`), 처리 시간/처리량 기록, 에러율 급증 경고, 배치 간 통계 비교 | `data/audit/` |
 
-생성 조건: raw/원본 데이터가 존재하는 프로젝트.
-
-역할:
-- seal: 파일 checksum 계산 → MANIFEST 기록 → read-only 권한 설정
-- verify: MANIFEST와 실제 파일 비교 → 불일치 탐지
-- ingest 완료 후 자동 seal 호출
-
-### Lineage Tracker
-
-생성 조건: transform 단계가 존재하여 원본-결과 매핑이 끊어질 수 있는 경우.
-
-역할:
-- 최종 출력의 각 레코드가 어떤 원본에서 왔는지 기록
-- 순방향 추적: 출력 → 원본
-- 역방향 추적: 원본 → 포함된 모든 출력
-- CLI 유틸리티로 즉시 조회 가능
-
-### Migration Manager
-
-생성 조건: DB 스키마가 있고 진화할 가능성이 있는 경우.
-
-역할:
-- 스키마 변경 마이그레이션 스크립트 관리
-- 각 마이그레이션에 롤백 스크립트 동반
-- 트랜잭션 안에서 실행
-
-### Deduplicator
-
-생성 조건: 여러 소스에서 데이터가 합쳐지는 경우.
-
-역할:
-- 중복 탐지 (exact match + fuzzy match)
-- 중복 해소 전략 (최신 우선, 소스 우선순위 등)
-- 중복 리포트 생성
-
-### Anonymizer
-
-생성 조건: PII/민감정보가 포함된 데이터인 경우.
-
-역할:
-- PII 필드 식별 및 마스킹/해싱
-- 원본과 익명화 데이터 간 매핑 테이블 (별도 보안 저장)
-- 마스킹 정책 config로 관리
-
-### Dead Letter Handler
-
-생성 조건: 스키마 위반이나 비정상 데이터가 유입될 수 있고, 전체 파이프라인 중단 없이 격리해야 하는 경우.
-
-역할:
-- 스키마 검증 실패 레코드를 DLQ(Dead Letter Queue) 디렉토리/테이블로 격리
-- 격리된 레코드에 실패 사유, 원본 단계, 타임스탬프 기록
-- DLQ 재처리 CLI 제공: 수정 후 재투입 또는 영구 폐기
-- DLQ 적재량 모니터링 (임계값 초과 시 경고)
-
-구현 위치: `data/dlq/`
+### 데이터 계약 (조건부 에이전트)
 
 ```python
 @dataclass(frozen=True)
 class DeadLetter:
-    record: dict           # 원본 레코드
-    stage: str             # 실패 발생 단계
-    error: str             # 실패 사유
-    timestamp: str         # ISO 8601
-    source_path: str       # 원본 파일/테이블 경로
-```
+    record: dict; stage: str; error: str; timestamp: str; source_path: str
 
-### Checkpoint Manager
-
-생성 조건: 장시간 배치 처리 또는 스트리밍 처리에서 중간 장애 복구가 필요한 경우.
-
-역할:
-- 각 단계의 처리 진행 상태를 주기적으로 기록 (offset, batch_id, last_processed)
-- 장애 복구 시 마지막 체크포인트부터 재시작
-- Staging area 기반 원자적 쓰기 지원 (임시 공간 → 검증 → atomic rename)
-- 체크포인트 정리: 완료된 배치의 오래된 체크포인트 자동 삭제
-
-구현 위치: `data/checkpoints/`
-
-```python
 @dataclass(frozen=True)
 class Checkpoint:
-    stage: str
-    batch_id: str
-    last_offset: int       # 마지막 처리 위치
-    status: str            # "in_progress" | "completed" | "failed"
-    timestamp: str         # ISO 8601
-    metadata: dict         # 단계별 추가 정보
-```
+    stage: str; batch_id: str; last_offset: int
+    status: str             # "in_progress" | "completed" | "failed"
+    timestamp: str; metadata: dict
 
-### Audit Logger
-
-생성 조건: 단계 간 건수 reconciliation, 처리 이력 추적, 또는 운영 가시성이 필요한 경우.
-
-역할:
-- 각 단계의 입력/출력/스킵/에러 건수 기록 및 reconciliation 검증
-- Count reconciliation: `input_count == output_count + skipped_count + error_count`
-- 처리 시간, 처리량(throughput) 기록
-- Health check: 지연(latency) 임계값 초과 또는 에러율 급증 시 경고
-- 배치 간 통계 비교 (이전 대비 급격한 변화 탐지)
-
-구현 위치: `data/audit/`
-
-```python
 @dataclass(frozen=True)
 class AuditRecord:
-    stage: str
-    batch_id: str
-    input_count: int
-    output_count: int
-    skipped_count: int
-    error_count: int
-    duration_seconds: float
-    timestamp: str         # ISO 8601
-    reconciled: bool       # input == output + skipped + error
+    stage: str; batch_id: str
+    input_count: int; output_count: int; skipped_count: int; error_count: int
+    duration_seconds: float; timestamp: str
+    reconciled: bool        # input == output + skipped + error
 ```
 
 ---

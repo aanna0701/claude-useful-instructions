@@ -22,24 +22,23 @@ description: >
 
 ---
 
+## Required Reading
+
+Read before each phase:
+- Phase 1: `references/principles.md`, `references/reliability.md`
+- Phase 2: `references/parallelism.md`
+- Phase 3: `references/agents.md`
+- Phase 4: `references/instructions.md`
+
 ## 워크플로우
 
 ### Phase 0: 입력 수집
 
-사용자에게 아래를 확인하라. 이미 대화에 포함된 정보는 다시 묻지 말 것.
+사용자에게 확인 (이미 대화에 포함된 정보는 다시 묻지 말 것):
 
-**필수 (없으면 반드시 요청)**
-- 데이터 흐름 개요: 어디서 → 어디로, 몇 단계
-- 각 단계 입출력 형태: 파일? DB? API? 스트림?
-- 최종 목적: 학습? 분석? 서빙? 리포팅?
+**필수:** 데이터 흐름 개요 (어디서→어디로), 각 단계 입출력 형태, 최종 목적
 
-**선택 (있으면 더 정확한 설계)**
-- 현재 코드베이스 구조 또는 파일
-- 데이터 볼륨 (건수, 용량, 증가 속도)
-- 팀 규모
-- 이미 알고 있는 문제점
-
-필수 정보가 확보되면 Phase 1로 진행. 선택 정보는 설계 품질을 높이지만 없어도 진행 가능.
+**선택:** 코드베이스 구조, 데이터 볼륨, 팀 규모, 알려진 문제점
 
 ---
 
@@ -48,10 +47,6 @@ description: >
 사용자의 데이터 구조와 파이프라인을 두 가지 축으로 진단한다:
 1. **구조 진단 (8원칙)**: 데이터 모델링의 정확성
 2. **신뢰성 진단 (5원칙)**: 파이프라인 실행의 무결성과 복원력
-
-> 구조 원칙 상세: `references/principles.md` 참조.
-> 신뢰성 원칙 상세: `references/reliability.md` 참조.
-> Phase 1 실행 전 두 파일 모두 반드시 읽을 것.
 
 각 원칙에 대해 **통과 ✅ / 위반 ⚠️ / 해당없음 —** 으로 판정하고,
 위반 시 **위치 + 이유 + 처방**을 구체적으로 명시한다.
@@ -124,17 +119,11 @@ parallelism:  # 병렬 처리 분석
     partition_key: "date" | "source_id" | null
 ```
 
-> 병렬화 분석 상세: `references/parallelism.md` 참조.
-> Phase 2 실행 시 각 단계의 병렬화 가능 여부를 반드시 분석할 것.
-
 ---
 
 ### Phase 3: 서브에이전트 설계
 
-> 에이전트 설계 규칙 및 템플릿: `references/agents.md` 참조.
-> Phase 3 실행 전 반드시 읽을 것.
-
-**핵심 규칙 (요약):**
+**핵심 규칙:**
 - 1 에이전트 = 1 단계. 예외 없음
 - 에이전트 간 통신 = JSON manifest 파일
 - 공통 인터페이스: `run(config) → Report`, `validate(path) → ValidationReport`
@@ -175,10 +164,7 @@ Orchestrator
 
 ### Phase 4: Instruction 세트 생성
 
-> Instruction 생성 규칙 및 템플릿: `references/instructions.md` 참조.
-> Phase 4 실행 전 반드시 읽을 것.
-
-**핵심 규칙 (요약):**
+**핵심 규칙:**
 - 각 instruction은 독립적으로 완료·테스트·merge 가능
 - 순서는 의존성 그래프로 결정
 - 기본 제약: "기존 코드 동작을 바꾸지 말 것"

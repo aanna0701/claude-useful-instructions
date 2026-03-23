@@ -35,6 +35,16 @@ RFC/ADR (why) → Contract (guarantees) → Brief (scope) → Checklist (verify)
 
 **Principle:** Claude designs and reviews. Codex follows the contract — never makes design decisions.
 
+### Status Lifecycles
+
+| Subtype | Lifecycle |
+|---------|-----------|
+| Brief | open → in-progress → blocked → done |
+| Contract | draft → signed → superseded |
+| Checklist | open → in-progress → done |
+| Status | (always current — updated on every transition) |
+| Review | draft → published |
+
 ### Codex Prompt Template
 
 ```
@@ -101,8 +111,6 @@ tags: []
 - [Prerequisite work items or external dependencies]
 ```
 
-**Status lifecycle:** `open → in-progress → blocked → done`
-
 ---
 
 ## Subtype B: Contract
@@ -150,8 +158,6 @@ Conditions that **must never be violated**:
 | [Case] | [Behavior] |
 ```
 
-**Status lifecycle:** `draft → signed → superseded`
-
 ---
 
 ## Subtype C: Checklist
@@ -182,8 +188,6 @@ updated: YYYY-MM-DD
 |------|------|------|----------|
 | [Role] | | | [ ] |
 ```
-
-**Status lifecycle:** `open → in-progress → done`
 
 ---
 
@@ -220,8 +224,6 @@ updated: YYYY-MM-DD HH:MM
 ## Changed Files
 - [path/to/file] — [what changed]
 ```
-
-**Update rule:** Agent updates on every state transition. Always reflects current state.
 
 ---
 
@@ -264,8 +266,6 @@ created: YYYY-MM-DD
 - [ ] [Follow-up]
 ```
 
-**Status lifecycle:** `draft → published`
-
 ---
 
 ## Naming Conventions
@@ -293,34 +293,11 @@ For standalone use outside work item bundles (backward compatible):
 
 ## Linking Rules
 
-| Document | MUST link to |
-|----------|-------------|
-| Brief | Source RFC/ADR or Contract |
-| Contract | Brief (parent) |
-| Checklist | Brief (parent) |
-| Review | Brief + Checklist |
+| Document | MUST link to | Related Diataxis Doc |
+|----------|-------------|---------------------|
+| Brief | Source RFC/ADR or Contract | Explanation (design rationale), Reference (API spec) |
+| Contract | Brief (parent) | Reference (detailed spec) |
+| Checklist | Brief (parent) | How-to (operational procedures) |
+| Review | Brief + Checklist | Explanation (reflect lessons learned) |
 
 Reverse linking recommended: list derived Work Items at the bottom of RFC/ADR documents.
-
----
-
-## Cross-Axis Linking
-
-| Work Item Doc | Related Diataxis Doc |
-|--------------|---------------------|
-| Brief | Explanation (design rationale), Reference (API spec) |
-| Contract | Reference (detailed spec) |
-| Checklist | How-to (operational procedures) |
-| Review | Explanation (reflect lessons learned) |
-
----
-
-## Anti-Patterns
-
-1. **Sourceless Brief** — No RFC/ADR link: no traceability for "why"
-2. **LGTM Review** — No substance: no lesson accumulation
-3. **Vague Contract** — No concrete boundaries: implementer makes design decisions
-4. **Orphan Checklist** — Checklist remains after work item deletion: clean up periodically
-5. **Design in Brief** — Alternative comparisons in Brief: separate into Explanation
-6. **Stale Status** — Status not updated: other agents make wrong assumptions
-7. **Scope Creep** — Implementer goes beyond contract: enforce via review

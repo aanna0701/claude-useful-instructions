@@ -16,10 +16,7 @@ tools:
 
 ## Required Reading
 
-Read before writing:
-1. `skills/diataxis-doc-system/references/execution-rules.md` — Contract template, status lifecycle
-2. `skills/diataxis-doc-system/references/common-rules.md` — Metadata, SSOT
-3. `skills/diataxis-doc-system/references/writing-style.md` — Style and readability
+Read `skills/diataxis-doc-system/references/` — `execution-rules.md`, `common-rules.md`, `writing-style.md`.
 
 ## Modes
 

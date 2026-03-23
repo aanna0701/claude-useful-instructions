@@ -11,10 +11,7 @@ Writes Diataxis Reference documents. Handles three subtypes: API, Config, CLI.
 
 ## Required Reading
 
-Read before writing:
-1. `skills/diataxis-doc-system/references/reference-rules.md` — Reference rules
-2. `skills/diataxis-doc-system/references/common-rules.md` — Docs as Code common rules
-3. `skills/diataxis-doc-system/references/writing-style.md` — Readability and style rules
+Read `skills/diataxis-doc-system/references/` — `reference-rules.md`, `common-rules.md`, `writing-style.md`.
 
 ## Input
 
@@ -66,14 +63,4 @@ Notify user of possible extraction gaps.
 
 ## YAML Frontmatter
 
-```yaml
----
-title: "[System] [API/Config/CLI] Reference"
-type: reference
-status: draft
-author: "[Author]"
-created: [Date]
-audience: "[Target Audience]"
-version: "[Target Version]"
----
-```
+Per `common-rules.md` §4. Type: `reference`. Add `version` field.

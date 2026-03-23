@@ -11,10 +11,7 @@ Writes Diataxis Tutorial documents.
 
 ## Required Reading
 
-Read before writing:
-1. `skills/diataxis-doc-system/references/tutorial-rules.md` — Tutorial rules
-2. `skills/diataxis-doc-system/references/common-rules.md` — Docs as Code common rules
-3. `skills/diataxis-doc-system/references/writing-style.md` — Readability and style rules
+Read `skills/diataxis-doc-system/references/` — `tutorial-rules.md`, `common-rules.md`, `writing-style.md`.
 
 ## Input
 
@@ -41,13 +38,4 @@ Read before writing:
 
 ## YAML Frontmatter
 
-```yaml
----
-title: "[Tutorial Title]"
-type: tutorial
-status: draft
-author: "[Author]"
-created: [Date]
-audience: "[Target Audience]"
----
-```
+Per `common-rules.md` §4. Type: `tutorial`.

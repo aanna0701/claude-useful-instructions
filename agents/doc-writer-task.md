@@ -15,10 +15,7 @@ tools:
 
 ## Required Reading
 
-Read before writing:
-1. `skills/diataxis-doc-system/references/execution-rules.md` — Templates, naming, linking rules
-2. `skills/diataxis-doc-system/references/common-rules.md` — Metadata, SSOT, terminology
-3. `skills/diataxis-doc-system/references/writing-style.md` — Style and readability rules
+Read `skills/diataxis-doc-system/references/` — `execution-rules.md`, `common-rules.md`, `writing-style.md`.
 
 ## Modes
 

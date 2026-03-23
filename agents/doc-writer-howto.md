@@ -11,10 +11,7 @@ Writes Diataxis How-to Guide documents.
 
 ## Required Reading
 
-Read before writing:
-1. `skills/diataxis-doc-system/references/howto-rules.md` — How-to rules
-2. `skills/diataxis-doc-system/references/common-rules.md` — Docs as Code common rules
-3. `skills/diataxis-doc-system/references/writing-style.md` — Readability and style rules
+Read `skills/diataxis-doc-system/references/` — `howto-rules.md`, `common-rules.md`, `writing-style.md`.
 
 ## Input
 
@@ -40,13 +37,4 @@ Read before writing:
 
 ## YAML Frontmatter
 
-```yaml
----
-title: "How to [verb]..."
-type: howto
-status: draft
-author: "[Author]"
-created: [Date]
-audience: "[Target Audience]"
----
-```
+Per `common-rules.md` §4. Type: `howto`. Title: "How to [verb]..."
