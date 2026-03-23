@@ -58,13 +58,18 @@ cui-gemini-setup /path/to/my-project      # optional
 ```bash
 # 1. Get a key at https://aistudio.google.com/apikey
 
-# 2. Add to shell profile
-echo 'export GEMINI_API_KEY="your-key-here"' >> ~/.bashrc  # or ~/.zshrc
-source ~/.bashrc
+# 2. Add to ~/.profile (NOT ~/.bashrc — see note below)
+echo 'export GEMINI_API_KEY="your-key-here"' >> ~/.profile
+source ~/.profile
 
 # 3. (Optional) Override default model (gemini-2.5-pro)
-export GEMINI_MODEL="gemini-2.5-flash"  # cheaper, faster
+echo 'export GEMINI_MODEL="gemini-2.5-flash"' >> ~/.profile  # cheaper, faster
 ```
+
+> **Why `~/.profile` instead of `~/.bashrc`?**
+> Most `.bashrc` files have a non-interactive shell guard (`case $- in *i*) ;; *) return;; esac`) near the top.
+> Claude Code launches MCP servers as non-interactive processes, so any exports below that guard are never loaded.
+> `~/.profile` is sourced for all login shells (including non-interactive), ensuring MCP servers can read the key.
 
 Without this, the MCP server will fail to start with `EnvironmentError`.
 
