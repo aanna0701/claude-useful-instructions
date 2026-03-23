@@ -1,11 +1,12 @@
 """Gemini Review MCP Server.
 
-Provides 5 tools for Claude-Codex-Gemini collaboration:
+Provides 6 tools for Claude-Codex-Gemini collaboration:
 1. gemini_summarize_design_pack — Compress design docs into implementation-ready summary
 2. gemini_derive_contract — Generate contract.md draft from design summary
 3. gemini_audit_implementation — Neutral audit of code against contract
 4. gemini_compare_diffs — Cross-compare multiple branch diffs
 5. gemini_draft_release_notes — Generate release notes from work items
+6. gemini_polish_career_doc — Polish career documents for natural, authentic tone
 
 Usage:
     GEMINI_API_KEY=... uv run python server.py
@@ -211,6 +212,37 @@ async def gemini_draft_release_notes(
         DRAFT_RELEASE_NOTES,
         f"Generate release notes from:\n\n{''.join(parts)}{migration_note}",
     )
+
+
+@server.tool()
+async def gemini_polish_career_doc(
+    document: str,
+    doc_type: str,
+    char_limit: int = 0,
+) -> str:
+    """Polish a refined career document for natural, authentic tone.
+    Takes a pre-refined draft and smooths it to read like a genuine career
+    document — not AI-generated text. Preserves all facts and structure.
+
+    Args:
+        document: The refined document text to polish.
+        doc_type: One of: cover-letter, career-desc, portfolio, cover-letter-en, hr-essay.
+        char_limit: Character limit including spaces (0 = no limit).
+    """
+    from prompts import POLISH_CAREER_DOC
+
+    limit_note = (
+        f"\n\nCharacter limit: {char_limit}자 (spaces included). Do NOT exceed this."
+        if char_limit > 0
+        else ""
+    )
+
+    user_content = (
+        f"## Document Type\n{doc_type}\n\n"
+        f"## Document to Polish\n{document}"
+        f"{limit_note}"
+    )
+    return await _call_gemini(POLISH_CAREER_DOC, user_content)
 
 
 # ── Main ──────────────────────────────────────────────────────────────────

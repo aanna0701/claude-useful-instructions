@@ -17,13 +17,16 @@ Supports multiple document types with shared refinement process and type-specifi
 
 ```
 User Input (doc type + JD/context + constraints)
-  → [Optional] Context Update (new CV/info → NLM merge)
-  → NLM Draft Request (type-specific prompt)
-  → 6-Step AI Refinement (career-docs-writer agent)
+  → [Optional] Context Update (new CV/info → NLM merge → Gemini Polish)
+  → NLM Draft Request (type-specific prompt) → Gemini Polish
+  → 6-Step AI Refinement (career-docs-writer agent) → Gemini Polish
   → Reviewer Evaluation (career-docs-reviewer agent)
-  → Iteration Loop (min 3, max 5)
+  → Iteration Loop (min 3, max 5, each: Writer → Gemini Polish → Reviewer)
   → Final Output
 ```
+
+Every writing output passes through `gemini_polish_career_doc` for natural tone smoothing.
+Fallback: if Gemini MCP is unavailable, skip all polish steps and proceed with unpolished output.
 
 ---
 
@@ -63,8 +66,9 @@ If NLM MCP call fails:
 When new material is provided:
 1. Query NLM to cross-reference new info against existing context
 2. Generate an updated context/career doc incorporating the delta
-3. Upload the updated version to NLM (overwrite old source)
-4. Proceed with draft request using the refreshed context
+3. **Gemini Polish**: `gemini_polish_career_doc(updated_doc, doc_type, 0)` — smooth the merged context doc for natural tone before uploading
+4. Upload the polished version to NLM (overwrite old source)
+5. Proceed with draft request using the refreshed context
 
 When no new material is provided: skip — use existing NLM sources as-is.
 
@@ -92,34 +96,41 @@ Common pattern:
 nlm query "자소서" "{type-specific prompt with user inputs}"
 ```
 
-**If user provided their own draft**: skip this step, use the user draft as input to Step 2.
+After receiving the NLM draft, immediately pass it through Gemini for initial polish:
+
+**Call**: `gemini_polish_career_doc(nlm_draft, doc_type, char_limit)`
+
+This smooths NLM's raw output into natural prose before the Writer agent begins structural refinement. The Writer starts from a better baseline, reducing iteration count.
+
+**If user provided their own draft**: skip NLM query but still apply Gemini Polish to the user draft before passing to Step 2.
 
 ---
 
 ## Step 2: 6-Step AI Refinement → delegate to `career-docs-writer` agent
 
-Pass the NLM draft (or user draft) to the career-docs-writer agent along with:
-- Document type + type-specific structure rules
-- JD, item, emphasis points, character limit
-- NLM context (agent queries as needed)
+Delegate to `career-docs-writer` agent with: document type, type-specific structure rules, JD, item/topic, emphasis points, character limit, and NLM context.
 
-The writer agent applies the 6-step refinement checklist:
-1. **비문 체크** — Sentence-level grammar
-2. **문장 간 흐름** — Inter-sentence flow
-3. **문단 구조** — Paragraph-level logic (type-specific rules apply)
-4. **용어 일반화** — Terminology simplification
-5. **톤 조정** — Readability & tone
-6. **글자수 체크** — Character count compliance
-
-> Full checklist: `references/refinement-checklist.md`
+The writer applies the 6-step refinement checklist sequentially (grammar → flow → structure → terminology → tone → character count). See `references/refinement-checklist.md` for full details.
 
 ---
 
-## Step 3: Reviewer Evaluation → delegate to `career-docs-reviewer` agent
+## Step 3: Gemini Polish (via MCP)
+
+After the writer agent's 6-step refinement, pass the result through Gemini for natural tone polishing.
+
+**Call**: `gemini_polish_career_doc(document, doc_type, char_limit)`
+
+Smooths tone for natural rhythm, authentic voice, and organic flow. Preserves all facts, structure, and character count. See `POLISH_CAREER_DOC` prompt in `mcp/gemini-review/prompts.py` for full polishing principles.
+
+**Fallback**: If Gemini MCP is unavailable, skip and proceed with unpolished output.
 
 ---
 
-## Step 4: Iteration Loop
+## Step 4: Reviewer Evaluation → delegate to `career-docs-reviewer` agent
+
+---
+
+## Step 5: Iteration Loop
 
 **Always run at least 3 iterations. Max 5.**
 
@@ -127,9 +138,10 @@ The writer agent applies the 6-step refinement checklist:
 iteration = 0, best_score = 0, no_improve_streak = 0
 
 WHILE iteration < 5:
-    iteration 0: NLM draft → Refiner (Step 2)
+    iteration 0: NLM draft → Refiner (Step 2) → Gemini Polish (Step 3)
     iteration 1+: restart from best_draft if score drops
 
+    Gemini polish (Step 3)
     Reviewer evaluation (6 dimensions, 0-100 continuous)
     update best or no_improve_streak++
     iteration++
@@ -141,7 +153,7 @@ WHILE iteration < 5:
 
 ---
 
-## Step 5: Final Output
+## Step 6: Final Output
 
 - Final document (best version)
 - `글자수: [N]자 / [limit]자 (공백 포함)` (if character limit applies)

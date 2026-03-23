@@ -198,6 +198,7 @@ project/
 | `gemini_audit_implementation` | Before /work-review | Neutral third-party compliance audit |
 | `gemini_compare_diffs` | Before integration | Cross-compare parallel branch diffs |
 | `gemini_draft_release_notes` | After merge | Generate release notes with migration steps |
+| `gemini_polish_career_doc` | After career-docs-writer refinement | Polish career docs for natural, authentic tone |
 
 ### Workflow Example
 
