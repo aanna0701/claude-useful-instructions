@@ -174,7 +174,25 @@ fi
 
 # ── Default: install all if no bundles specified ────────────────────────────
 if [[ ${#SELECTED_BUNDLES[@]} -eq 0 ]]; then
-  SELECTED_BUNDLES=("${BUNDLE_NAMES[@]}")
+  if $UNINSTALL; then
+    echo "WARNING: No bundle specified — this will uninstall ALL bundles."
+    if $FORCE_YES; then
+      SELECTED_BUNDLES=("${BUNDLE_NAMES[@]}")
+    elif [ -t 0 ]; then
+      read -rp "Continue? [y/N] " confirm
+      if [[ "$confirm" =~ ^[Yy]$ ]]; then
+        SELECTED_BUNDLES=("${BUNDLE_NAMES[@]}")
+      else
+        echo "Aborted."
+        exit 0
+      fi
+    else
+      echo "Use -y to confirm, or specify bundles (e.g. --uninstall --vla)."
+      exit 1
+    fi
+  else
+    SELECTED_BUNDLES=("${BUNDLE_NAMES[@]}")
+  fi
 fi
 
 # ── Apply exclusions ───────────────────────────────────────────────────────
