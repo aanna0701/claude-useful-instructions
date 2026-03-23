@@ -22,7 +22,7 @@ from mcp.server.fastmcp import FastMCP
 
 # ── Configuration ─────────────────────────────────────────────────────────
 
-MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-pro")
+MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
 API_KEY = os.environ.get("GEMINI_API_KEY", "")
 
 if not API_KEY:
@@ -121,7 +121,7 @@ async def _call_gemini(system_prompt: str, user_content: str) -> str:
             f"[Gemini Quota Exhausted] {error_msg}\n\n"
             "Suggestions:\n"
             "- Wait a few minutes and retry\n"
-            "- Switch to a cheaper model: export GEMINI_MODEL=gemini-2.5-flash\n"
+            "- If using pro, switch to flash: export GEMINI_MODEL=gemini-2.5-flash\n"
             "- Check quota at https://aistudio.google.com/apikey\n"
             "- Skip Gemini: Claude can proceed without Gemini for all workflow steps"
         )

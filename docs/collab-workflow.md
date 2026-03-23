@@ -83,9 +83,9 @@ bash gemini-setup.sh /path/to/project
 
 The script automatically registers the MCP server and permissions in `.claude/settings.local.json`. If `gemini-review` is already registered, the step is skipped.
 
-Override the model with `GEMINI_MODEL` (default: `gemini-2.5-pro`):
+Override the model with `GEMINI_MODEL` (default: `gemini-2.5-flash`):
 ```bash
-export GEMINI_MODEL='gemini-2.5-flash'  # cheaper, faster
+export GEMINI_MODEL='gemini-2.5-pro'  # deeper reasoning
 ```
 
 ### Step 3: Set up worktree links (if using git worktrees)
