@@ -7,9 +7,28 @@ Portable Claude Code configuration. One `./install.sh` to apply everywhere.
 ```bash
 git clone https://github.com/aanna0701/claude-useful-instructions.git
 cd claude-useful-instructions
-./install.sh                        # Global: ~/.claude/
+./install.sh                        # Global: ~/.claude/ (all bundles)
 ./install.sh /path/to/project       # Project-specific: /path/to/project/.claude/
 ```
+
+### Selective Installation
+
+Install only the bundles you need:
+
+```bash
+./install.sh --list                                 # Show available bundles
+./install.sh --core --docs                          # Install specific bundles
+./install.sh --exclude career --exclude vla         # Install all except specific bundles
+./install.sh --interactive                          # Interactive menu
+```
+
+| Bundle | Contents |
+|--------|----------|
+| `core` | coding-style, smart-git-commit-push, optimize-tokens |
+| `docs` | diataxis-doc-system, diagram-architect, doc/diagram agents, write-doc, init-docs, sync-docs |
+| `data-pipeline` | data-pipeline-architect skill |
+| `career` | career-docs skill, career agents |
+| `vla` | vla-code-standards, vla agents (6 domains) |
 
 ---
 
@@ -20,17 +39,17 @@ claude-useful-instructions/
 ├── skills/                          # Auto-triggered by conversation context
 │   ├── diataxis-doc-system/         # Diátaxis documentation system
 │   ├── diagram-architect/           # C4 Mermaid architecture diagrams
-│   └── data-pipeline-architect/     # Data pipeline design + subagent generation
+│   ├── data-pipeline-architect/     # Data pipeline design + subagent generation
+│   └── career-docs/                 # Cover letter & career documents (Korean)
 ├── agents/                          # Subagents delegated by Claude
-│   ├── doc-writer-*.md              # Diátaxis doc writers (4 types)
+│   ├── doc-writer-*.md              # Diátaxis doc writers (4 types + delivery agents)
 │   ├── diagram-writer.md            # Mermaid diagram generation
-│   ├── cover-letter-*.md            # Cover letter writer & reviewer
+│   ├── career-docs-*.md             # Career document writer & reviewer
 │   └── vla-*.md                     # VLA robotics project (6 domains)
 ├── commands/                        # User-invocable slash commands
 │   ├── write-doc.md                 # /write-doc
 │   ├── init-docs.md                 # /init-docs
 │   ├── sync-docs.md                 # /sync-docs
-│   ├── cover-letter.md              # /cover-letter
 │   ├── optimize-tokens.md           # /optimize-tokens
 │   └── smart-git-commit-push.md     # /smart-git-commit-push
 ├── rules/                           # Shared code standards

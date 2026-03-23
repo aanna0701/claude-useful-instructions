@@ -1,76 +1,247 @@
 #!/usr/bin/env bash
 # install.sh — Copy Claude settings (commands, agents, rules, skills) into <TARGET>/.claude/
-# Usage: ./install.sh [TARGET_DIR]
+# Usage: ./install.sh [OPTIONS] [TARGET_DIR]
 #   TARGET_DIR: project root to install into (default: ~, i.e. ~/.claude)
+#
+# Options:
+#   --all           Install all bundles (default if no bundle flags given)
+#   --core          Core utilities (coding-style, smart-git-commit-push, optimize-tokens)
+#   --docs          Documentation & diagrams (diataxis, write-doc, init-docs, sync-docs, doc/diagram agents)
+#   --data-pipeline Data pipeline architect skill
+#   --career        Career document tools (career-docs skill, career agents)
+#   --vla           VLA robotics project (vla-code-standards, vla agents)
+#   --exclude NAME  Exclude a bundle (repeatable, e.g. --exclude vla --exclude career)
+#   --interactive   Interactive mode: choose bundles from a menu
+#   --list          List available bundles and exit
+#
+# Examples:
+#   ./install.sh                                  # Install all to ~/.claude
+#   ./install.sh --core --docs                    # Install core + docs only
+#   ./install.sh --exclude career --exclude vla   # Install all except career and vla
+#   ./install.sh --interactive ~/proj             # Interactive selection
 
 set -e
 
 REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-# Accept optional project root as first argument (default: $HOME)
-if [ -n "$1" ]; then
-  PROJECT_ROOT="$(cd "$1" 2>/dev/null && pwd || echo "$1")"
-else
+# ── Bundle definitions ──────────────────────────────────────────────────────
+# Each bundle lists its files relative to REPO_DIR.
+# Format: "type:relative_path" where type is rules|commands|agents|skills
+
+BUNDLE_CORE=(
+  "rules:coding-style.md"
+  "commands:smart-git-commit-push.md"
+  "commands:optimize-tokens.md"
+)
+
+BUNDLE_DOCS=(
+  "skills:diataxis-doc-system"
+  "commands:write-doc.md"
+  "commands:init-docs.md"
+  "commands:sync-docs.md"
+  "agents:doc-writer-tutorial.md"
+  "agents:doc-writer-howto.md"
+  "agents:doc-writer-explain.md"
+  "agents:doc-writer-reference.md"
+  "agents:doc-writer-task.md"
+  "agents:doc-writer-contract.md"
+  "agents:doc-writer-checklist.md"
+  "agents:doc-writer-review.md"
+  "agents:doc-reviewer.md"
+  "skills:diagram-architect"
+  "agents:diagram-writer.md"
+)
+
+BUNDLE_DATA_PIPELINE=(
+  "skills:data-pipeline-architect"
+)
+
+BUNDLE_CAREER=(
+  "skills:career-docs"
+  "agents:career-docs-writer.md"
+  "agents:career-docs-reviewer.md"
+)
+
+BUNDLE_VLA=(
+  "rules:vla-code-standards.md"
+  "agents:vla-capture.md"
+  "agents:vla-data.md"
+  "agents:vla-eval.md"
+  "agents:vla-infra.md"
+  "agents:vla-model.md"
+  "agents:vla-train.md"
+)
+
+BUNDLE_NAMES=("core" "docs" "data-pipeline" "career" "vla")
+BUNDLE_DESCRIPTIONS=(
+  "Core utilities (coding-style, smart-git-commit-push, optimize-tokens)"
+  "Documentation & diagrams (diataxis framework, doc agents, diagram-architect)"
+  "Data pipeline architect"
+  "Career document tools (cover letters, Korean)"
+  "VLA robotics project (vla agents, code standards)"
+)
+
+# ── Parse arguments ─────────────────────────────────────────────────────────
+SELECTED_BUNDLES=()
+EXCLUDED_BUNDLES=()
+TARGET_DIR=""
+INTERACTIVE=false
+LIST_ONLY=false
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --all)           SELECTED_BUNDLES=("${BUNDLE_NAMES[@]}"); shift ;;
+    --core)          SELECTED_BUNDLES+=("core"); shift ;;
+    --docs)          SELECTED_BUNDLES+=("docs"); shift ;;
+    --data-pipeline) SELECTED_BUNDLES+=("data-pipeline"); shift ;;
+    --career)        SELECTED_BUNDLES+=("career"); shift ;;
+    --vla)           SELECTED_BUNDLES+=("vla"); shift ;;
+    --exclude)       shift; EXCLUDED_BUNDLES+=("$1"); shift ;;
+    --interactive)   INTERACTIVE=true; shift ;;
+    --list)          LIST_ONLY=true; shift ;;
+    -*)              echo "Unknown option: $1" >&2; exit 1 ;;
+    *)               TARGET_DIR="$1"; shift ;;
+  esac
+done
+
+# ── List mode ───────────────────────────────────────────────────────────────
+if $LIST_ONLY; then
+  echo "Available bundles:"
+  echo ""
+  for i in "${!BUNDLE_NAMES[@]}"; do
+    printf "  %-16s %s\n" "${BUNDLE_NAMES[$i]}" "${BUNDLE_DESCRIPTIONS[$i]}"
+  done
+  echo ""
+  echo "Usage: ./install.sh --core --docs [TARGET_DIR]"
+  exit 0
+fi
+
+# ── Interactive mode ────────────────────────────────────────────────────────
+if $INTERACTIVE; then
+  echo "Select bundles to install (space-separated numbers, or 'a' for all):"
+  echo ""
+  for i in "${!BUNDLE_NAMES[@]}"; do
+    printf "  [%d] %-16s %s\n" "$((i+1))" "${BUNDLE_NAMES[$i]}" "${BUNDLE_DESCRIPTIONS[$i]}"
+  done
+  echo ""
+  read -rp "Choice: " choice
+
+  if [[ "$choice" == "a" || "$choice" == "A" ]]; then
+    SELECTED_BUNDLES=("${BUNDLE_NAMES[@]}")
+  else
+    for num in $choice; do
+      idx=$((num - 1))
+      if [[ $idx -ge 0 && $idx -lt ${#BUNDLE_NAMES[@]} ]]; then
+        SELECTED_BUNDLES+=("${BUNDLE_NAMES[$idx]}")
+      else
+        echo "Invalid selection: $num" >&2
+      fi
+    done
+  fi
+
+  if [[ ${#SELECTED_BUNDLES[@]} -eq 0 ]]; then
+    echo "No bundles selected. Exiting."
+    exit 0
+  fi
+fi
+
+# ── Default: install all if no bundles specified ────────────────────────────
+if [[ ${#SELECTED_BUNDLES[@]} -eq 0 ]]; then
+  SELECTED_BUNDLES=("${BUNDLE_NAMES[@]}")
+fi
+
+# ── Apply exclusions ───────────────────────────────────────────────────────
+if [[ ${#EXCLUDED_BUNDLES[@]} -gt 0 ]]; then
+  FILTERED=()
+  for bundle in "${SELECTED_BUNDLES[@]}"; do
+    skip=false
+    for ex in "${EXCLUDED_BUNDLES[@]}"; do
+      [[ "$bundle" == "$ex" ]] && skip=true
+    done
+    $skip || FILTERED+=("$bundle")
+  done
+  SELECTED_BUNDLES=("${FILTERED[@]}")
+fi
+
+# ── Resolve target directory ────────────────────────────────────────────────
+if [ -z "$TARGET_DIR" ]; then
   PROJECT_ROOT="$HOME"
+else
+  PROJECT_ROOT="$(cd "$TARGET_DIR" 2>/dev/null && pwd || echo "$TARGET_DIR")"
 fi
 
 CLAUDE_DIR="$PROJECT_ROOT/.claude"
 
+# ── Collect files to install ────────────────────────────────────────────────
+declare -a INSTALL_LIST=()
+
+get_bundle_items() {
+  local bundle_name="$1"
+  case "$bundle_name" in
+    core)          printf '%s\n' "${BUNDLE_CORE[@]}" ;;
+    docs)          printf '%s\n' "${BUNDLE_DOCS[@]}" ;;
+    data-pipeline) printf '%s\n' "${BUNDLE_DATA_PIPELINE[@]}" ;;
+    career)        printf '%s\n' "${BUNDLE_CAREER[@]}" ;;
+    vla)           printf '%s\n' "${BUNDLE_VLA[@]}" ;;
+  esac
+}
+
+for bundle in "${SELECTED_BUNDLES[@]}"; do
+  while IFS= read -r item; do
+    INSTALL_LIST+=("$item")
+  done < <(get_bundle_items "$bundle")
+done
+
+# ── Install functions ───────────────────────────────────────────────────────
+install_file() {
+  local src="$1" dst="$2"
+  mkdir -p "$(dirname "$dst")"
+  cp -v "$src" "$dst"
+  chmod 644 "$dst"
+}
+
+install_skill_dir() {
+  local skill_name="$1"
+  local src="$REPO_DIR/skills/$skill_name"
+  local dst="$CLAUDE_DIR/skills/$skill_name"
+
+  [ -d "$src" ] || return 0
+
+  mkdir -p "$dst"
+  find "$src" -type d | while read -r dir; do
+    relative="${dir#$src}"
+    [ -n "$relative" ] && mkdir -p "$dst/$relative"
+  done
+  find "$src" -type f | while read -r file; do
+    relative="${file#$src}"
+    install_file "$file" "$dst/$relative"
+  done
+}
+
+# ── Execute installation ───────────────────────────────────────────────────
 echo "Installing Claude settings from $REPO_DIR → $CLAUDE_DIR"
+echo "Bundles: ${SELECTED_BUNDLES[*]}"
 echo "────────────────────────────────────────────────────────"
 
-# commands/ (including subdirectories like references/)
-if [ -d "$REPO_DIR/commands" ]; then
-  find "$REPO_DIR/commands" -type d | while read -r dir; do
-    relative="${dir#$REPO_DIR/}"
-    mkdir -p "$CLAUDE_DIR/$relative"
-  done
-  find "$REPO_DIR/commands" -name "*.md" | while read -r file; do
-    relative="${file#$REPO_DIR/}"
-    cp -v "$file" "$CLAUDE_DIR/$relative"
-    chmod 644 "$CLAUDE_DIR/$relative"
-  done
-fi
+for entry in "${INSTALL_LIST[@]}"; do
+  type="${entry%%:*}"
+  path="${entry#*:}"
 
-# agents/
-if [ -d "$REPO_DIR/agents" ]; then
-  mkdir -p "$CLAUDE_DIR/agents"
-  cp -v "$REPO_DIR/agents/"*.md "$CLAUDE_DIR/agents/"
-  chmod 644 "$CLAUDE_DIR/agents/"*.md
-fi
-
-# rules/
-if [ -d "$REPO_DIR/rules" ]; then
-  find "$REPO_DIR/rules" -type d | while read -r dir; do
-    relative="${dir#$REPO_DIR/}"
-    mkdir -p "$CLAUDE_DIR/$relative"
-  done
-  find "$REPO_DIR/rules" -name "*.md" | while read -r file; do
-    relative="${file#$REPO_DIR/}"
-    cp -v "$file" "$CLAUDE_DIR/$relative"
-    chmod 644 "$CLAUDE_DIR/$relative"
-  done
-fi
-
-# skills/ (copy entire folder structure per skill)
-if [ -d "$REPO_DIR/skills" ]; then
-  for skill_dir in "$REPO_DIR"/skills/*/; do
-    [ -d "$skill_dir" ] || continue
-    skill_name="$(basename "$skill_dir")"
-    target="$CLAUDE_DIR/skills/$skill_name"
-    mkdir -p "$target"
-    # Preserve subdirectory structure (references/, scripts/, assets/)
-    find "$skill_dir" -type d | while read -r dir; do
-      relative="${dir#$skill_dir}"
-      [ -n "$relative" ] && mkdir -p "$target/$relative"
-    done
-    find "$skill_dir" -type f | while read -r file; do
-      relative="${file#$skill_dir}"
-      cp -v "$file" "$target/$relative"
-      chmod 644 "$target/$relative"
-    done
-  done
-fi
+  case "$type" in
+    rules)
+      install_file "$REPO_DIR/rules/$path" "$CLAUDE_DIR/rules/$path"
+      ;;
+    commands)
+      install_file "$REPO_DIR/commands/$path" "$CLAUDE_DIR/commands/$path"
+      ;;
+    agents)
+      install_file "$REPO_DIR/agents/$path" "$CLAUDE_DIR/agents/$path"
+      ;;
+    skills)
+      install_skill_dir "$path"
+      ;;
+  esac
+done
 
 echo "────────────────────────────────────────────────────────"
-echo "Done. Claude settings applied."
+echo "Done. Installed bundles: ${SELECTED_BUNDLES[*]}"
