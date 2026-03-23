@@ -66,40 +66,15 @@ Places `AGENTS.md` + `codex-implement.sh` at project root. Creates `work/items/`
 ### Step 3: Set up Gemini MCP (optional)
 
 ```bash
-# 1. Get a Gemini API key
-#    → https://aistudio.google.com/apikey
-
-# 2. Set environment variable
+# 1. Get a Gemini API key → https://aistudio.google.com/apikey
+# 2. Set environment variable (add to ~/.bashrc or ~/.zshrc)
 export GEMINI_API_KEY='your-api-key-here'
 
-# 3. Run setup (installs deps, prints config)
+# 3. Run setup (installs deps, auto-registers MCP config)
 bash gemini-setup.sh /path/to/project
 ```
 
-The setup script prints a JSON snippet to add to Claude Code settings. Add it to either:
-- **Project-level**: `/path/to/project/.claude/settings.local.json`
-- **Global**: `~/.claude/settings.json`
-
-```json
-{
-  "mcpServers": {
-    "gemini-review": {
-      "command": "uv",
-      "args": ["run", "--directory", "/path/to/project/mcp/gemini-review", "python", "server.py"],
-      "env": { "GEMINI_API_KEY": "${GEMINI_API_KEY}" }
-    }
-  },
-  "permissions": {
-    "allow": [
-      "mcp__gemini_review__gemini_summarize_design_pack",
-      "mcp__gemini_review__gemini_derive_contract",
-      "mcp__gemini_review__gemini_audit_implementation",
-      "mcp__gemini_review__gemini_compare_diffs",
-      "mcp__gemini_review__gemini_draft_release_notes"
-    ]
-  }
-}
-```
+The script automatically registers the MCP server and permissions in `.claude/settings.local.json`. If `gemini-review` is already registered, the step is skipped.
 
 Override the model with `GEMINI_MODEL` (default: `gemini-2.5-pro`):
 ```bash

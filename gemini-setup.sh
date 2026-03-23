@@ -8,7 +8,7 @@
 #   1. Installs Python dependencies via uv
 #   2. Validates GEMINI_API_KEY is set
 #   3. Copies MCP server to project
-#   4. Prints Claude Code MCP configuration to add to settings
+#   4. Auto-registers MCP config in .claude/settings.local.json (skips if already present)
 
 set -e
 
@@ -70,39 +70,67 @@ google-generativeai>=0.8") --python python3
 cd "$PROJECT_DIR"
 echo "Dependencies installed."
 
-# ── Print configuration ──────────────────────────────────────────────────
+# ── Register MCP config in settings.local.json ───────────────────────────
+
+SETTINGS_FILE="$PROJECT_DIR/.claude/settings.local.json"
+mkdir -p "$PROJECT_DIR/.claude"
+
+MCP_PERMISSIONS=(
+  "mcp__gemini_review__gemini_summarize_design_pack"
+  "mcp__gemini_review__gemini_derive_contract"
+  "mcp__gemini_review__gemini_audit_implementation"
+  "mcp__gemini_review__gemini_compare_diffs"
+  "mcp__gemini_review__gemini_draft_release_notes"
+)
+
+python3 << PYEOF
+import json, sys, os
+
+settings_file = "$SETTINGS_FILE"
+mcp_dst = "$MCP_DST"
+permissions = $(printf '%s\n' "${MCP_PERMISSIONS[@]}" | python3 -c "import sys,json; print(json.dumps([l.strip() for l in sys.stdin]))")
+
+# Load existing settings or start fresh
+settings = {}
+if os.path.isfile(settings_file):
+    with open(settings_file, "r") as f:
+        try:
+            settings = json.load(f)
+        except json.JSONDecodeError:
+            settings = {}
+
+# Check if gemini-review is already registered
+mcp_servers = settings.get("mcpServers", {})
+if "gemini-review" in mcp_servers:
+    print("MCP config: gemini-review already registered — skipped.")
+    sys.exit(0)
+
+# Add MCP server config
+mcp_servers["gemini-review"] = {
+    "command": "uv",
+    "args": ["run", "--directory", mcp_dst, "python", "server.py"],
+    "env": {"GEMINI_API_KEY": "\${GEMINI_API_KEY}"}
+}
+settings["mcpServers"] = mcp_servers
+
+# Add permissions (merge with existing, deduplicate)
+existing_allow = settings.get("permissions", {}).get("allow", [])
+merged_allow = list(dict.fromkeys(existing_allow + permissions))
+settings.setdefault("permissions", {})["allow"] = merged_allow
+
+# Write back
+with open(settings_file, "w") as f:
+    json.dump(settings, f, indent=2, ensure_ascii=False)
+    f.write("\n")
+
+print(f"MCP config: registered gemini-review → {settings_file}")
+PYEOF
+
+# ── Summary ───────────────────────────────────────────────────────────────
 
 echo ""
 echo "────────────────────────────────────────────────────────"
 echo "Gemini MCP setup complete."
-echo ""
-echo "Add this to your Claude Code settings:"
-echo ""
-echo "  For project-level: $PROJECT_DIR/.claude/settings.local.json"
-echo "  For global:        ~/.claude/settings.json"
-echo ""
-cat << EOF
-{
-  "mcpServers": {
-    "gemini-review": {
-      "command": "uv",
-      "args": ["run", "--directory", "$MCP_DST", "python", "server.py"],
-      "env": {
-        "GEMINI_API_KEY": "\${GEMINI_API_KEY}"
-      }
-    }
-  },
-  "permissions": {
-    "allow": [
-      "mcp__gemini_review__gemini_summarize_design_pack",
-      "mcp__gemini_review__gemini_derive_contract",
-      "mcp__gemini_review__gemini_audit_implementation",
-      "mcp__gemini_review__gemini_compare_diffs",
-      "mcp__gemini_review__gemini_draft_release_notes"
-    ]
-  }
-}
-EOF
 echo ""
 echo "Optional: Set GEMINI_MODEL to override default (gemini-2.5-pro)."
 echo "  export GEMINI_MODEL='gemini-2.5-flash'  # cheaper, faster"
