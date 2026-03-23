@@ -45,6 +45,6 @@
 - Codex: code + `status.md` only — **never docs**; records doc needs in "Doc Changes Needed"
 - Ambiguities recorded in `status.md`, never resolved by implementer
 - `review.md` required before merge
-- MERGE decision: ask user → `git merge` → `git branch -d` → apply doc changes
+- MERGE decision: ask user → `git merge` → `git branch -d` → apply doc changes → remove work item dir
 - Worktree setups: commit on worktree branch, no sub-branches
 - Human intervention: dispatch + review only

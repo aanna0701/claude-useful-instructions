@@ -88,21 +88,22 @@ Update `status.md`:
 ### Step 8: Execute Decision
 
 **MERGE**:
-1. Ask user: "FEAT-NNN: MERGE decision. Merge and delete branch? [Y/n]"
+1. Ask user: "FEAT-NNN: MERGE decision. Merge, delete branch, and clean up work item? [Y/n]"
 2. If confirmed (or default Y):
    ```bash
    git merge feat/FEAT-NNN-slug
    git branch -d feat/FEAT-NNN-slug
    ```
-3. Update `status.md`: status → `done`
-4. Handle doc changes from `status.md` "Doc Changes Needed" section
+3. Handle doc changes from `status.md` "Doc Changes Needed" section
+4. Remove work item directory: `rm -r work/items/FEAT-NNN-slug/`
+5. Update `work/dispatch.json`: remove the merged FEAT entry
 
 **REVISE**: List specific items Codex must fix. Output re-dispatch command:
 ```
 bash codex-run.sh FEAT-NNN
 ```
 
-**REJECT**: State reason. Update `status.md`: status → `rejected`.
+**REJECT**: State reason. Remove work item directory: `rm -r work/items/FEAT-NNN-slug/`.
 
 ### Step 9: Batch Summary (when reviewing multiple items)
 
@@ -111,8 +112,8 @@ When reviewing multiple items, also check for "Doc Changes Needed" in each `stat
 ```
 Review Complete
 ──────────────────────────────────────────────
-  FEAT-001  duckdb-schema-cleanup      MERGED ✓ (branch deleted)
-  FEAT-002  jwt-auth-middleware        MERGED ✓ (branch deleted)
+  FEAT-001  duckdb-schema-cleanup      MERGED ✓ (cleaned up)
+  FEAT-002  jwt-auth-middleware        MERGED ✓ (cleaned up)
   FEAT-003  refactor-logging           REVISE
 
 Doc changes applied:
