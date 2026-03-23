@@ -18,8 +18,7 @@ import subprocess
 from pathlib import Path
 
 from google import genai
-from mcp.server import Server
-from mcp.server.stdio import stdio_server
+from mcp.server.fastmcp import FastMCP
 
 # ── Configuration ─────────────────────────────────────────────────────────
 
@@ -34,7 +33,7 @@ if not API_KEY:
 
 client = genai.Client(api_key=API_KEY)
 
-server = Server("gemini-review")
+server = FastMCP("gemini-review")
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────
@@ -248,13 +247,8 @@ async def gemini_polish_career_doc(
 
 # ── Main ──────────────────────────────────────────────────────────────────
 
-async def _run():
-    async with stdio_server() as (read_stream, write_stream):
-        await server.run(read_stream, write_stream)
-
-
 def main():
-    asyncio.run(_run())
+    server.run(transport="stdio")
 
 
 if __name__ == "__main__":
