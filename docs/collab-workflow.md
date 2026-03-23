@@ -28,7 +28,9 @@ TOUCH 1 — Human: bash codex-run.sh FEAT-001 FEAT-002 FEAT-003
   → prints: /work-review FEAT-001 FEAT-002 FEAT-003
                                           ↓
 TOUCH 2 — Human: /work-review FEAT-001 FEAT-002 FEAT-003
-  → Claude reviews in parallel, handles doc changes, merges
+  → Claude reviews in parallel, handles doc changes
+  → MERGE: asks confirm → git merge + delete branch
+  → REVISE: outputs fix items + codex-run.sh command
 ```
 
 ## Architecture
@@ -47,11 +49,11 @@ graph LR
         D --> E["code +\nstatus.md"]
     end
 
-    subgraph "3 Claude — Review"
+    subgraph "3 Claude — Review + Merge"
         E --> G2["Gemini MCP\naudit"]
         G2 --> F["/work-review\n(parallel agents)"]
         E -.->|no Gemini| F
-        F --> H["review.md\nMERGE / REVISE / REJECT"]
+        F --> H["MERGE:\ngit merge + branch -d"]
         F --> DOC["doc changes\n(from status.md)"]
     end
 
@@ -245,7 +247,7 @@ Codex Command: bash codex-run.sh FEAT-001
   → Updates status.md → done (5/5 checklist items)
 ```
 
-### Phase 3 — Review (Gemini + Claude)
+### Phase 3 — Review + Merge (Gemini + Claude)
 
 ```
 [Claude] /work-review FEAT-001
@@ -254,27 +256,15 @@ Gemini: audit_implementation(contract, changed_files, checklist)
   → review-gemini.md: 5/5 Pass, no boundary violations
 
 Claude (informed by Gemini audit):
-  → review.md: MERGE (token expiry race condition noted, acceptable for v1)
+  → review.md: MERGE
+  → asks user to confirm → git merge + delete branch
+  → applies doc changes from status.md
 ```
 
-### Phase 4 — Merge or Revise
-
-```mermaid
-flowchart TD
-    R{"/work-review\nDecision"}
-    M["git merge\nfeat/FEAT-001-*"]
-    V["Generate revision\nprompt for Codex"]
-    X["Close work item\nwith reason"]
-    C["Codex fixes\nrevision items"]
-
-    R -->|MERGE| M
-    R -->|REVISE| V
-    R -->|REJECT| X
-    V --> C
-    C --> R
-```
-
-If **REVISE**, Claude outputs specific fix items and a new Codex prompt. Codex addresses them and the review cycle repeats.
+Decision flow:
+- **MERGE** → ask user → `git merge feat/FEAT-NNN-*` → `git branch -d feat/FEAT-NNN-*` → apply doc changes → done
+- **REVISE** → output fix items + `bash codex-run.sh FEAT-NNN` → Codex fixes → re-review
+- **REJECT** → close work item with reason
 
 ---
 

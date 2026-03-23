@@ -85,18 +85,24 @@ Update `status.md`:
 - Status: `review`
 - Agent: `Claude`
 
-### Step 8: Report Decision
+### Step 8: Execute Decision
 
-Print the decision with details:
+**MERGE**:
+1. Ask user: "FEAT-NNN: MERGE decision. Merge and delete branch? [Y/n]"
+2. If confirmed (or default Y):
+   ```bash
+   git merge feat/FEAT-NNN-slug
+   git branch -d feat/FEAT-NNN-slug
+   ```
+3. Update `status.md`: status → `done`
+4. Handle doc changes from `status.md` "Doc Changes Needed" section
 
-**MERGE**: "Ready to merge. Suggest: `git merge feat/FEAT-NNN-slug`"
-
-**REVISE**: List specific items Codex must fix. Output a re-dispatch command:
+**REVISE**: List specific items Codex must fix. Output re-dispatch command:
 ```
 bash codex-run.sh FEAT-NNN
 ```
 
-**REJECT**: State reason clearly. Suggest whether to rework or abandon the work item.
+**REJECT**: State reason. Update `status.md`: status → `rejected`.
 
 ### Step 9: Batch Summary (when reviewing multiple items)
 
@@ -105,13 +111,13 @@ When reviewing multiple items, also check for "Doc Changes Needed" in each `stat
 ```
 Review Complete
 ──────────────────────────────────────────────
-  FEAT-001  duckdb-schema-cleanup      MERGE
-  FEAT-002  jwt-auth-middleware        MERGE
+  FEAT-001  duckdb-schema-cleanup      MERGED ✓ (branch deleted)
+  FEAT-002  jwt-auth-middleware        MERGED ✓ (branch deleted)
   FEAT-003  refactor-logging           REVISE
 
-Doc changes needed (from Codex status.md):
-  FEAT-001: Update docs/schema.md with new column list
-  FEAT-002: Add API auth section to docs/api.md
+Doc changes applied:
+  FEAT-001: Updated docs/schema.md with new column list
+  FEAT-002: Added API auth section to docs/api.md
 
 Revisions needed:
   bash codex-run.sh FEAT-003

@@ -18,7 +18,7 @@
 |---------|--------|
 | `/work-plan [topic(s)]` | Create work item(s) with parallel agents + boundary check |
 | `/work-status [FEAT-NNN]` | Check progress |
-| `/work-review [FEAT-NNN ...]` | Batch review implementations |
+| `/work-review [FEAT-NNN ...]` | Review → merge + branch cleanup |
 
 ## Work Items
 
@@ -45,5 +45,6 @@
 - Codex: code + `status.md` only — **never docs**; records doc needs in "Doc Changes Needed"
 - Ambiguities recorded in `status.md`, never resolved by implementer
 - `review.md` required before merge
+- MERGE decision: ask user → `git merge` → `git branch -d` → apply doc changes
 - Worktree setups: commit on worktree branch, no sub-branches
 - Human intervention: dispatch + review only
