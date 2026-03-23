@@ -14,7 +14,7 @@ Reviews existing documentation against all quality dimensions.
 Before reviewing any document, Read:
 1. `skills/diataxis-doc-system/references/writing-style.md` — Readability and style rules
 2. `skills/diataxis-doc-system/references/common-rules.md` — Docs as Code common rules, dual-axis model
-3. `skills/diataxis-doc-system/references/execution-rules.md` — Execution artifact rules (if reviewing planning/ docs)
+3. `skills/diataxis-doc-system/references/execution-rules.md` — Work Item + execution artifact rules (if reviewing work/ docs)
 
 ## Input
 
@@ -71,19 +71,20 @@ Based on Google Developer Documentation and Microsoft Writing Style guides:
 - No hardcoded volatile values (versions, dates, URLs)
 - No "current"/"now" without absolute dates
 
-### 6. Execution Artifact Integrity (planning/ docs only)
+### 6. Execution Artifact Integrity (work/ docs only)
 
-Skip for Diataxis docs (`docs/`). Apply only to `planning/`:
+Skip for Diataxis docs (`docs/`). Apply only to `work/`:
 
-- **Source link**: Task links to valid RFC/ADR or Contract?
-- **Task ID format**: Follows `T-NNN` (3-digit, zero-padded)?
+- **Source link**: Brief/Task links to valid RFC/ADR or Contract?
+- **ID format**: `FEAT-NNN` (bundle) or `T-NNN` (standalone)?
 - **Acceptance criteria**: Verifiable (Yes/No)?
 - **Contract invariants**: At least 1 present?
-- **Violation handling**: Defined?
+- **Contract boundaries**: Allowed/forbidden zones specified? (bundle)
 - **Checklist items**: All Yes/No verifiable?
-- **Parent links**: Valid references to existing Task?
-- **Review substance**: Has deliverables, deviations, lessons learned?
-- **Status consistency**: Matches lifecycle rules?
+- **Parent links**: Valid references to existing Brief/Task?
+- **Review substance**: Contract compliance, lessons learned, merge decision?
+- **Status currency**: status.md reflects actual state? (bundle)
+- **Bundle completeness**: All 5 files present? (bundle)
 
 ## Output Format
 
