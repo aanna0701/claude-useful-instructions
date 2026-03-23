@@ -51,7 +51,7 @@ Headings are the skeleton of the document — they must work standalone.
   | Level | Icon style | Example |
   |-------|-----------|---------|
   | H1 | No icon (title stands alone) | `# Writing Style Guide` |
-  | H2 | Section marker `§` or numbered | `## §1 Structure and Visual Hierarchy` |
+  | H2 | Arrow marker `▸` or numbered | `## ▸ Structure and Visual Hierarchy` |
   | H3 | Emoji icon as topic anchor | `### 📌 Key Decisions` |
 
 - **Section separators:** Use `---` between H2 sections to create clear visual breaks. Do not use `---` between H3 subsections.
@@ -86,7 +86,7 @@ Emojis serve as **functional icons** — visual anchors that let readers identif
   - Bad: `Never commit secrets to source code. ⚠️`
 - **Density limit:** Max **2 icons per paragraph**. If everything has an icon, nothing stands out.
 - **Consistency:** Once you assign an icon to a meaning (e.g., ⚠️ = warning), use it the same way throughout the entire document. Never reuse the same icon for different meanings.
-- **Heading icons:** Follow the heading icon rules in the "Heading Hierarchy" section — H1 no icon, H2 `§` or number, H3 emoji anchor.
+- **Heading icons:** Follow the heading icon rules in the "Heading Hierarchy" section — H1 no icon, H2 `▸` or number, H3 emoji anchor.
 
 ### Color and Highlighting
 
