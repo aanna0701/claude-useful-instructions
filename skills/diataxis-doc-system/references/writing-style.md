@@ -46,6 +46,14 @@ Headings are the skeleton of the document — they must work standalone.
 
 - **Self-contained headings:** A reader scanning only H2/H3 headings should understand the document's structure. Avoid generic headings like "Overview", "Details", "Notes".
 - **Heading depth:** Use H2 for major sections, H3 for subsections. Avoid H4+ — restructure into separate H2 sections instead.
+- **Heading icons by level:** Use distinct icon styles per heading level for instant visual differentiation:
+
+  | Level | Icon style | Example |
+  |-------|-----------|---------|
+  | H1 | No icon (title stands alone) | `# Writing Style Guide` |
+  | H2 | Section marker `§` or numbered | `## §1 Structure and Visual Hierarchy` |
+  | H3 | Emoji icon as topic anchor | `### 📌 Key Decisions` |
+
 - **Section separators:** Use `---` between H2 sections to create clear visual breaks. Do not use `---` between H3 subsections.
 
 ### Bullet Points and Indentation
@@ -56,18 +64,37 @@ Headings are the skeleton of the document — they must work standalone.
   - Good: "Download file, Install program, Reboot system" (consistent verb-noun pattern)
 - **Indentation limit:** Maximum **3 levels** of nesting. If deeper nesting is needed, restructure as a separate section or use a table.
 
-### Color and Icon Usage
+### Emoji Protocol: Icons, Not Decoration
 
-Use color and icons as **functional signals**, not decoration:
+Emojis serve as **functional icons** — visual anchors that let readers identify content type at a glance.
 
-| Signal | Color | Icon | Usage |
-|--------|-------|------|-------|
-| Danger / Warning | Red | `⚠️` | Breaking changes, data loss risk, security |
-| Caution | Yellow/Orange | `⚡` | Performance impact, deprecation |
-| Tip / Note | Blue/Green | `💡` `✅` | Best practices, helpful hints, success |
+**Standard icon mapping** (use consistently across all documents):
 
-**Accessibility rule:** Never rely on color alone. Always pair with an icon or bold text
-so color-blind readers receive the same signal.
+| Signal | Icon | Usage |
+|--------|------|-------|
+| Danger / Warning | ⚠️ | Breaking changes, data loss risk, security |
+| Caution | ⚡ | Performance impact, deprecation |
+| Tip / Best practice | 💡 | Helpful hints, recommendations |
+| Success / Verified | ✅ | Confirmed steps, passing checks |
+| Key point / Anchor | 📌 | Section summaries, important callouts |
+| Prerequisite | 📋 | Required setup, dependencies |
+
+**Placement rules:**
+
+- **Position:** Place the icon **before** the text, not after. The icon acts as a visual anchor for scanning.
+  - Good: `⚠️ Never commit secrets to source code.`
+  - Bad: `Never commit secrets to source code. ⚠️`
+- **Density limit:** Max **2 icons per paragraph**. If everything has an icon, nothing stands out.
+- **Consistency:** Once you assign an icon to a meaning (e.g., ⚠️ = warning), use it the same way throughout the entire document. Never reuse the same icon for different meanings.
+- **Heading icons:** Follow the heading icon rules in the "Heading Hierarchy" section — H1 no icon, H2 `§` or number, H3 emoji anchor.
+
+### Color and Highlighting
+
+Use color as a **functional signal**, not decoration:
+
+- **Accessibility rule:** Never rely on color alone. Always pair with an icon or bold text so color-blind readers receive the same signal.
+- **Color limit:** Restrict highlight colors to **1-2** per document. More colors create visual noise.
+- **Blockquotes for emphasis:** Use `>` callout blocks for supplementary notes, tips, or warnings — not for regular content.
 
 ### Callout Blocks
 
