@@ -1,175 +1,153 @@
-# Explanation 작성 규칙
+# Explanation Writing Rules
 
-`doc-writer-explain` 에이전트가 문서 작성 전 반드시 Read하는 규칙.
+Rules that `doc-writer-explain` agent must Read before writing.
 
----
+## Identity
 
-## 정체성
-
-Explanation = **이해(Understanding)**를 위한 문서.
-Google/Amazon의 Design Doc(RFC), 아키텍처 결정 기록(ADR)이 여기에 해당.
-독자는 "이것이 왜 이렇게 되어 있는가"를 **이해**하려 한다.
-
----
+Explanation = document for **Understanding** (Design Docs/RFCs, ADRs).
+Reader wants to understand **"why is it built this way?"**
 
 ## DO / DON'T
 
 | DO | DON'T |
 |----|-------|
-| **맥락(Context)** 충분히 제공 | 결론만 던지기 |
-| **대안(Alternatives)** 비교 | 선택한 방법만 정당화 |
-| **트레이드오프** 명시 | "최선의 선택"이라고만 주장 |
-| **역사적 배경** 포함 | 현재 상태만 기술 |
-| 여러 **관점(View)**에서 설명 | 하나의 시각만 |
+| Provide sufficient **context** | State conclusions without reasoning |
+| Compare **alternatives** | Justify only the chosen approach |
+| State **trade-offs** explicitly | Claim "this is the best" without evidence |
+| Include **historical background** | Describe only the current state |
+| Explain from multiple **viewpoints** | Present only one perspective |
 
 ---
 
-## 서브타입 A: Design Doc (RFC) 템플릿
+## Subtype A: Design Doc (RFC) Template
 
 ```markdown
-# [RFC/Design Doc 제목]
+# [RFC/Design Doc Title]
 
-| 항목 | 내용 |
-|------|------|
-| 상태 | Draft / In Review / Approved / Superseded |
-| 작성자 | [이름] |
-| 리뷰어 | [이름들] |
-| 최종 수정 | [날짜] |
+| Field | Value |
+|-------|-------|
+| Status | Draft / In Review / Approved / Superseded |
+| Author | [Name] |
+| Reviewers | [Names] |
+| Last Updated | [Date] |
 
-## 1. 배경 및 목표 (Context & Goals)
+## 1. Context & Goals
 
-### 배경
-[이 설계가 필요한 이유. 현재 시스템의 한계.]
+### Background
+[Why this design is needed. Current system limitations.]
 
-### 목표
-- [달성하려는 것 1]
-- [달성하려는 것 2]
+### Goals
+- [Goal 1]
+- [Goal 2]
 
-### 비목표 (Non-Goals)
-- [이번에 하지 않을 것 1] — 이유: [...]
-- [이번에 하지 않을 것 2] — 이유: [...]
+### Non-Goals
+- [Out of scope item 1] — Reason: [...]
+- [Out of scope item 2] — Reason: [...]
 
-## 2. 상세 설계 (Proposed Design)
+## 2. Proposed Design
 
-### 2.1 시스템 개요
+### 2.1 System Overview
 \```mermaid
-[아키텍처 다이어그램]
+[Architecture diagram]
 \```
 
-### 2.2 데이터 모델
-[엔티티, 관계, 스키마]
+### 2.2 Data Model
+[Entities, relationships, schema]
 
-### 2.3 인터페이스
-[API 엔드포인트 요약 — 상세 스펙은 Reference로 분리]
+### 2.3 Interfaces
+[API endpoint summary — detailed specs go in Reference]
 
-### 2.4 핵심 흐름
+### 2.4 Key Flows
 \```mermaid
 sequenceDiagram
-    [주요 유스케이스 시퀀스]
+    [Primary use case sequence]
 \```
 
-## 3. 대안 고려 (Alternatives Considered)
+## 3. Alternatives Considered
 
-### 대안 A: [이름]
-- **장점**: [...]  **단점**: [...]  **기각 이유**: [...]
+### Alternative A: [Name]
+- **Pros**: [...]  **Cons**: [...]  **Rejection reason**: [...]
 
-### 비교 요약
-| 기준 | 제안 설계 | 대안 A | 대안 B |
-|------|----------|--------|--------|
-| 성능 | ... | ... | ... |
-| 복잡도 | ... | ... | ... |
-| 비용 | ... | ... | ... |
+### Comparison Summary
+| Criterion | Proposed | Alt A | Alt B |
+|-----------|----------|-------|-------|
+| Performance | ... | ... | ... |
+| Complexity | ... | ... | ... |
+| Cost | ... | ... | ... |
 
-## 4. 횡단 관심사 (Cross-cutting Concerns)
-보안 / 성능 & 확장성 / 운영 비용 / 모니터링 & 알림
+## 4. Cross-cutting Concerns
+Security / Performance & Scalability / Operational Cost / Monitoring & Alerting
 
-## 5. 마이그레이션 계획
-[기존 시스템에서 전환 방법]
+## 5. Migration Plan
+[Transition strategy from existing system]
 
-## 6. 미해결 질문 (Open Questions)
-- [ ] [아직 결정되지 않은 사항 1]
-- [ ] [아직 결정되지 않은 사항 2]
+## 6. Open Questions
+- [ ] [Unresolved item 1]
+- [ ] [Unresolved item 2]
 ```
 
----
-
-## 서브타입 B: ADR 템플릿
+## Subtype B: ADR Template
 
 ```markdown
-# ADR-[번호]: [결정 제목]
+# ADR-[Number]: [Decision Title]
 
-| 항목 | 내용 |
-|------|------|
-| 상태 | Proposed / Accepted / Deprecated / Superseded by ADR-[N] |
-| 날짜 | [YYYY-MM-DD] |
+| Field | Value |
+|-------|-------|
+| Status | Proposed / Accepted / Deprecated / Superseded by ADR-[N] |
+| Date | [YYYY-MM-DD] |
 
-## 맥락 (Context)
-[이 결정이 필요한 상황. 제약 조건.]
+## Context
+[Situation requiring this decision. Constraints.]
 
-## 결정 (Decision)
-[무엇을 하기로 했는가. 간결하게.]
+## Decision
+[What was decided. Keep it concise.]
 
-## 근거 (Rationale)
-[왜 이 결정을 내렸는가. 고려한 대안과 트레이드오프.]
+## Rationale
+[Why this decision was made. Alternatives considered and trade-offs.]
 
-## 결과 (Consequences)
-### 긍정적
-### 부정적
-### 위험 요소
+## Consequences
+### Positive
+### Negative
+### Risks
 ```
 
----
+## Core Rules
 
-## 핵심 규칙
+### 1. 4+1 View Model (ISO 42010)
 
-### 1. 4+1 View Model (ISO 42010) 적용
-복잡한 시스템은 관점(View)을 분리:
+| View | Shows | Tools |
+|------|-------|-------|
+| Logical | Functional structure (domain, modules, classes) | Class diagrams, ERD |
+| Process | Runtime flows (concurrency, communication) | Sequence, activity diagrams |
+| Development | Code structure (packages, layers, build) | Package diagrams, module deps |
+| Physical | Deployment (servers, network, cloud) | Deployment diagrams, infra topology |
+| +1 Scenarios | Key use cases spanning all 4 views | Use case diagrams |
 
-| View | 보여주는 것 | 도구 |
-|------|-----------|------|
-| Logical | 기능적 구조 (도메인, 모듈, 클래스 관계) | 클래스 다이어그램, ERD |
-| Process | 런타임 흐름 (동시성, 통신, 성능) | 시퀀스, 액티비티 다이어그램 |
-| Development | 코드 구조 (패키지, 레이어, 빌드) | 패키지 다이어그램, 모듈 의존성 |
-| Physical | 배포 구조 (서버, 네트워크, 클라우드) | 배포 다이어그램, 인프라 토폴로지 |
-| +1 Scenarios | 위 4개 관통 핵심 유스케이스 | 유스케이스 다이어그램 |
+Choose views based on audience and purpose. Delegate diagrams to diagram-architect skill.
 
-모든 View를 항상 다 작성할 필요 없음. 독자와 목적에 따라 선택.
+### 2. Always Include "Why"
+- "What" only = Reference. Explanation's core value is **Why** and **Trade-offs**.
 
-> 다이어그램 생성은 diagram-architect 스킬에게 위임할 수 있다.
+### 3. Alternatives Comparison Required
+- Include at least 1 rejected alternative. "Why not X" matters as much as "why Y."
 
-### 2. "왜"를 반드시 포함
-- 현재 상태(What)만 기술하면 Reference가 됨.
-- Explanation의 핵심 가치는 **Why**와 **Trade-off**.
-
-### 3. 대안 비교 필수
-- 최소 1개의 기각된 대안 포함.
-- "이것을 택하지 않은 이유"가 "이것을 택한 이유"만큼 중요.
-
-### 4. Non-Goals 섹션
-- "이번에 하지 않을 것"을 명시 → 범위 확산(Scope Creep) 방지.
-- "향후 고려 예정"과 "의도적 배제"를 구분.
+### 4. Non-Goals Section
+- State what is out of scope -> prevents scope creep.
+- Distinguish "deferred" from "intentionally excluded."
 
 ### 5. Open Questions
-- 미해결 질문을 숨기지 마라. 체크리스트로 관리.
-- 리뷰 과정에서 해결되면 체크 표시 + 결론 기록.
+- Never hide unresolved questions. Track as checklist; record conclusions when resolved.
 
-### 6. 다이어그램 (Diagrams as Code)
-- 모든 다이어그램은 Mermaid 또는 PlantUML.
-- 범례(Legend) 또는 캡션 필수.
+### 6. Diagrams as Code
+- Mermaid or PlantUML only. Legend/caption required.
 
----
+## Tone & Style
 
-## 톤 & 스타일
-
-- 논증적이되 중립적. 특정 기술 감정적 옹호 금지.
-- "~가 최고다"가 아니라 "~의 트레이드오프는 이러하다".
-- 추측과 사실 구분: "~로 예상 (벤치마크 미실시)" vs "벤치마크 결과 ~"
-
----
+- Analytical, neutral. No emotional advocacy. Distinguish speculation from fact.
 
 ## Anti-Patterns
 
-1. **"정당화 문서"**: 결정 후 소급 합리화, 대안이 형식적
-2. **"백과사전형"**: 관련 기술 나열하되 설계 결정과 연결 안 함
-3. **"구현 가이드 위장"**: 코드 레벨 절차 > 설계 철학 (→ How-to 분리)
-4. **"다이어그램만"**: 그림 풍부하나 왜 그런 구조인지 설명 없음
+1. **"Justification Doc"**: Post-hoc rationalization; perfunctory alternatives
+2. **"Encyclopedia"**: Lists technologies without connecting to design decisions
+3. **"How-to in Disguise"**: Code-level procedures > design philosophy (-> split)
+4. **"Diagrams Only"**: Rich visuals, no explanation of why

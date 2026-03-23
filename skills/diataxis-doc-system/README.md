@@ -1,57 +1,68 @@
 # diataxis-doc-system
 
-Diátaxis Framework 기반 기술 문서 작성 스킬. 문서 유형을 자동 판별하고 유형별 전문 에이전트에게 위임한다.
+Technical documentation skill based on Diátaxis Framework + Execution Artifacts. Automatically determines doc type across two axes (reader-oriented / execution-oriented) and delegates to specialized agents.
 
-## 트리거
+## Triggers
 
-- "문서 작성해줘", "기술 문서", "가이드 작성", "튜토리얼 작성"
-- "설계 문서", "Design Doc", "RFC 작성", "ADR 작성"
-- "API 문서", "레퍼런스 문서", "config reference", "CLI reference"
-- "how-to 가이드", "문서화", "documentation"
+**Diátaxis axis (informational docs):**
+- "write doc", "technical doc", "guide", "tutorial"
+- "design doc", "RFC", "ADR"
+- "API doc", "reference doc", "config reference", "CLI reference"
+- "how-to guide", "documentation"
 
-## 핵심 원칙
+**Delivery axis (execution docs):**
+- "task", "work order"
+- "contract", "interface agreement"
+- "checklist", "verification checklist"
+- "review", "assessment"
 
-1. **유형 분리** — Tutorial / How-to / Explanation / Reference를 한 문서에 섞지 않는다
-2. **독자 중심** — 독자가 누구인지, 읽고 나서 무엇을 하는지로 유형을 결정
-3. **Docs as Code** — Markdown + Mermaid + Git, 이미지 파일 대신 텍스트 코드
-4. **용어 일관성** — Glossary로 같은 대상을 다른 이름으로 부르지 않기
-5. **상호 참조** — 유형 간 적극적으로 링크
+## Core Principles
 
-## 워크플로우
+1. **Dual-axis separation** — Diátaxis (informational) and Delivery (execution) are orthogonal
+2. **Type purity** — Never mix different doc types in one document
+3. **Audience-driven** — Type is determined by who reads it and what they do next
+4. **Docs as Code** — Markdown + Mermaid + Git; text over image files
+5. **Source of Truth hierarchy** — RFC/ADR + Contract are authoritative; Tasks are derived
+
+## Workflow
 
 ```
-사용자 요청
-  → Phase 1: 유형 판별 (Router)
-  → Phase 2: 에이전트 위임 (4 유형 중 택)
-  → Phase 3: 품질 검증 (공통 규칙 체크)
+User request
+  → Phase 0.5: Axis determination (Diátaxis or Delivery?)
+  → Phase 1/1-D: Type routing (select from 8 types)
+  → Phase 2: Agent delegation
+  → Phase 3: Quality validation (common + axis-specific rules)
 ```
 
-## 파일 구조
+## File Structure
 
 ```
 diataxis-doc-system/
-├── SKILL.md              ← 메인 워크플로우 (Router)
-├── README.md             ← 이 파일
+├── SKILL.md                 ← Main workflow (Router)
+├── README.md                ← This file
 └── references/
-    ├── common-rules.md   ← Docs as Code 공통 규칙
-    ├── site-architecture.md ← 문서 사이트 구조 (번호 체계, MkDocs, 거버넌스)
-    ├── tutorial-rules.md ← Tutorial 에이전트 상세 규칙
-    ├── howto-rules.md    ← How-to Guide 에이전트 상세 규칙
-    ├── explain-rules.md  ← Explanation 에이전트 상세 규칙
-    └── reference-rules.md← Reference 에이전트 상세 규칙
+    ├── common-rules.md      ← Docs as Code common rules + dual-axis model
+    ├── site-architecture.md ← Doc site structure (numbering, MkDocs, governance, planning/)
+    ├── execution-rules.md   ← Execution Artifact rules (Task/Contract/Checklist/Review)
+    ├── tutorial-rules.md    ← Tutorial agent rules
+    ├── howto-rules.md       ← How-to Guide agent rules
+    ├── explain-rules.md     ← Explanation agent rules
+    ├── reference-rules.md   ← Reference agent rules
+    └── writing-style.md     ← Readability/style guide
 ```
 
-## 관련 에이전트
+## Related Agents
 
-- `agents/doc-writer-tutorial.md` — Tutorial 작성 전담
-- `agents/doc-writer-howto.md` — How-to Guide 작성 전담
-- `agents/doc-writer-explain.md` — Explanation (Design Doc / ADR) 작성 전담
-- `agents/doc-writer-reference.md` — Reference 작성 전담
+**Diátaxis:** `doc-writer-tutorial`, `doc-writer-howto`, `doc-writer-explain`, `doc-writer-reference`
 
-## 관련 스킬
+**Delivery:** `doc-writer-task`, `doc-writer-contract`, `doc-writer-checklist`, `doc-writer-review`
 
-- `diagram-architect` — 문서 내 아키텍처 다이어그램 생성
-## 관련 커맨드
+**Shared:** `doc-reviewer` (quality review, both axes), `diagram-writer` (Mermaid diagrams)
 
-- `/write-doc [주제]` — 문서 유형 판별 → 에이전트 위임 → 작성
-- `/init-docs [경로]` — 프로젝트에 문서 사이트 구조 초기화 (번호 체계 + MkDocs)
+## Related Commands
+
+- `/write-doc [topic]` — Determine type → delegate to agent → write
+- `/write-doc task [topic]` — Direct Task creation (Delivery axis)
+- `/write-doc contract [topic]` — Direct Contract creation
+- `/init-docs [path]` — Initialize doc structure (docs/ + planning/)
+- `/sync-docs` — Sync documentation to current codebase state

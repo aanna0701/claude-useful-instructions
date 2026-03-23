@@ -1,14 +1,14 @@
-# Reference 작성 규칙
+# Reference Writing Rules
 
-`doc-writer-reference` 에이전트가 문서 작성 전 반드시 Read하는 규칙.
+Rules that `doc-writer-reference` agent must Read before writing.
 
 ---
 
-## 정체성
+## Identity
 
-Reference = **정보 검색(Information)**을 위한 문서.
-독자는 **정확한 사실**을 찾으려 한다 — 파라미터, 타입, 기본값, 에러 코드.
-가르치지 않고(Tutorial), 해결책 안 주고(How-to), 설명 안 한다(Explanation).
+Reference = document for **Information lookup**.
+Reader wants **precise facts** — parameters, types, defaults, error codes.
+Not teaching (Tutorial), problem-solving (How-to), or explaining rationale (Explanation).
 
 ---
 
@@ -16,37 +16,37 @@ Reference = **정보 검색(Information)**을 위한 문서.
 
 | DO | DON'T |
 |----|-------|
-| **정확하고 완전하게** 기술 | 주관적 판단 섞기 |
-| **일관된 구조** 유지 | 항목마다 다른 형식 |
-| **검색 가능하게** 만들기 | 산문체로 장황하게 |
-| 코드와 **동기화** 유지 | 수동 복사-붙여넣기 |
-| **기본값과 타입** 반드시 명시 | "소스를 참고"로 넘기기 |
+| Describe **accurately and completely** | Mix in subjective judgment |
+| Maintain **consistent structure** | Use different formats per item |
+| Make it **searchable** | Write in flowing prose |
+| Keep **in sync** with code | Copy-paste manually and forget |
+| Always state **defaults and types** | Say "refer to the source" |
 
 ---
 
-## 문서 구조 템플릿: API Reference
+## Template: API Reference
 
 ```markdown
-# [서비스/모듈명] API Reference
+# [Service/Module] API Reference
 
-> 버전: [v1.2.3] | 최종 업데이트: [날짜] | [소스 코드 링크]
+> Version: [v1.2.3] | Last updated: [Date] | [Source code link]
 
-## 인증 (Authentication)
-| 방식 | 헤더 | 형식 |
-|------|------|------|
+## Authentication
+| Method | Header | Format |
+|--------|--------|--------|
 | Bearer Token | `Authorization` | `Bearer <token>` |
 
-## 엔드포인트
+## Endpoints
 
 ### `POST /api/v1/resources`
-[1문장 설명]
+[One-sentence description]
 
 **Request**
-| 필드 | 타입 | 필수 | 기본값 | 설명 |
-|------|------|------|--------|------|
-| `name` | `string` | ✅ | — | 리소스 이름 (1~128자) |
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `name` | `string` | ✅ | — | Resource name (1-128 chars) |
 | `type` | `enum` | ✅ | — | `"A"` \| `"B"` \| `"C"` |
-| `limit` | `integer` | — | `100` | 최대 반환 수 (1~1000) |
+| `limit` | `integer` | — | `100` | Max results (1-1000) |
 
 **Response** `200 OK`
 \```json
@@ -58,49 +58,49 @@ Reference = **정보 검색(Information)**을 위한 문서.
 \```
 
 **Errors**
-| 코드 | 의미 | 원인 |
-|------|------|------|
-| `400` | Bad Request | 필수 필드 누락 |
-| `401` | Unauthorized | 토큰 만료 |
-| `429` | Rate Limited | 분당 한도 초과 |
+| Code | Meaning | Cause |
+|------|---------|-------|
+| `400` | Bad Request | Missing required field |
+| `401` | Unauthorized | Token expired |
+| `429` | Rate Limited | Per-minute limit exceeded |
 ```
 
-## 문서 구조 템플릿: Config Reference
+## Template: Config Reference
 
 ```markdown
-# [시스템명] Configuration Reference
+# [System] Configuration Reference
 
-> 적용 대상: [버전] | 설정 파일: `config.yaml`
+> Applies to: [version] | Config file: `config.yaml`
 
-## 환경 변수
-| 변수명 | 타입 | 기본값 | 필수 | 설명 |
-|--------|------|--------|------|------|
-| `DATABASE_URL` | `string` | — | ✅ | PostgreSQL 연결 문자열 |
+## Environment Variables
+| Variable | Type | Default | Required | Description |
+|----------|------|---------|----------|-------------|
+| `DATABASE_URL` | `string` | — | ✅ | PostgreSQL connection string |
 | `LOG_LEVEL` | `enum` | `"info"` | — | `"debug"` \| `"info"` \| `"warn"` \| `"error"` |
 ```
 
-## 문서 구조 템플릿: CLI Reference
+## Template: CLI Reference
 
 ```markdown
-# [도구명] CLI Reference
+# [Tool] CLI Reference
 
-## 글로벌 옵션
-| 옵션 | 축약 | 타입 | 기본값 | 설명 |
-|------|------|------|--------|------|
-| `--config` | `-c` | `path` | `~/.config/tool.yaml` | 설정 파일 경로 |
-| `--verbose` | `-v` | `flag` | `false` | 상세 출력 |
+## Global Options
+| Option | Short | Type | Default | Description |
+|--------|-------|------|---------|-------------|
+| `--config` | `-c` | `path` | `~/.config/tool.yaml` | Config file path |
+| `--verbose` | `-v` | `flag` | `false` | Verbose output |
 
-## 명령어
+## Commands
 
 ### `tool create <name>`
-[설명]
+[Description]
 
-| 인수/옵션 | 타입 | 필수 | 설명 |
-|----------|------|------|------|
-| `<name>` | `string` | ✅ | 리소스 이름 |
-| `--dry-run` | `flag` | — | 미리보기 |
+| Arg/Option | Type | Required | Description |
+|------------|------|----------|-------------|
+| `<name>` | `string` | ✅ | Resource name |
+| `--dry-run` | `flag` | — | Preview only |
 
-**예시:**
+**Example:**
 \```bash
 tool create my-service --dry-run
 \```
@@ -108,49 +108,43 @@ tool create my-service --dry-run
 
 ---
 
-## 핵심 규칙
+## Core Rules
 
-### 1. 일관성이 생명
-- 모든 항목은 **동일한 구조**로 기술.
-- 엔드포인트 A에 `타입` 컬럼이 있으면 B에도 있어야 함.
-- 하나의 항목이라도 구조가 다르면 독자는 전체를 신뢰하지 않음.
+### 1. Consistency Is Everything
+- Every item uses the **same structure**. One inconsistency erodes trust in the whole doc.
 
-### 2. 표(Table) 우선
-- 파라미터, 옵션, 에러 코드 → 산문 아닌 **표**.
-- 표 필수 컬럼: `이름`, `타입`, `필수 여부`, `기본값`, `설명`.
-- 설명 컬럼에 **제약 조건**(범위, 길이, 패턴) 반드시 포함.
+### 2. Tables First
+- Parameters, options, error codes -> **tables**, not prose.
+- Required columns: `Name`, `Type`, `Required`, `Default`, `Description`.
+- Description must include **constraints** (range, length, pattern).
 
-### 3. 기본값과 타입 절대 생략 불가
-- 기본값 없으면 `—`으로 명시. 비워두지 않음.
-- 타입은 코드 타입 그대로: `string`, `integer`, `boolean`, `enum`.
-- enum은 모든 가능한 값 나열.
+### 3. Defaults and Types Are Mandatory
+- No default -> `—`. Never blank. Types match code: `string`, `integer`, `boolean`, `enum`.
+- Enums: list all possible values.
 
-### 4. 예시는 간결하게
-- 각 엔드포인트/명령어에 **1개 최소 예시**.
-- 필수 필드만 포함한 가장 단순한 형태.
-- 복잡한 사용 예시 → How-to Guide로 분리.
+### 4. Examples: Minimal
+- At least **1 example** per endpoint/command, simplest form only.
+- Complex usage -> separate How-to Guide.
 
-### 5. 버전과 날짜
-- 문서 상단에 **대상 버전 + 최종 업데이트 날짜** 필수.
-- 변경 항목에 `Added in v1.3`, `Deprecated in v2.0` 뱃지.
+### 5. Version and Date
+- Header: **target version + last updated date**. Use `Added in v1.3` / `Deprecated in v2.0` badges.
 
-### 6. 코드 동기화 자동화
-- 가능하면 소스에서 Reference **자동 생성** (JSDoc, OpenAPI, TypeDoc).
-- 수동 작성 불가피 시, 코드 변경 → Reference 업데이트를 PR 체크리스트에 포함.
+### 6. Code Sync
+- Prefer **auto-generated** References (JSDoc, OpenAPI, TypeDoc).
+- Manual docs: add "Update Reference" to PR checklist.
 
 ---
 
-## 톤 & 스타일
+## Tone & Style
 
-- 건조하고 사실적. 감정 표현 없음.
-- 3인칭 또는 수동태: "요청 성공 시 200을 반환한다."
-- "추천합니다", "보통 ~합니다"는 금지어 → How-to로 분리.
+- Dry, factual, no emotional language. Third person or passive voice.
+- "We recommend" and "usually" are forbidden -> move to How-to.
 
 ---
 
 ## Anti-Patterns
 
-1. **"설명형"**: 파라미터에 3줄짜리 배경 이야기
-2. **"불완전"**: 10개 엔드포인트 중 7개만 문서화 (전부 또는 전무)
-3. **"비일관적"**: A는 표, B는 산문, C는 코드 주석
-4. **"스냅샷"**: 작성 시점에만 정확, 코드와 동기화 장치 없음
+1. **"Narrative"**: 3-line backstory per parameter
+2. **"Incomplete"**: 7 of 10 endpoints documented (all or nothing)
+3. **"Inconsistent"**: A uses tables, B uses prose, C uses code comments
+4. **"Snapshot"**: Accurate only at time of writing, no sync mechanism

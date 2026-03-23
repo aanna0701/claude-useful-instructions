@@ -1,134 +1,162 @@
-# init-docs — 프로젝트 문서 보관서 초기화
+# init-docs — Initialize Project Documentation Structure
 
-프로젝트에 MkDocs 기반 문서 사이트 구조(번호 체계 + Diátaxis)를 생성하고,
-mkdocs.yml과 카테고리별 index.md를 자동 세팅한다.
+Create MkDocs-based doc site structure (numbered hierarchy + Diátaxis) and execution doc structure (`planning/`), with auto-generated mkdocs.yml and category index files.
 
-Target: $ARGUMENTS (프로젝트 루트 경로. 비어있으면 현재 디렉토리)
-
----
-
-## Step 0: 사전 조건 확인
-
-1. `$ARGUMENTS`가 비어있으면 현재 디렉토리를 프로젝트 루트로 사용
-2. 이미 `docs/` 디렉토리가 존재하는지 확인:
-   - 존재하면 → 사용자에게 "기존 docs/ 구조가 있습니다. 병합할까요, 덮어쓸까요?" 확인
-   - 없으면 → 새로 생성
-3. `mkdocs.yml`이 존재하는지 확인:
-   - 존재하면 → 백업 후 병합 제안
-   - 없으면 → 새로 생성
+Target: $ARGUMENTS (project root path; defaults to current directory)
 
 ---
 
-## Step 1: 프로젝트 정보 수집
+## Step 0: Precondition Check
 
-사용자에게 아래를 확인. 이미 대화에 있으면 다시 묻지 않음.
-
-**필수:**
-- 프로젝트 이름
-- 프로젝트 한줄 설명
-
-**선택 (기본값 있음):**
-- 언어: 한국어(ko) / 영어(en) — 기본: ko
-- 테마: material — 기본: material
-- 필요한 카테고리 선택 (기본: 전체)
+1. If `$ARGUMENTS` is empty, use current directory as project root
+2. Check if `docs/` exists:
+   - Exists → Ask user: "Existing docs/ found. Merge or overwrite?"
+   - Missing → Create new
+3. Check if `mkdocs.yml` exists:
+   - Exists → Backup, then propose merge
+   - Missing → Create new
 
 ---
 
-## Step 2: 규칙 파일 읽기
+## Step 1: Gather Project Info
 
-반드시 Read:
+Confirm with user (skip if already in conversation):
+
+**Required:** Project name, one-line description
+
+**Optional (has defaults):**
+- Language: en/ko — default: en
+- Theme: material (default)
+- Categories to include (default: all)
+- Include execution docs (`planning/`) — default: yes
+
+---
+
+## Step 2: Read Rules
+
+Must Read:
 ```
 skills/diataxis-doc-system/references/site-architecture.md
 ```
 
-이 파일의 폴더 구조, mkdocs.yml 템플릿, index.md 템플릿을 기반으로 생성한다.
+Use its folder structure, mkdocs.yml template, and index.md templates as the basis.
 
 ---
 
-## Step 3: 폴더 구조 생성
+## Step 3: Create Folder Structure
 
-`site-architecture.md`의 "계층적 폴더 구조" 섹션에 따라 디렉토리와 파일 생성:
+Per `site-architecture.md` "Hierarchical folder structure" section:
 
 ```bash
-mkdir -p docs/{00_context,10_architecture/adr,20_implementation,30_guides/{tutorials,howto},40_operations,90_archive}
+mkdir -p docs/{00_context,10_architecture/{adr,rfc},20_implementation,30_guides/{tutorials,howto},40_operations,90_archive}
 ```
 
-각 카테고리에 `index.md`를 생성한다. 템플릿은 `site-architecture.md`의 "카테고리 index.md 템플릿" 참조.
+Create `index.md` per category using templates from `site-architecture.md`.
 
----
+### Execution doc structure (when planning/ included)
 
-## Step 4: mkdocs.yml 생성
+```bash
+mkdir -p planning/{tasks,contracts,checklists,reviews}
+```
 
-`site-architecture.md`의 "mkdocs.yml 기본 구조" 섹션을 기반으로 생성.
-Step 1에서 수집한 프로젝트 정보를 반영:
-
-- `site_name` ← 프로젝트 이름
-- `site_description` ← 프로젝트 설명
-- `theme.language` ← 선택 언어
-- `nav` ← 생성된 파일 구조에 맞춰 동적 생성
-
----
-
-## Step 5: glossary.md 생성
+Create `planning/index.md`:
 
 ```markdown
 ---
-title: "용어 사전"
-status: published
-owner: "[TBD]"
-updated: [오늘 날짜]
+title: "Planning"
 ---
 
-# 용어 사전 (Glossary)
+# Execution Artifacts
 
-프로젝트 전체에서 사용하는 용어의 단일 정본(Single Source of Truth).
+Documents for assigning, tracking, and verifying work.
 
-| 용어 | 정의 | 동의어 (사용 금지) |
-|------|------|-------------------|
-| | | |
+## Workflow
 
-## 용어 추가 규칙
+RFC/ADR (docs/10_architecture/) -> Contract (planning/contracts/) -> Task (planning/tasks/) -> Checklist (planning/checklists/) -> Implementation -> Review (planning/reviews/) -> Docs Update (docs/)
 
-1. 새 용어 도입 시 이 파일에 먼저 추가
-2. "동의어" 컬럼의 단어는 문서에서 사용 금지
-3. 다른 문서에서 용어를 정의하지 않고, 이 파일로 링크
+## Directories
+
+| Directory | Purpose | Naming |
+|-----------|---------|--------|
+| [tasks/](tasks/) | Work orders derived from RFC/ADR | `T-NNN-slug.md` |
+| [contracts/](contracts/) | Interface/schema/SLA agreements | `{domain}-contract.md` |
+| [checklists/](checklists/) | Task completion verification | `T-NNN.md` |
+| [reviews/](reviews/) | Post-completion assessments | `T-NNN-review.md` |
 ```
 
 ---
 
-## Step 6: docs/index.md 생성
+## Step 4: Generate mkdocs.yml
+
+Based on `site-architecture.md` "mkdocs.yml base structure" section, using Step 1 project info:
+
+- `site_name` ← project name
+- `site_description` ← project description
+- `theme.language` ← selected language
+- `nav` ← dynamically generated from file structure
+
+---
+
+## Step 5: Create glossary.md
+
+```markdown
+---
+title: "Glossary"
+status: published
+owner: "[TBD]"
+updated: [today's date]
+---
+
+# Glossary
+
+Single Source of Truth for all project terminology.
+
+| Term | Definition | Synonyms (do not use) |
+|------|------------|----------------------|
+| | | |
+
+## Rules
+
+1. Add new terms here before using them in docs
+2. Words in "Synonyms" column must not appear in docs
+3. Other docs link here instead of defining terms inline
+```
+
+---
+
+## Step 6: Create docs/index.md
 
 ```markdown
 ---
 title: "Home"
 ---
 
-# [프로젝트명] Documentation
+# [Project Name] Documentation
 
-[프로젝트 한줄 설명]
+[One-line description]
 
-## 문서 지도
+## Document Map
 
-| 카테고리 | 설명 |
-|----------|------|
-| [Context](00_context/index.md) | 비즈니스 목표, 요구사항, 용어 사전 |
-| [Architecture](10_architecture/index.md) | 시스템 설계, 기술 스택, ADR |
-| [Implementation](20_implementation/index.md) | API/Config/CLI 명세 |
-| [Guides](30_guides/index.md) | 튜토리얼, How-to 가이드 |
-| [Operations](40_operations/index.md) | 배포, 모니터링, Runbook |
-| [Archive](90_archive/index.md) | 과거 문서 보관 |
+| Category | Description |
+|----------|-------------|
+| [Context](00_context/index.md) | Business goals, requirements, glossary |
+| [Architecture](10_architecture/index.md) | System design, tech stack, ADR |
+| [Implementation](20_implementation/index.md) | API/Config/CLI specs |
+| [Guides](30_guides/index.md) | Tutorials, How-to guides |
+| [Operations](40_operations/index.md) | Deployment, monitoring, runbooks |
+| [Archive](90_archive/index.md) | Archived documents |
 
-## 빠른 시작
+## Quick Start
 
-- 🆕 신규 팀원이라면 → [Getting Started](30_guides/tutorials/getting-started.md)
-- 🔧 특정 작업이 필요하면 → [How-to Guides](30_guides/howto/)
-- 📐 설계 결정을 알고 싶으면 → [Architecture](10_architecture/index.md)
-- 📖 API 스펙을 찾고 있다면 → [API Reference](20_implementation/api-reference.md)
+- New team member → [Getting Started](30_guides/tutorials/getting-started.md)
+- Need to do something → [How-to Guides](30_guides/howto/)
+- Understand design decisions → [Architecture](10_architecture/index.md)
+- Looking for API specs → [API Reference](20_implementation/api-reference.md)
 ```
 
 ---
 
-## Step 7: 90_archive/index.md 생성
+## Step 7: Create 90_archive/index.md
 
 ```markdown
 ---
@@ -137,56 +165,64 @@ title: "Archive"
 
 # Archive
 
-더 이상 유효하지 않지만 참고용으로 보존하는 문서.
+Documents no longer current, preserved for reference.
 
-## 아카이브 목록
+## Archive List
 
-| 문서 | 원래 위치 | 이동 사유 | 이동일 | 대체 문서 |
-|------|-----------|-----------|--------|-----------|
-| (아직 없음) | | | | |
+| Document | Original Location | Reason | Date | Replacement |
+|----------|-------------------|--------|------|-------------|
+| (none yet) | | | | |
 
-## 아카이브 절차
+## Archive Procedure
 
-1. 해당 문서에 `status: deprecated` 설정
-2. 이 폴더로 이동
-3. 위 표에 이동 사유 기록
-4. 원래 위치에 대체 문서 링크 안내 (선택)
+1. Set `status: deprecated` on the document
+2. Move to this folder
+3. Record reason in the table above
+4. Optionally link replacement doc at original location
 ```
 
 ---
 
-## Step 8: CI/CD 파일 생성 (선택)
+## Step 8: CI/CD Files (optional)
 
-사용자에게 확인:
-> "GitHub Actions로 문서 자동 배포(gh-pages)와 링크 검사를 설정할까요?"
+Ask user:
+> "Set up GitHub Actions for auto-deploy (gh-pages) and link checking?"
 
-Yes이면 `.github/workflows/docs.yml`과 `.github/workflows/docs-lint.yml`을
-`site-architecture.md`의 "CI/CD 자동화" 섹션에 따라 생성.
+If yes, create `.github/workflows/docs.yml` and `.github/workflows/docs-lint.yml` per `site-architecture.md` "CI/CD automation" section.
 
 ---
 
-## Step 9: 완료 리포트
+## Step 9: Completion Report
 
 ```
-문서 보관서 초기화 완료
+Documentation structure initialized
 ─────────────────────────────────
-프로젝트:  [프로젝트명]
-구조:
-  docs/
+Project:  [project name]
+Structure:
+  docs/                             (Diátaxis - informational docs)
   ├── index.md
   ├── glossary.md
   ├── 00_context/       (index.md)
-  ├── 10_architecture/  (index.md + adr/)
+  ├── 10_architecture/  (index.md + adr/ + rfc/)
   ├── 20_implementation/(index.md)
   ├── 30_guides/        (index.md + tutorials/ + howto/)
   ├── 40_operations/    (index.md)
   └── 90_archive/       (index.md)
 
-  mkdocs.yml            ✅ 생성
-  CI/CD                 [✅ 생성 / ⏭ 건너뜀]
+  planning/                         (Delivery - execution docs)
+  ├── index.md
+  ├── tasks/
+  ├── contracts/
+  ├── checklists/
+  └── reviews/
+
+  mkdocs.yml            CREATED
+  CI/CD                 [CREATED / SKIPPED]
 ─────────────────────────────────
-다음 단계:
-  pip install mkdocs-material       # MkDocs 설치
-  mkdocs serve                      # 로컬 미리보기
-  /write-doc [주제]                  # 문서 작성 시작
+Next steps:
+  pip install mkdocs-material       # Install MkDocs
+  mkdocs serve                      # Local preview
+  /write-doc [topic]                # Write Diátaxis doc
+  /write-doc task [topic]           # Write Task
+  /write-doc contract [topic]       # Write Contract
 ```

@@ -1,83 +1,80 @@
-# 문서 사이트 아키텍처 (Information Architecture)
+# Documentation Site Architecture (Information Architecture)
 
-문서가 쌓이기 시작하면 정작 필요한 정보를 찾는 데 더 많은 시간이 걸린다.
-이 파일은 MkDocs 기반 문서 사이트의 **계층 구조, 번호 체계, 거버넌스 규칙**을 정의한다.
-
-`/init-docs` 커맨드가 이 규칙에 따라 프로젝트 문서 구조를 초기화한다.
+Defines the **hierarchy, numbering scheme, and governance rules** for MkDocs-based documentation sites.
+`/init-docs` command initializes project docs according to these rules.
 
 ---
 
-## 1. 계층적 폴더 구조 (The 3-Level Hierarchy)
+## 1. 3-Level Folder Hierarchy
 
-`00-99` 번호 체계로 정렬 순서를 강제한다. 번호는 **카테고리**를 나타내며,
-각 카테고리 안에서 Diátaxis 유형(Tutorial / How-to / Explanation / Reference)이 공존한다.
+The `00-99` numbering scheme enforces sort order. Numbers represent **categories**;
+each category contains multiple Diataxis types (Tutorial / How-to / Explanation / Reference).
 
 ```
 docs/
-├── index.md                         # 문서 홈 (프로젝트 개요 + 문서 지도)
-├── glossary.md                      # 용어 사전 (SSOT)
+├── index.md                         # Doc home (project overview + doc map)
+├── glossary.md                      # Glossary (SSOT)
 │
-├── 00_context/                      # 맥락: 왜 이 프로젝트인가
-│   ├── index.md                     # 카테고리 개요
-│   ├── business-goals.md            # [Explanation] 비즈니스 목표
-│   ├── personas.md                  # [Reference] 사용자 페르소나
-│   ├── requirements.md              # [Reference] 요구사항 정의
-│   └── glossary-guide.md            # [How-to] 용어 사전 관리 방법
-│
-├── 10_architecture/                 # 설계: 어떻게 만들 것인가
+├── 00_context/                      # Context: why this project
 │   ├── index.md
-│   ├── system-overview.md           # [Explanation] 시스템 전체 구조
-│   ├── tech-stack.md                # [Explanation] 기술 스택 결정 사유
-│   ├── data-model.md                # [Reference] 데이터 모델
-│   └── adr/                         # Architecture Decision Records
+│   ├── business-goals.md            # [Explanation]
+│   ├── personas.md                  # [Reference]
+│   ├── requirements.md              # [Reference]
+│   └── glossary-guide.md            # [How-to]
+│
+├── 10_architecture/                 # Design: how to build it
+│   ├── index.md
+│   ├── system-overview.md           # [Explanation]
+│   ├── tech-stack.md                # [Explanation]
+│   ├── data-model.md                # [Reference]
+│   └── adr/
 │       ├── 001-database-choice.md
 │       └── 002-auth-strategy.md
 │
-├── 20_implementation/               # 구현: 코드 레벨 상세
+├── 20_implementation/               # Implementation: code-level details
 │   ├── index.md
-│   ├── api-reference.md             # [Reference] API 명세
-│   ├── config-reference.md          # [Reference] 설정값
-│   ├── cli-reference.md             # [Reference] CLI 옵션
-│   └── module-guide.md              # [Explanation] 모듈별 상세 설계
+│   ├── api-reference.md             # [Reference]
+│   ├── config-reference.md          # [Reference]
+│   ├── cli-reference.md             # [Reference]
+│   └── module-guide.md              # [Explanation]
 │
-├── 30_guides/                       # 가이드: 실무 작업 안내
+├── 30_guides/                       # Guides: practical work
 │   ├── index.md
-│   ├── tutorials/                   # [Tutorial] 처음부터 따라하기
+│   ├── tutorials/                   # [Tutorial]
 │   │   ├── getting-started.md
 │   │   └── first-deployment.md
-│   └── howto/                       # [How-to] 특정 문제 해결
+│   └── howto/                       # [How-to]
 │       ├── migrate-database.md
 │       ├── rotate-tokens.md
 │       └── troubleshooting.md
 │
-├── 40_operations/                   # 운영: 프로덕션 관리
+├── 40_operations/                   # Operations: production management
 │   ├── index.md
-│   ├── deploy-guide.md              # [How-to] 배포 절차
-│   ├── monitoring.md                # [Explanation] 모니터링 구성
-│   ├── runbook.md                   # [How-to] 장애 대응 매뉴얼
-│   └── sla-reference.md             # [Reference] SLA 기준
+│   ├── deploy-guide.md              # [How-to]
+│   ├── monitoring.md                # [Explanation]
+│   ├── runbook.md                   # [How-to]
+│   └── sla-reference.md             # [Reference]
 │
-└── 90_archive/                      # 보관: 더 이상 유효하지 않은 문서
-    ├── index.md                     # 아카이브 인덱스 + 이동 이유
-    └── ...                          # deprecated 문서들
+└── 90_archive/                      # Archive: no longer valid
+    ├── index.md
+    └── ...
 ```
 
-### 번호 체계 규칙
+### Numbering Scheme
 
-| 번호 대역 | 카테고리 | 핵심 질문 |
-|-----------|---------|-----------|
-| `00` | Context | **왜** 이 프로젝트를 하는가? |
-| `10` | Architecture | **어떻게** 만들 것인가? (설계) |
-| `20` | Implementation | **무엇을** 만들었는가? (코드 레벨) |
-| `30` | Guides | **어떻게** 사용하는가? (실무) |
-| `40` | Operations | **어떻게** 운영하는가? (프로덕션) |
-| `50-80` | (예약) | 프로젝트별 확장 가능 |
-| `90` | Archive | 더 이상 유효하지 않은 문서 |
+| Range | Category | Key Question |
+|-------|----------|-------------|
+| `00` | Context | **Why** this project? |
+| `10` | Architecture | **How** to build it? (design) |
+| `20` | Implementation | **What** was built? (code-level) |
+| `30` | Guides | **How** to use it? (practical) |
+| `40` | Operations | **How** to run it? (production) |
+| `50-80` | (Reserved) | Project-specific extensions |
+| `90` | Archive | Deprecated documents |
 
-### 번호 vs Diátaxis 매핑
+### Numbering vs Diataxis Mapping
 
-번호 체계는 **주제(도메인)**별 분류이고, Diátaxis는 **목적**별 분류다.
-두 축은 직교한다 — 하나의 카테고리 안에 여러 Diátaxis 유형이 공존할 수 있다.
+Numbering = **topic (domain)** classification. Diataxis = **purpose** classification. They are orthogonal.
 
 ```
               Tutorial   How-to   Explanation   Reference
@@ -88,236 +85,119 @@ docs/
 40_operations    -          ●          ●            ●
 ```
 
-각 문서의 YAML frontmatter `type` 필드로 Diátaxis 유형을 명시한다.
+Diataxis type is specified via the `type` field in YAML frontmatter.
+
+### 3-Axis Model: Domain x Purpose x Execution
+
+| Axis | Classification | Physical Location |
+|------|---------------|-------------------|
+| **Domain** (numbering) | By topic: context, architecture, implementation... | `docs/00-90_*/` |
+| **Diataxis** (purpose) | By reader goal: Tutorial, How-to, Explanation, Reference | within `docs/` categories |
+| **Delivery** (execution) | By workflow: Task, Contract, Checklist, Review | `planning/` |
+
+Domain and Diataxis axes intersect within `docs/`. Delivery axis lives in a separate root (`planning/`).
+**Same repo, different roots** — separates concerns while maintaining traceability.
 
 ---
 
-## 2. MkDocs 설정
+## 2. MkDocs Configuration
 
-### mkdocs.yml 기본 구조
+**Theme:** `material` with navigation tabs/sections/indexes, search suggest/highlight, TOC integration, light/dark toggle.
 
-```yaml
-site_name: "[프로젝트명] Documentation"
-site_description: "[프로젝트 한줄 설명]"
-docs_dir: docs/
+**Required plugins:** `search`, `tags`, `git-revision-date-localized` (with `enable_creation_date: true`).
 
-theme:
-  name: material
-  language: ko
-  features:
-    - navigation.tabs           # 상단 탭 네비게이션
-    - navigation.sections       # 사이드바 섹션 접기
-    - navigation.indexes        # 카테고리 index.md를 탭 랜딩으로
-    - navigation.top            # 맨 위로 버튼
-    - search.suggest            # 검색 자동완성
-    - search.highlight          # 검색 결과 하이라이트
-    - content.tabs.link         # 탭 링크 동기화
-    - toc.integrate             # 목차 사이드바 통합
-  palette:
-    - scheme: default
-      toggle:
-        icon: material/brightness-7
-    - scheme: slate
-      toggle:
-        icon: material/brightness-4
+**Required extensions:** `admonition`, `pymdownx.details`, `pymdownx.superfences` (with mermaid fence), `pymdownx.tabbed`, `attr_list`, `md_in_html`, `toc` (with permalink).
 
-plugins:
-  - search:
-      lang: [en, ko]
-  - tags                        # 태그 기반 검색
-  - git-revision-date-localized:  # 마지막 수정일 자동 표시
-      enable_creation_date: true
+**Tags:** Define allowed tags in `extra.tags` (e.g., `auth`, `database`, `api`, `infra`, `security`).
 
-markdown_extensions:
-  - admonition                  # !!! note, warning 박스
-  - pymdownx.details            # 접기/펼치기
-  - pymdownx.superfences:       # mermaid 렌더링
-      custom_fences:
-        - name: mermaid
-          class: mermaid
-          format: !!python/name:pymdownx.superfences.fence_code_format
-  - pymdownx.tabbed:            # 탭 UI (OS별 분기 등)
-      alternate_style: true
-  - attr_list                   # 이미지 속성
-  - md_in_html                  # HTML 안에 마크다운
-  - toc:
-      permalink: true           # 섹션 링크
+**Nav structure** mirrors the numbered folder hierarchy: Home, Glossary, Context, Architecture (with ADR sub-section), Implementation, Guides (Tutorials + How-to), Operations, Archive.
 
-extra:
-  tags:                         # 태그 정의
-    Auth: auth
-    Database: database
-    API: api
-    Infra: infra
-    Security: security
+### index.md Template
 
-nav:
-  - Home: index.md
-  - 용어 사전: glossary.md
-  - Context:
-    - 00_context/index.md
-    - 비즈니스 목표: 00_context/business-goals.md
-    - 요구사항: 00_context/requirements.md
-  - Architecture:
-    - 10_architecture/index.md
-    - 시스템 개요: 10_architecture/system-overview.md
-    - 기술 스택: 10_architecture/tech-stack.md
-    - ADR:
-      - 10_architecture/adr/001-database-choice.md
-  - Implementation:
-    - 20_implementation/index.md
-    - API Reference: 20_implementation/api-reference.md
-    - Config Reference: 20_implementation/config-reference.md
-  - Guides:
-    - 30_guides/index.md
-    - Tutorials:
-      - 30_guides/tutorials/getting-started.md
-    - How-to:
-      - 30_guides/howto/migrate-database.md
-  - Operations:
-    - 40_operations/index.md
-    - 배포 가이드: 40_operations/deploy-guide.md
-    - Runbook: 40_operations/runbook.md
-  - Archive: 90_archive/index.md
-```
-
-### index.md 작성 규칙
-
-각 카테고리의 `index.md`는 **문서 지도** 역할:
+Each category `index.md` serves as a **document map**:
 
 ```markdown
 ---
-title: "[카테고리명]"
+title: "[Category Name]"
 tags: []
 ---
 
-# [카테고리명]
+# [Category Name]
 
-[이 카테고리가 다루는 영역 2~3문장]
+[2-3 sentences describing what this category covers.]
 
-## 이 섹션의 문서
+## Documents
 
-| 문서 | 유형 | 설명 | 최종 수정 |
-|------|------|------|-----------|
-| [시스템 개요](system-overview.md) | Explanation | 전체 아키텍처 설명 | 2025-03-18 |
-| [데이터 모델](data-model.md) | Reference | 엔티티 관계, 스키마 | 2025-03-10 |
+| Document | Type | Description | Last Updated |
+|----------|------|-------------|-------------|
+| [System Overview](system-overview.md) | Explanation | Full architecture description | 2025-03-18 |
 ```
 
 ---
 
-## 3. 거버넌스 5대 규칙
+## 3. Five Governance Rules
 
-문서가 "쓰레기통"이 되지 않게 관리하는 실무 규칙.
+### Rule 1: Single Source of Truth (SSOT)
 
-### 규칙 1: Single Source of Truth (SSOT)
+Same information exists in **exactly one place**.
 
-동일한 정보는 **딱 한 곳**에만 적는다.
+| Pattern | DO | DON'T |
+|---------|-----|-------|
+| API spec | Auto-generate from code, link from design docs | Copy-paste spec into design docs |
+| Config values | One config reference file | Duplicate in README + guides |
+| Term definitions | Define in `glossary.md`, link elsewhere | Redefine in each document |
 
-| 패턴 | DO | DON'T |
-|------|-----|-------|
-| API 스펙 | 코드에서 자동 생성, 설계서에서 링크 | 설계서에 스펙 복사-붙여넣기 |
-| 설정값 | config reference 한 곳에 정리 | README에도, 가이드에도 중복 나열 |
-| 용어 정의 | `glossary.md`에 정의, 다른 문서에서 링크 | 각 문서마다 용어 재정의 |
+Violation: if same info exists in 2+ places, designate one as canonical and replace others with links.
 
-위반 감지: 같은 내용이 2곳 이상에 있으면, 하나를 정본으로 지정하고 나머지는 링크로 교체.
+### Rule 2: Date & Status
 
-### 규칙 2: Date & Status Marking
+Required frontmatter: `title`, `type`, `status`, `author`, `owner`, `created`, `updated`, `tags`, `audience`.
+Lifecycle: `draft → review → published → deprecated → 90_archive/`
 
-모든 문서 상단 YAML frontmatter에 필수:
+### Rule 3: Tagging
 
-```yaml
----
-title: "문서 제목"
-type: tutorial | howto | explanation | reference
-status: draft | review | published | deprecated
-author: "작성자"
-owner: "유지보수 담당자"     # ← 거버넌스 추가 필드
-created: 2025-01-15
-updated: 2025-03-18
-tags: [auth, api]            # ← 검색용 태그
-audience: "Backend Engineers"
----
-```
+Tags surface cross-cutting concerns beyond folder structure. Lowercase kebab-case only (`auth`, `deploy`). Maintain an allowed list in `mkdocs.yml extra.tags` — no free-form tags.
 
-**status 생명주기:**
-```
-draft → review → published → deprecated → (90_archive/ 이동)
-```
+### Rule 4: Ownership
 
-### 규칙 3: Searchability (Tagging)
+Every document has an `owner` (GitHub handle or team). Owners: quarterly review published docs, update docs on code changes, handle deprecation, transfer ownership before leaving.
 
-폴더 구조만으로는 교차 관심사(cross-cutting concerns)를 찾기 어렵다.
-YAML frontmatter의 `tags` 필드로 검색 효율을 높인다.
+### Rule 5: Pruning
 
-태그 규칙:
-- 소문자 kebab-case: `auth`, `database`, `deploy`, `monitoring`
-- 프로젝트 수준에서 허용 태그 목록을 관리 (mkdocs.yml `extra.tags`)
-- 자유 태그 금지 — 허용 목록에 없는 태그는 먼저 목록에 추가
-
-MkDocs Material의 tags 플러그인이 태그 인덱스 페이지를 자동 생성한다.
-
-### 규칙 4: Ownership
-
-각 문서에 `owner` 필드를 지정. 정보가 오래되었을 때 누구에게 물어볼지 명확히 한다.
-
-```yaml
-owner: "@alice"   # GitHub handle 또는 팀명
-```
-
-오너 책임:
-- 분기 1회 문서 유효성 확인 (status가 published인 문서)
-- 코드 변경 시 관련 문서 업데이트 (PR 체크리스트 연동)
-- deprecated 판단 및 archive 이동
-
-오너가 팀을 떠나면 반드시 새 오너를 지정한다.
-
-### 규칙 5: Pruning (가지치기)
-
-**잘못된 정보는 정보가 없는 것보다 위험하다.**
-
-가지치기 트리거:
-- 분기 1회 전체 문서 리뷰 (오너별)
-- `updated` 날짜가 6개월 이상 된 문서 자동 경고
-- 참조하는 코드/설정이 삭제된 문서
-
-가지치기 절차:
-1. 해당 문서에 `status: deprecated` + deprecation 사유 기록
-2. `90_archive/`로 이동
-3. 원래 위치에 리다이렉트 또는 안내 메시지 남기기 (선택)
-4. archive index.md에 이동 사유와 날짜 기록
+**Wrong information is worse than no information.** Triggers: quarterly review, `updated` > 6 months, deleted referenced code. Procedure: set `status: deprecated` with reason, move to `90_archive/`, record in `archive/index.md`.
 
 ---
 
-## 4. 카테고리 index.md 템플릿
+## 4. Category index.md Template
 
 ```markdown
 ---
-title: "[NN_카테고리명]"
+title: "[NN_CategoryName]"
 ---
 
-# [카테고리명]
+# [Category Name]
 
-[이 카테고리가 다루는 영역 설명. 2~3문장.]
+[2-3 sentences describing this category's scope.]
 
-## 문서 목록
+## Document List
 
-| 문서 | 유형 | 상태 | 담당자 | 최종 수정 |
-|------|------|------|--------|-----------|
-| [문서 제목](파일명.md) | [유형] | [상태] | [@이름] | [날짜] |
+| Document | Type | Status | Owner | Last Updated |
+|----------|------|--------|-------|-------------|
+| [Title](filename.md) | [Type] | [Status] | [@name] | [Date] |
 
-## 관련 카테고리
+## Related Categories
 
-- [이전 단계: XX_카테고리](../XX_카테고리/index.md)
-- [다음 단계: XX_카테고리](../XX_카테고리/index.md)
+- [Previous: XX_Category](../XX_Category/index.md)
+- [Next: XX_Category](../XX_Category/index.md)
 ```
 
 ---
 
-## 5. Archive 규칙
+## 5. Archive Rules
 
-`90_archive/`는 문서의 묘지가 아니라 **참고용 서고**다.
+`90_archive/` is a **reference library**, not a graveyard.
 
-### archive/index.md 템플릿
+### archive/index.md Template
 
 ```markdown
 ---
@@ -326,33 +206,31 @@ title: "Archive"
 
 # Archive
 
-더 이상 유효하지 않지만 참고용으로 보존하는 문서.
+Documents no longer valid but preserved for reference.
 
-## 아카이브 목록
+## Archive List
 
-| 문서 | 원래 위치 | 이동 사유 | 이동일 | 대체 문서 |
-|------|-----------|-----------|--------|-----------|
-| [v1 API 스펙](v1-api.md) | 20_implementation/ | v2로 교체 | 2025-03 | [v2 API](../20_implementation/api-reference.md) |
+| Document | Original Location | Reason | Date | Replacement |
+|----------|------------------|--------|------|-------------|
+| [v1 API Spec](v1-api.md) | 20_implementation/ | Replaced by v2 | 2025-03 | [v2 API](../20_implementation/api-reference.md) |
 ```
 
-### 아카이브된 문서 상단 표시
+### Archived Document Header
 
 ```markdown
 ---
 status: deprecated
 ---
 
-> ⚠️ **이 문서는 더 이상 유효하지 않습니다.**
-> 대체 문서: [v2 API Reference](../20_implementation/api-reference.md)
-> 아카이브 사유: v2 API 출시로 v1 스펙 폐기
-> 아카이브 일자: 2025-03-18
+> **This document is no longer valid.**
+> Replacement: [v2 API Reference](../20_implementation/api-reference.md)
+> Reason: v1 spec retired after v2 API launch
+> Archive date: 2025-03-18
 ```
 
 ---
 
-## 6. CI/CD 자동화 (선택)
-
-MkDocs 기반 문서 사이트라면 아래 자동화를 추천:
+## 6. CI/CD Automation (Optional)
 
 ```yaml
 # .github/workflows/docs.yml
@@ -361,14 +239,13 @@ on:
   push:
     branches: [main]
     paths: ['docs/**', 'mkdocs.yml']
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0        # git-revision-date 플러그인용
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -376,7 +253,7 @@ jobs:
       - run: mkdocs gh-deploy --force
 ```
 
-### 링크 검사 자동화
+### Link Validation
 
 ```yaml
 # .github/workflows/docs-lint.yml
@@ -388,5 +265,68 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: pip install mkdocs-material
-      - run: mkdocs build --strict   # 깨진 링크 감지
+      - run: mkdocs build --strict   # Detects broken links
 ```
+
+---
+
+## 7. Execution Document Directory (`planning/`)
+
+`docs/` contains **reader-facing documentation**. `planning/` contains **execution artifacts for assigning, tracking, and verifying work**.
+`planning/` sits outside the `00-90` numbering scheme and operates independently of Diataxis classification.
+
+### Structure
+
+```
+planning/
+├── index.md              # Overview + workflow diagram
+├── tasks/                # Work orders (derived from RFC/ADR)
+│   └── T-001-slug.md
+├── contracts/            # Interface/schema/SLA contracts
+│   └── domain-contract.md
+├── checklists/           # Per-task verification lists
+│   └── T-001.md
+└── reviews/              # Post-completion reviews
+    └── T-001-review.md
+```
+
+### Workflow
+
+```mermaid
+flowchart LR
+    RFC["RFC/ADR<br/>(docs/10_architecture/)"] --> Contract["Contract<br/>(planning/contracts/)"]
+    RFC --> Task["Task<br/>(planning/tasks/)"]
+    Contract --> Task
+    Task --> Checklist["Checklist<br/>(planning/checklists/)"]
+    Task --> Impl["Implementation<br/>(code)"]
+    Impl --> Review["Review<br/>(planning/reviews/)"]
+    Checklist --> Review
+    Review --> Docs["Docs Update<br/>(docs/)"]
+```
+
+### Source of Truth Hierarchy
+
+The source of truth is **RFC/ADR + Contract**:
+
+1. **RFC/ADR** (`docs/10_architecture/`) — Why, alternatives, tradeoffs
+2. **Contract** (`planning/contracts/`) — What is guaranteed
+3. **Task** (`planning/tasks/`) — What to do (derived)
+4. **Checklist** (`planning/checklists/`) — How to verify
+5. **Review** (`planning/reviews/`) — Result evaluation
+
+### MkDocs nav Integration
+
+To include `planning/` docs in the MkDocs site:
+
+```yaml
+nav:
+  # ... existing docs/ entries ...
+  - Planning:
+    - planning/index.md
+    - Tasks:
+      - planning/tasks/T-001-slug.md
+    - Contracts:
+      - planning/contracts/domain-contract.md
+```
+
+> Detailed rules (templates, naming, status lifecycle, linking): see `references/execution-rules.md`.

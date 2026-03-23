@@ -1,144 +1,176 @@
 ---
 name: diataxis-doc-system
 description: >
-  Diátaxis Framework 기반 기술 문서 작성 시스템.
-  문서를 Tutorial, How-to Guide, Explanation, Reference 4가지 유형으로 분리하고,
-  각 유형에 최적화된 서브 에이전트(doc-writer-tutorial, doc-writer-howto,
-  doc-writer-explain, doc-writer-reference)를 호출하여 고품질 기술 문서를 생성한다.
-  "문서 작성", "기술 문서", "아키텍처 문서", "API 문서", "가이드 작성", "튜토리얼 작성",
-  "설계 문서", "Design Doc", "RFC 작성", "ADR 작성", "README 작성",
-  "문서화", "documentation", "technical writing", "how-to 가이드",
-  "레퍼런스 문서", "config reference", "CLI reference",
-  "문서 구조", "docs 초기화", "MkDocs", "문서 사이트", "문서 보관서",
-  "information architecture", "문서 체계" 등의 요청에 트리거.
-  문서화 관련 요청이면 종류를 불문하고 이 스킬을 먼저 참조할 것.
+  Diátaxis Framework + Execution Artifacts documentation system.
+  Separates docs into two axes: (1) Diátaxis — Tutorial, How-to, Explanation, Reference,
+  (2) Delivery — Task, Contract, Checklist, Review.
+  Delegates to type-specific sub-agents for high-quality output.
+  Triggers on: "write doc", "technical doc", "architecture doc", "API doc",
+  "guide", "tutorial", "design doc", "RFC", "ADR", "README",
+  "documentation", "technical writing", "how-to guide",
+  "reference doc", "config reference", "CLI reference",
+  "doc structure", "docs init", "MkDocs", "doc site",
+  "information architecture",
+  "task", "contract", "checklist", "review",
+  "work order", "planning", "execution artifact",
+  "delivery document", "interface contract", "verification checklist".
+  Consult this skill first for any documentation-related request.
 ---
 
-# Diátaxis Documentation System
+# Diátaxis + Execution Artifacts Documentation System
 
-사용자의 문서 요청을 분석 → 유형 판별 → 유형별 에이전트 위임 → 품질 검증.
+Analyze request → **axis determination** → type routing → agent delegation → quality validation.
 
 ```
-[요청] → Phase 1: 유형 판별 → Phase 2: 에이전트 위임 → Phase 3: 품질 검증
-          (Router)              (4 유형 중 택)            (공통 규칙 체크)
+[Request] → Phase 0.5: Axis → Phase 1/1-D: Type → Phase 2: Agent → Phase 3: Quality
+             (Diátaxis or Delivery?)  (select type)      (8 agents)     (rule check)
 ```
 
 ---
 
-## 핵심 원리
+## Core Principle
 
-기술 문서의 실패는 대부분 **목적이 다른 내용을 한 문서에 섞는 것**에서 시작된다.
-이 스킬은 Diátaxis Framework에 따라 문서를 4가지 유형으로 엄격히 분리하고,
-각 유형에 특화된 에이전트를 위임한다.
+Most documentation failures stem from **mixing different purposes in one document**.
+This skill separates docs into **two axes** and delegates to specialized agents.
 
-| 유형 | 목적 | 독자 상태 | 에이전트 |
-|------|------|-----------|----------|
-| **Tutorial** | 학습 | 처음 접함 | `doc-writer-tutorial` |
-| **How-to Guide** | 문제 해결 | 기본은 앎, 특정 문제 있음 | `doc-writer-howto` |
-| **Explanation** | 이해 | "왜 이렇게?"를 알고 싶음 | `doc-writer-explain` |
-| **Reference** | 정보 검색 | 정확한 스펙 필요 | `doc-writer-reference` |
+### Diátaxis Axis (reader-oriented — informational docs)
 
----
+| Type | Purpose | Reader State | Agent |
+|------|---------|-------------|-------|
+| **Tutorial** | Learning | First encounter | `doc-writer-tutorial` |
+| **How-to Guide** | Problem solving | Knows basics, has specific problem | `doc-writer-howto` |
+| **Explanation** | Understanding | Wants to know "why" | `doc-writer-explain` |
+| **Reference** | Information lookup | Needs exact specs | `doc-writer-reference` |
 
-## 워크플로우
+### Delivery Axis (execution-oriented — action docs)
 
-### Phase 0: 입력 수집
-
-**필수 (없으면 요청)**
-- 문서의 주제/범위
-- 대상 독자 (신입? 동료 개발자? 경영진?)
-- 목적 (온보딩? 설계 리뷰? API 배포?)
-
-**선택 (있으면 더 좋은 결과)**
-- 기존 코드베이스 또는 문서
-- 프로젝트 glossary
-- 기존 다이어그램
-
-### Phase 1: 유형 판별 (Router)
-
-아래 질문으로 유형을 판별한다:
-
-| 질문 | Yes → 유형 |
-|------|-----------|
-| 독자가 처음 접하고, 끝까지 따라하면 무언가를 만들 수 있는가? | **Tutorial** |
-| 독자가 이미 기본을 알고, 특정 문제를 해결하려 하는가? | **How-to Guide** |
-| 독자가 "왜 이렇게 설계했는가"를 이해하려 하는가? | **Explanation** |
-| 독자가 정확한 스펙/파라미터/타입을 찾으려 하는가? | **Reference** |
-
-판별이 어렵다면 사용자에게 질문:
-> "이 문서의 주요 독자는 누구이고, 읽은 뒤 어떤 행동을 하길 바라시나요?"
-
-하나의 프로젝트에 여러 유형이 필요할 수 있다. 이 경우 유형별로 별도 파일을 생성한다.
-
-### Phase 2: 에이전트 위임
-
-유형이 결정되면 해당 에이전트에게 위임한다:
-
-- **Tutorial** → `doc-writer-tutorial` 에이전트에게 위임
-- **How-to Guide** → `doc-writer-howto` 에이전트에게 위임
-- **Explanation** → `doc-writer-explain` 에이전트에게 위임
-- **Reference** → `doc-writer-reference` 에이전트에게 위임
-
-에이전트 위임 시 Phase 0에서 수집한 정보를 함께 전달한다.
-
-### Phase 3: 품질 검증
-
-> 공통 규칙: `references/common-rules.md` 참조.
-> 가독성/문체 규칙: `references/writing-style.md` 참조.
-
-기존 문서 리뷰 요청이면 `doc-reviewer` 에이전트에게 위임할 수 있다.
-
-문서 초안 완성 후 아래를 확인:
-
-1. **유형 순수성**: 한 문서 안에 다른 유형의 내용이 섞이지 않았는가?
-   - Tutorial에 Reference 표가 끼어 있으면 분리한다.
-   - Explanation에 단계별 절차가 들어가면 How-to로 분리한다.
-2. **독자 적합성**: 설정한 독자가 이 문서를 받아들고 목적을 달성할 수 있는가?
-3. **6개월 테스트**: Apply longevity test (see common-rules.md).
-4. **용어 일관성**: 같은 대상을 다른 이름으로 부르지 않았는가?
-5. **상호 참조**: 관련 유형 문서로의 링크가 있는가?
-6. **Diagrams as Code**: 다이어그램이 Mermaid/PlantUML로 작성되었는가?
+| Type | Purpose | When Used | Agent |
+|------|---------|-----------|-------|
+| **Task** | Work assignment | Derived from RFC/ADR | `doc-writer-task` |
+| **Contract** | Interface agreement | Cross-module/team alignment | `doc-writer-contract` |
+| **Checklist** | Completion verification | Task acceptance | `doc-writer-checklist` |
+| **Review** | Result assessment | Post-task completion | `doc-writer-review` |
 
 ---
 
-## 부분 실행
+## Workflow
 
-| 요청 | 실행 범위 |
-|------|-----------|
-| "문서 작성해줘" | Phase 0→3 전체 |
-| "이 문서 유형 판별해줘" | Phase 1만 |
-| "이 문서 검토해줘" | Phase 3만 (기존 문서에 품질 검증) |
-| "Reference만 추가해줘" | Phase 2 바로 진입 (유형 확정) |
-| "문서 구조 잡아줘" | `/init-docs` 커맨드로 안내 |
+### Phase 0: Input Gathering
+
+**Required (ask if missing):**
+- Document topic/scope
+- Target audience (newcomer? peer developer? management?) or task assignee
+- Purpose (onboarding? design review? API release? work assignment? interface contract?)
+
+**Optional (improves quality):**
+- Existing codebase or docs
+- Project glossary
+- Existing diagrams
+- Source RFC/ADR or Contract (for execution docs)
+
+### Phase 0.5: Axis Determination
+
+| Question | Yes → Axis |
+|----------|-----------|
+| Is the doc meant for understanding, learning, or lookup? | **Diátaxis** → Phase 1 |
+| Is the doc meant for work assignment, interface agreement, verification, or assessment? | **Delivery** → Phase 1-D |
+
+**Keyword shortcuts:**
+- `task`, `work order` → Delivery (Task)
+- `contract`, `interface agreement` → Delivery (Contract)
+- `checklist`, `verification list` → Delivery (Checklist)
+- `review`, `assessment` → Delivery (Review)
+
+If ambiguous, ask:
+> "Is this document for someone to read and understand, or for assigning/tracking/verifying work?"
+
+### Phase 1: Diátaxis Type Routing
+
+| Question | Yes → Type |
+|----------|-----------|
+| Reader is new and will build something by following along? | **Tutorial** |
+| Reader knows basics and wants to solve a specific problem? | **How-to Guide** |
+| Reader wants to understand "why it was designed this way"? | **Explanation** |
+| Reader needs exact specs/parameters/types? | **Reference** |
+
+If unclear, ask:
+> "Who is the primary reader, and what should they be able to do after reading?"
+
+Multiple types per project are common — create separate files per type.
+
+### Phase 1-D: Delivery Subtype Routing
+
+| Question | Yes → Subtype |
+|----------|--------------|
+| Assigns implementation work derived from RFC/ADR? | **Task** |
+| Agrees on interface/schema/SLA across modules/teams? | **Contract** |
+| Verifies Task completion item-by-item? | **Checklist** |
+| Evaluates completed Task results and records lessons? | **Review** |
+
+### Phase 2: Agent Delegation
+
+Route to the matching agent, passing all Phase 0 context:
+
+**Diátaxis:** Tutorial → `doc-writer-tutorial` | How-to → `doc-writer-howto` | Explanation → `doc-writer-explain` | Reference → `doc-writer-reference`
+
+**Delivery:** Task → `doc-writer-task` | Contract → `doc-writer-contract` | Checklist → `doc-writer-checklist` | Review → `doc-writer-review`
+
+### Phase 3: Quality Validation
+
+> Common rules: `references/common-rules.md`. Style rules: `references/writing-style.md`.
+
+For existing doc review requests, delegate to `doc-reviewer` agent.
+
+After draft completion, verify:
+
+**Universal checks:**
+1. **Type purity**: No mixed-type content (e.g., Reference tables in Tutorial → split)
+2. **Audience fit**: Can the target audience achieve their goal with this doc?
+3. **6-month test**: Still valid in 6 months? No hardcoded volatile values?
+4. **Term consistency**: Same concept never called by different names?
+5. **Cross-references**: Links to related docs (including cross-axis)?
+6. **Diagrams as Code**: Mermaid/PlantUML only?
+
+**Delivery-axis additional checks:**
+7. **Source link**: Task has RFC/ADR or Contract link?
+8. **Acceptance criteria**: Task completion criteria are verifiable?
+9. **Task ID consistency**: Checklist/Review task_id matches actual Task file?
+10. **Invariants**: Contract has at least 1 invariant?
 
 ---
 
-## Explanation 서브타입: Design Doc vs ADR
+## Partial Execution
 
-Explanation 유형은 두 가지 서브타입이 있다:
-
-| 서브타입 | 용도 | 규모 |
-|----------|------|------|
-| **Design Doc (RFC)** | 새 기능/시스템의 전체 설계 제안서 | 큰 변경, 리뷰 필요 |
-| **ADR** | 개별 아키텍처 결정 기록 | 작은 결정, 이력 보존 |
-
-판별 기준:
-- "새 시스템/기능을 설계하고 리뷰 받고 싶다" → Design Doc
-- "특정 기술 선택의 이유를 기록하고 싶다" → ADR
-
-둘 다 `doc-writer-explain` 에이전트가 처리하며, 에이전트 내부에서 템플릿을 분기한다.
+| Request | Scope |
+|---------|-------|
+| "Write a doc" | Full Phase 0→3 |
+| "Determine this doc's type" | Phase 0.5→1 only |
+| "Review this doc" | Phase 3 only |
+| "Add a Reference" | Phase 2 direct (type known) |
+| "Write a Task" | Phase 2 direct (Delivery axis, Task) |
+| "Set up doc structure" | Redirect to `/init-docs` |
 
 ---
 
-## 다른 스킬/커맨드와의 연계
+## Explanation Subtypes: Design Doc vs ADR
 
-- **`/init-docs`**: 프로젝트에 문서 사이트 구조(번호 체계 + MkDocs) 초기화
-- **diagram-architect**: Explanation 문서에 아키텍처 다이어그램이 필요할 때 위임
-- **doc-reviewer**: 기존 문서의 가독성/유형순수성/거버넌스 종합 리뷰
-## 문서 사이트 아키텍처
+| Subtype | Use Case | Scale |
+|---------|----------|-------|
+| **Design Doc (RFC)** | Full design proposal for new feature/system | Large change, needs review |
+| **ADR** | Record of individual architecture decision | Small decision, history preservation |
 
-개별 문서 작성 전에 프로젝트 전체의 문서 구조가 필요하다면:
+Both handled by `doc-writer-explain` with internal template branching.
 
-> 사이트 구조 규칙: `references/site-architecture.md` 참조.
-> 번호 체계(00-90), MkDocs 설정, 거버넌스 5대 규칙을 정의한다.
-> `/init-docs` 커맨드가 이 규칙에 따라 구조를 자동 생성한다.
+---
+
+## Related Skills/Commands
+
+- **`/init-docs`**: Initialize doc site structure (numbered hierarchy + MkDocs) + execution doc structure (`planning/`)
+- **diagram-architect**: Delegate for architecture diagrams in Explanation docs
+- **doc-reviewer**: Comprehensive review of existing docs (both axes)
+
+## Doc Site Architecture
+
+For project-wide doc structure before writing individual docs:
+> See `references/site-architecture.md` for numbering scheme (00-90), MkDocs config, and 5 governance rules.
+> `/init-docs` auto-generates structure per these rules.

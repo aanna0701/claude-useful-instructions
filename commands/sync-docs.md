@@ -1,6 +1,6 @@
 # sync-docs — Sync project documentation to current codebase state
 
-Analyze the current codebase state (including git worktrees if present, recent git changes, and all dependency files) and update all `.md` documentation files to match reality.
+Analyze the current codebase state (including git worktrees if present, recent git changes, and all dependency files) and update all `.md` documentation files (both `docs/` and `planning/`) to match reality.
 
 Target files: $ARGUMENTS (if empty, update all stale `.md` files)
 
@@ -39,7 +39,7 @@ For EACH worktree discovered in Step 0 (or just the current directory in single-
 
 ### Docs worktree scan (current directory)
 1. **File structure** — Glob `**/*.{cpp,h,sh,py,ts,js,yaml,yml,toml,json,proto,rs,go}`, `Makefile`, `Dockerfile*`, `docker-compose*.yml` — exclude `node_modules/`, `.venv/`, `**/googletest-*`, `dist/`, `build/`, `target/`
-2. **All `.md` files** — Glob `**/*.md` (same exclusions)
+2. **All `.md` files** — Glob `**/*.md` (same exclusions), including `planning/**/*.md`
 3. **Dependency files** — Read every file that matches:
    - Python: `requirements*.txt`, `pyproject.toml`, `setup.py`, `setup.cfg`, `Pipfile`
    - Node: `package.json`, `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`
@@ -100,6 +100,14 @@ For each `.md` file, check against **actual codebase across all worktrees**:
 - [ ] Completed tasks still marked as TODO?
 - [ ] New features not documented?
 
+### Execution artifact consistency (planning/)
+- [ ] Tasks marked `done` but no corresponding Review exists?
+- [ ] Checklists for `done` tasks with unchecked items?
+- [ ] Contracts referenced by tasks that have been `superseded`?
+- [ ] Tasks referencing deleted/archived RFC/ADR documents?
+- [ ] Orphaned checklists (parent task deleted)?
+- [ ] Task status not matching implementation reality (done in code but `open` in task)?
+
 ### Cross-worktree consistency (multi-worktree mode only)
 - [ ] Each worktree's modules match their docs descriptions?
 - [ ] Test counts accurate across all worktrees?
@@ -153,6 +161,15 @@ Do not touch files where no changes were detected.
 
 - Sync with subproject's actual state
 - Ensure paths are correct relative to the subproject
+
+### Execution artifacts (planning/**/*.md)
+
+- Update Task status based on git log evidence (e.g., feature branches merged → `done`)
+- Flag orphaned Checklists (parent task deleted or moved)
+- Flag Contracts with no referencing Tasks (unused contracts)
+- Flag `done` Tasks without corresponding Reviews
+- Verify source links in Tasks still point to valid RFC/ADR files
+- Verify task_id references in Checklists and Reviews match existing Tasks
 
 ---
 

@@ -1,121 +1,183 @@
-# write-doc — Diátaxis Framework 기반 기술 문서 작성
+# write-doc — Diátaxis + Execution Artifacts Documentation
 
-Diátaxis Framework에 따라 문서 유형을 판별하고, 유형별 전문 에이전트에게 위임하여 고품질 기술 문서를 작성한다.
+Write high-quality documents by determining type via the Diátaxis + Execution Artifacts framework and delegating to specialized agents.
 
-Target: $ARGUMENTS (문서 주제 또는 "review [파일경로]" 형태)
-
----
-
-## Step 0: 모드 판별
-
-`$ARGUMENTS`를 분석:
-
-| 패턴 | 모드 | 동작 |
-|------|------|------|
-| `review [파일경로]` | 기존 문서 검토 | → Step 5로 직행 |
-| 그 외 | 새 문서 작성 | → Step 1부터 |
+Target: $ARGUMENTS (doc topic, or "review [filepath]")
 
 ---
 
-## Step 1: 입력 수집
+## Step 0: Mode Detection
 
-사용자에게 아래를 확인. 이미 대화에 있으면 다시 묻지 않음.
+Analyze `$ARGUMENTS`:
 
-**필수:**
-- 문서의 주제/범위
-- 대상 독자 (신입? 동료 개발자? 경영진?)
-
-**선택 (더 좋은 결과):**
-- 기존 코드베이스 경로
-- 프로젝트 glossary 경로
-- 참고할 기존 문서
+| Pattern | Mode | Action |
+|---------|------|--------|
+| `review [filepath]` | Review existing doc | → Step 5 |
+| `task [topic]` | Task creation | → Step 3 (Delivery, Task) |
+| `contract [topic]` | Contract creation | → Step 3 (Delivery, Contract) |
+| `checklist [T-NNN]` | Checklist creation | → Step 3 (Delivery, Checklist) |
+| `review-doc [T-NNN]` | Review creation | → Step 3 (Delivery, Review) |
+| Other | New document | → Step 1 |
 
 ---
 
-## Step 2: 유형 판별 (Router)
+## Step 1: Input Gathering
 
-See SKILL.md for type definitions and discrimination questions.
+Confirm with user (skip if already in conversation):
 
-판별이 어려우면 사용자에게 질문:
-> "이 문서의 주요 독자는 누구이고, 읽은 뒤 어떤 행동을 하길 바라시나요?"
+**Required:** Document topic/scope, target audience (newcomer? peer dev? management?)
 
-하나의 프로젝트에 여러 유형 필요 시 유형별 별도 파일 생성.
+**Optional:** Codebase path, glossary path, existing reference docs
 
-사용자에게 판별 결과를 보여주고 확인:
+---
+
+## Step 1.5: Axis Determination
+
+Apply axis determination routing from SKILL.md Phase 0.5.
+
+Show determination result to user for confirmation:
 ```
-📝 문서 유형: [Tutorial / How-to Guide / Explanation / Reference]
-   독자: [대상 독자]
-   결과물: [문서를 읽고 나서 독자가 할 수 있는 것]
+Axis: [Diátaxis / Delivery]
 ```
 
 ---
 
-## Step 3: 에이전트 위임
+## Step 2: Diátaxis Type Routing
 
-Agent delegation follows SKILL.md Phase 2.
-위임 시 Step 1에서 수집한 정보를 함께 전달.
+Apply Diátaxis type routing from SKILL.md Phase 1.
+
+Show result to user:
+```
+Axis:   Diátaxis
+Type:   [Tutorial / How-to Guide / Explanation / Reference]
+Reader: [target audience]
+Outcome: [what reader can do after reading]
+```
 
 ---
 
-## Step 4: 파일 저장
+## Step 2-D: Delivery Subtype Routing
 
-에이전트가 작성한 문서를 프로젝트 docs/ 구조에 맞게 저장.
+If entering from Step 0 with explicit keyword, subtype is already determined. Otherwise apply Delivery subtype routing from SKILL.md Phase 1-D.
 
-**구조 판별:** `docs/00_context/` 디렉토리가 존재하면 번호 체계, 아니면 유형별 구조.
+Show result to user:
+```
+Axis:    Delivery (Execution Artifact)
+Type:    [Task / Contract / Checklist / Review]
+Target:  [assignee or contracting party]
+Purpose: [assignment / agreement / verification / assessment]
+```
 
-### 번호 체계 구조 (docs/00_context/ 존재 시)
+---
+
+## Step 3: Agent Delegation
+
+Delegate to the matching agent per SKILL.md Phase 2, passing Step 1 context.
+
+---
+
+## Step 4: File Saving
+
+Save the agent's output to the appropriate project location.
+
+### Diátaxis docs → `docs/`
+
+**Structure detection:** If `docs/00_context/` exists, use numbered hierarchy; otherwise use type-based layout.
+
+#### Numbered hierarchy (when docs/00_context/ exists)
 ```
 docs/
-├── 00_context/          ← Explanation(비즈니스), Reference(요구사항)
-├── 10_architecture/     ← Explanation(설계, ADR)
-├── 20_implementation/   ← Reference(API, Config, CLI)
+├── 00_context/          ← Explanation (business), Reference (requirements)
+├── 10_architecture/     ← Explanation (design, ADR)
+├── 20_implementation/   ← Reference (API, Config, CLI)
 ├── 30_guides/           ← Tutorial, How-to
 │   ├── tutorials/
 │   └── howto/
-├── 40_operations/       ← How-to(배포, Runbook), Reference(SLA)
+├── 40_operations/       ← How-to (deploy, runbook), Reference (SLA)
 └── 90_archive/
 ```
 
-### 유형별 구조 (기본)
+#### Type-based layout (default)
 ```
 docs/
 ├── tutorials/      ← Tutorial
 ├── howto/          ← How-to Guide
 ├── explanation/    ← Explanation (Design Doc, ADR)
-│   └── adr/        ← ADR 전용
+│   └── adr/
 └── reference/      ← Reference
 ```
 
-파일명: kebab-case, 한글 금지.
-
-> 번호 체계가 아직 없다면 `/init-docs`를 먼저 실행하도록 안내.
-
----
-
-## Step 5: 품질 검증 (review 모드 포함)
-
-기존 문서 검토(`review`) 또는 새 문서 검증에 적용.
-
-> **Review 모드 위임:** `review` 모드에서는 `doc-reviewer` 에이전트에게 위임하여
-> 가독성/유형순수성/거버넌스를 종합 리뷰받을 수 있다.
-
-Quality validation: follow SKILL.md Phase 3 checklist.
-Apply longevity test (see common-rules.md).
-
-위반 항목이 있으면 수정 사항을 제안하고, 사용자 확인 후 적용.
-
----
-
-## Step 6: 완료 리포트
+### Execution docs → `planning/`
 
 ```
-문서 작성 완료
+planning/
+├── tasks/          ← Task (T-NNN-slug.md)
+├── contracts/      ← Contract ({domain}-contract.md)
+├── checklists/     ← Checklist (T-NNN.md)
+└── reviews/        ← Review (T-NNN-review.md)
+```
+
+If `planning/` does not exist, prompt user to run `/init-docs` first.
+
+### Common rules
+
+Filenames: kebab-case only. If numbered hierarchy is missing, suggest `/init-docs`.
+
+---
+
+## Step 5: Quality Validation (includes review mode)
+
+For existing doc review or new doc validation.
+
+> **Review mode:** Delegate to `doc-reviewer` agent for comprehensive readability/type-purity/governance review.
+
+### Type purity (Diátaxis)
+- [ ] No Reference tables inside Tutorial?
+- [ ] No beginner explanations inside How-to?
+- [ ] No step-by-step procedures inside Explanation?
+- [ ] No opinions/recommendations inside Reference?
+
+### Type purity (Delivery)
+- [ ] No design discussion in Task? (→ split to Explanation)
+- [ ] No procedural guides in Contract? (→ split to How-to)
+- [ ] No background explanations in Checklist?
+- [ ] No new requirements in Review? (→ split to new Task)
+
+### Common quality
+- [ ] Complete YAML frontmatter? (title, type, status + type-specific fields)
+- [ ] Diagrams in Mermaid/PlantUML?
+- [ ] Terms match glossary?
+- [ ] Cross-reference links present (including cross-axis)?
+- [ ] Valid in 6 months?
+
+### Delivery-axis additional
+- [ ] Task has source link (RFC/ADR or Contract)?
+- [ ] Task has verifiable acceptance criteria?
+- [ ] Checklist/Review task_id matches actual Task file?
+- [ ] Contract has at least 1 invariant?
+- [ ] Review has at least 1 lesson learned?
+
+### Governance
+- [ ] `owner` field set?
+- [ ] No duplicate info across docs (SSOT)?
+- [ ] `tags` use only project-allowed values?
+
+Fix violations, confirm with user, then apply.
+
+---
+
+## Step 6: Completion Report
+
+```
+Document complete
 ─────────────────────────────────
-유형:     [Tutorial / How-to / Explanation / Reference]
-파일:     docs/[경로]/[파일명].md
-독자:     [대상 독자]
-품질 검사: ✅ 통과 (또는 ⚠️ N건 수정)
+Axis:     [Diátaxis / Delivery]
+Type:     [Tutorial / How-to / Explanation / Reference / Task / Contract / Checklist / Review]
+File:     [docs/ or planning/][path]/[filename].md
+Audience: [reader or assignee]
+Quality:  PASS (or WARN N items fixed)
 ─────────────────────────────────
-관련 문서 추천:
-  - [아직 없는 관련 유형 문서 제안]
+Suggested related docs:
+  - [missing related doc type suggestions]
+  - [cross-axis link suggestions (e.g., Task → related RFC)]
 ```
