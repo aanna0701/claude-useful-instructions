@@ -8,7 +8,7 @@
 #   1. Installs Python dependencies via uv
 #   2. Validates GEMINI_API_KEY is set
 #   3. Copies MCP server to project
-#   4. Auto-registers MCP config in ~/.claude/settings.json (global, works across all projects/worktrees)
+#   4. Registers MCP server via `claude mcp add` (user scope → ~/.claude.json)
 
 set -e
 
@@ -29,6 +29,12 @@ fi
 
 if ! command -v python3 &>/dev/null; then
   echo "ERROR: 'python3' is required but not found." >&2
+  exit 1
+fi
+
+if ! command -v claude &>/dev/null; then
+  echo "ERROR: 'claude' CLI is required but not found." >&2
+  echo "Install: npm install -g @anthropic-ai/claude-code" >&2
   exit 1
 fi
 
@@ -79,61 +85,19 @@ google-genai>=1.0") --python python3
 cd "$PROJECT_DIR"
 echo "Dependencies installed."
 
-# ── Register MCP config in global settings.json ──────────────────────────
+# ── Register MCP server via claude CLI ────────────────────────────────────
 
-SETTINGS_FILE="$HOME/.claude/settings.json"
-mkdir -p "$HOME/.claude"
+# Remove existing registration to allow re-registration (update API key etc.)
+claude mcp remove -s user gemini-review 2>/dev/null || true
 
-MCP_PERMISSIONS=(
-  "mcp__gemini_review__gemini_summarize_design_pack"
-  "mcp__gemini_review__gemini_derive_contract"
-  "mcp__gemini_review__gemini_audit_implementation"
-  "mcp__gemini_review__gemini_compare_diffs"
-  "mcp__gemini_review__gemini_draft_release_notes"
-)
+# Register with user scope (writes to ~/.claude.json, works across all projects/worktrees)
+claude mcp add -s user \
+  -e "GEMINI_API_KEY=$GEMINI_API_KEY" \
+  -- gemini-review \
+  "$(command -v uv)" run --directory "$MCP_DST" python server.py
 
-python3 << PYEOF
-import json, sys, os
-
-settings_file = "$SETTINGS_FILE"
-mcp_dst = "$MCP_DST"
-permissions = $(printf '%s\n' "${MCP_PERMISSIONS[@]}" | python3 -c "import sys,json; print(json.dumps([l.strip() for l in sys.stdin]))")
-
-# Load existing settings or start fresh
-settings = {}
-if os.path.isfile(settings_file):
-    with open(settings_file, "r") as f:
-        try:
-            settings = json.load(f)
-        except json.JSONDecodeError:
-            settings = {}
-
-# Add or update MCP server config (always update to refresh API key)
-api_key = "$GEMINI_API_KEY"
-mcp_servers = settings.get("mcpServers", {})
-existing = "gemini-review" in mcp_servers
-
-mcp_servers["gemini-review"] = {
-    "command": "uv",
-    "args": ["run", "--directory", mcp_dst, "python", "server.py"],
-    "env": {"GEMINI_API_KEY": api_key}
-}
-settings["mcpServers"] = mcp_servers
-
-# Add permissions (merge with existing, deduplicate)
-existing_allow = settings.get("permissions", {}).get("allow", [])
-merged_allow = list(dict.fromkeys(existing_allow + permissions))
-settings.setdefault("permissions", {})["allow"] = merged_allow
-
-# Write back
-with open(settings_file, "w") as f:
-    json.dump(settings, f, indent=2, ensure_ascii=False)
-    f.write("\n")
-
-action = "updated" if existing else "registered"
-print(f"MCP config: {action} gemini-review → {settings_file}")
-print(f"  API key: {api_key[:10]}...{api_key[-4:]}")
-PYEOF
+echo "MCP server registered (user scope → ~/.claude.json)"
+echo "  API key: ${GEMINI_API_KEY:0:10}...${GEMINI_API_KEY: -4}"
 
 # ── Summary ───────────────────────────────────────────────────────────────
 
