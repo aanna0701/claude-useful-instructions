@@ -6,13 +6,13 @@ The `collab` bundle enables structured handoff between **Claude** (design/review
 
 ---
 
-## Roles
+## Roles & Work Item Files
 
 | Agent | Role | Writes |
 |-------|------|--------|
-| **Claude** | spec owner, integrator, final authority | brief, contract (signed), review.md |
+| **Claude** | spec owner, integrator, final authority | brief.md, contract.md (signed), checklist.md, review.md |
 | **Codex** | implementer farm | code, status.md |
-| **Gemini** | auditor, synthesizer, spec normalizer | review-gemini.md, contract (draft) |
+| **Gemini** | auditor, synthesizer, spec normalizer | review-gemini.md, contract.md (draft) |
 
 ## 2-Touch Workflow
 
@@ -88,27 +88,9 @@ Override the model with `GEMINI_MODEL` (default: `gemini-2.5-pro`):
 export GEMINI_MODEL='gemini-2.5-flash'  # cheaper, faster
 ```
 
-### Step 4: Set up worktree links (if using git worktrees)
+### Step 3: Set up worktree links (if using git worktrees)
 
-If the project uses git worktrees to isolate feature branches:
-
-```bash
-# From any worktree in the repo:
-bash link-work.sh              # Link work/ to all worktrees
-bash link-work.sh training     # Link to specific worktree (partial match)
-bash link-work.sh --status     # Show symlink status
-```
-
-Optionally install as a git alias:
-```bash
-bash link-work.sh --self-install   # Registers: git work-link
-git work-link --status             # Use from anywhere
-```
-
-Create a new worktree with work/ pre-linked:
-```bash
-bash link-work.sh --init VasIntelli-Eval feature-eval
-```
+See [Worktree Support](#worktree-support) for `link-work.sh` commands.
 
 ### Installed Layout
 
@@ -158,7 +140,7 @@ workspace/
 - When Claude updates a plan in Docs, Codex sees the change immediately in Training
 - Codex commits directly on its worktree branch — no sub-branches needed
 
-### Commands
+### link-work.sh commands
 
 | Command | Description |
 |---------|-------------|
@@ -169,20 +151,7 @@ workspace/
 | `link-work.sh --init <name> <branch>` | Create new worktree + link + gitignore |
 | `link-work.sh --self-install` | Install as `git work-link` alias |
 
-### End-to-end flow with worktrees
-
-```
-1. Claude (Docs)       /work-plan [topic]         → creates work/items/FEAT-NNN/
-2. Gemini (MCP)        gemini_derive_contract      → drafts contract.md
-3. Claude (Docs)       signs contract.md           → work item ready
-4. User                link-work.sh                → symlinks work/ to impl worktrees
-5. Codex (Training)    reads work/items/FEAT-NNN/  → implements on worktree branch
-6. Codex (Training)    updates status.md           → marks done
-7. Gemini (MCP)        gemini_audit_implementation → writes review-gemini.md
-8. Claude (Docs)       /work-review FEAT-NNN       → writes review.md, merge decision
-```
-
-> Step 4 is only needed once per worktree. The `post-checkout` hook auto-links on subsequent branch switches.
+> The `post-checkout` hook auto-links on subsequent branch switches.
 
 ---
 
@@ -196,22 +165,6 @@ workspace/
 2. **Boundary check**: After contracts are generated, the system checks that "Allowed Modifications" paths don't overlap between any pair of items
 3. **Dispatch grouping**: Items with no boundary overlap are grouped for parallel execution; conflicting items are placed in sequential groups
 4. **Dispatch manifest**: `work/dispatch.json` records parallel groups, dependencies, and conflicts
-
-### Dispatch commands
-
-```bash
-# Check boundaries + print parallel dispatch commands
-bash codex-run.sh FEAT-001 FEAT-002 FEAT-003
-
-# Boundary check only (dry run)
-bash codex-run.sh --check FEAT-001 FEAT-002
-
-# Dispatch from manifest (respects parallel groups)
-bash codex-run.sh --from-manifest
-
-# Show all open work items
-bash codex-run.sh --status
-```
 
 ### Boundary matrix example
 
@@ -266,13 +219,9 @@ bash codex-run.sh FEAT-003
 
 ```
 [Claude] /work-plan "Add JWT authentication middleware"
-```
 
-Claude gathers RFC/ADR, optionally calls Gemini to summarize and derive contract draft:
-
-```
 Gemini: summarize_design_pack(["docs/rfc/RFC-012.md", "docs/adr/ADR-005.md"])
-  → Implementation-ready summary (valid decisions, invariants, open questions)
+  → Implementation-ready summary
 
 Gemini: derive_contract(summary, scope, boundaries)
   → contract.md draft (status: draft)
@@ -280,90 +229,35 @@ Gemini: derive_contract(summary, scope, boundaries)
 Claude: reviews + signs contract (status: draft → signed)
 
 Created work/items/FEAT-001-jwt-auth-middleware/
-  brief.md       — objective, scope, dependencies
-  contract.md    — interfaces, allowed/forbidden files, invariants (signed by Claude)
-  checklist.md   — 5 verification items (Yes/No)
-  status.md      — status: open
+  brief.md, contract.md (signed), checklist.md, status.md (open)
 
-Codex Command:
-  bash codex-run.sh FEAT-001
+Codex Command: bash codex-run.sh FEAT-001
 ```
 
 ### Phase 2 — Implement (Codex)
 
 ```
 [Codex] bash codex-run.sh FEAT-001
+  → Reads brief → contract → checklist
+  → Updates status.md (in-progress)
+  → Implements within contract boundaries (src/middleware/, tests/middleware/)
+  → Commits: feat(FEAT-001): add JWT validation middleware
+  → Updates status.md → done (5/5 checklist items)
 ```
 
-The script auto-reads brief, contract, checklist and initializes status:
-
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant X as Codex
-    participant W as work/items/FEAT-001/
-
-    U->>X: bash codex-run.sh FEAT-001
-    X->>W: Read brief.md → contract.md → checklist.md
-    X->>W: Update status.md (in-progress, Agent: Codex)
-    X->>X: git checkout -b feat/FEAT-001-jwt-auth-middleware
-
-    loop For each contract requirement
-        X->>X: Implement + write tests
-        X->>W: Update status.md (progress, changed files)
-        X->>X: git commit -m "feat(FEAT-001): ..."
-    end
-
-    X->>W: Update status.md (done)
-```
-
-Codex implements strictly within contract boundaries:
-
-```
-[Codex] Reading contract... Allowed: src/middleware/, tests/middleware/
-[Codex] Reading contract... Forbidden: src/database/
-[Codex] feat(FEAT-001): add JWT validation middleware
-[Codex] feat(FEAT-001): add middleware unit tests
-[Codex] Updated status.md → done (5/5 checklist items)
-```
-
-### Phase 3 — Monitor (Claude)
-
-```
-[Claude] /work-status FEAT-001
-
-FEAT-001: JWT Auth Middleware
-Status:     done
-Agent:      Codex
-Branch:     feat/FEAT-001-jwt-auth-middleware
-Progress:   5/5 checklist items
-```
-
-### Phase 4 — Review (Gemini + Claude)
+### Phase 3 — Review (Gemini + Claude)
 
 ```
 [Claude] /work-review FEAT-001
-```
 
-Gemini audits first (neutral third-party), then Claude makes the final decision:
-
-```
 Gemini: audit_implementation(contract, changed_files, checklist)
-  → review-gemini.md:
-    Contract Compliance: 5/5 Pass
-    Boundary Violations: None
-    Edge Cases: Token expiry race condition (LOW)
-    Written: work/items/FEAT-001-jwt-auth-middleware/review-gemini.md
+  → review-gemini.md: 5/5 Pass, no boundary violations
 
 Claude (informed by Gemini audit):
-  Contract Compliance: 5/5 Pass
-  Additional finding: Token expiry race condition noted, acceptable for v1
-
-Decision: MERGE
-Written: work/items/FEAT-001-jwt-auth-middleware/review.md
+  → review.md: MERGE (token expiry race condition noted, acceptable for v1)
 ```
 
-### Phase 5 — Merge or Revise
+### Phase 4 — Merge or Revise
 
 ```mermaid
 flowchart TD
@@ -384,30 +278,16 @@ If **REVISE**, Claude outputs specific fix items and a new Codex prompt. Codex a
 
 ---
 
-## Work Item Files
-
-| File | Author | Purpose |
-|------|--------|---------|
-| `brief.md` | Claude | Objective, scope, dependencies |
-| `contract.md` | Gemini (draft) → Claude (signed) | Interfaces, boundaries, invariants, test requirements |
-| `checklist.md` | Claude | Yes/No verification items |
-| `status.md` | Codex | Real-time progress, blockers, ambiguities, changed files |
-| `review-gemini.md` | Gemini | Neutral compliance audit (pre-review) |
-| `review.md` | Claude | Final review, deviations, lessons, merge decision |
-
-## Commands & Tools
+## Quick Reference
 
 | Command/Tool | Actor | Description |
 |-------------|-------|-------------|
-| `/work-plan [topic(s)]` | Claude | Create work item(s) — single or batch with boundary check |
-| `/work-status [FEAT-NNN]` | Claude | Check progress (summary table or detail view) |
+| `/work-plan [topic(s)]` | Claude | Create work item(s) with boundary check |
+| `/work-status [FEAT-NNN]` | Claude | Check progress |
 | `/work-review [FEAT-NNN]` | Claude | Review implementation against contract |
-| `bash codex-run.sh FEAT-IDs` | User | Boundary check + parallel dispatch (single or multi) |
-| `bash codex-run.sh --check` | User | Boundary overlap check only (dry run) |
-| `bash link-work.sh [filter]` | User | Manage work/ symlinks across worktrees |
-| `git work-link` | User | Same as link-work.sh (after --self-install) |
-| `gemini_summarize_design_pack` | Gemini (MCP) | Compress design docs into summary |
-| `gemini_derive_contract` | Gemini (MCP) | Generate contract draft |
-| `gemini_audit_implementation` | Gemini (MCP) | Neutral pre-review audit |
-| `gemini_compare_diffs` | Gemini (MCP) | Cross-compare parallel branches |
-| `gemini_draft_release_notes` | Gemini (MCP) | Generate release notes |
+| `codex-run.sh FEAT-IDs` | User | Boundary check + parallel dispatch |
+| `codex-run.sh --check` | User | Boundary overlap check only (dry run) |
+| `codex-run.sh --from-manifest` | User | Dispatch from manifest (respects parallel groups) |
+| `codex-run.sh --status` | User | Show all open work items |
+| `link-work.sh` | User | Manage work/ symlinks (see [commands](#link-worksh-commands)) |
+| `gemini_*` tools | Gemini (MCP) | See [Gemini MCP Tools](#gemini-mcp-tools) |
