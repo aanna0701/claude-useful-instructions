@@ -51,14 +51,22 @@ fi
 MCP_SRC="$SCRIPT_DIR/mcp/gemini-review"
 MCP_DST="$PROJECT_DIR/mcp/gemini-review"
 
+# Resolve real paths to detect self-copy (e.g., running from project dir)
+MCP_SRC_REAL="$(realpath "$MCP_SRC" 2>/dev/null || echo "$MCP_SRC")"
+MCP_DST_REAL="$(realpath "$MCP_DST" 2>/dev/null || echo "$MCP_DST")"
+
 if [ ! -d "$MCP_SRC" ]; then
   echo "ERROR: MCP server source not found: $MCP_SRC" >&2
   exit 1
 fi
 
-mkdir -p "$MCP_DST"
-cp -rv "$MCP_SRC"/* "$MCP_DST/"
-echo "Copied MCP server → $MCP_DST/"
+if [ "$MCP_SRC_REAL" = "$MCP_DST_REAL" ]; then
+  echo "MCP server already in place — skipped copy."
+else
+  mkdir -p "$MCP_DST"
+  cp -rv "$MCP_SRC"/* "$MCP_DST/"
+  echo "Copied MCP server → $MCP_DST/"
+fi
 
 # ── Install Python dependencies ──────────────────────────────────────────
 
