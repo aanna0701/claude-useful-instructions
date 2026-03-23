@@ -1,17 +1,19 @@
 # work-review — Review Codex Implementation Against Contract
 
-Review a completed work item by comparing the implementation against the contract, checklist, and brief.
+Review completed work item(s) by comparing the implementation against the contract, checklist, and brief. Supports single or batch review.
 
 ---
 
 ## Input
 
-**$ARGUMENTS**: Work item ID (e.g., `FEAT-001` or `FEAT-001-user-auth`).
+**$ARGUMENTS**: One or more work item IDs (e.g., `FEAT-001` or `FEAT-001 FEAT-002 FEAT-003`).
 
 If no arguments provided:
-1. Glob `work/items/FEAT-*/status.md` for items with status "done" or "review"
-2. If exactly one found, use it. If multiple, list them and ask user to choose.
+1. Glob `work/items/FEAT-*/status.md` for items with status "done"
+2. If found, review all of them (batch mode)
 3. If none found, report: "No work items ready for review."
+
+**Batch mode**: When multiple FEAT IDs are given, review each in parallel using concurrent agents, then present a consolidated summary.
 
 ---
 
@@ -89,10 +91,31 @@ Print the decision with details:
 
 **MERGE**: "Ready to merge. Suggest: `git merge feat/FEAT-NNN-slug`"
 
-**REVISE**: List specific items Codex must fix. Output a revised Codex prompt:
+**REVISE**: List specific items Codex must fix. Output a re-dispatch command:
 ```
-Read work/items/FEAT-NNN-slug/review.md for required revisions.
-Fix the listed items and update status.md when done.
+bash codex-dispatch.sh FEAT-NNN
 ```
 
 **REJECT**: State reason clearly. Suggest whether to rework or abandon the work item.
+
+### Step 9: Batch Summary (when reviewing multiple items)
+
+When reviewing multiple items, also check for "Doc Changes Needed" in each `status.md` and consolidate:
+
+```
+Review Complete
+──────────────────────────────────────────────
+  FEAT-001  duckdb-schema-cleanup      MERGE
+  FEAT-002  jwt-auth-middleware        MERGE
+  FEAT-003  refactor-logging           REVISE
+
+Doc changes needed (from Codex status.md):
+  FEAT-001: Update docs/schema.md with new column list
+  FEAT-002: Add API auth section to docs/api.md
+
+Revisions needed:
+  bash codex-dispatch.sh FEAT-003
+──────────────────────────────────────────────
+```
+
+Handle doc changes that Codex recorded but could not make (since Codex is forbidden from modifying docs). Apply these changes directly or delegate to doc agents.

@@ -28,22 +28,23 @@ This skill manages the structured handoff between Claude (design/review), Codex 
 | Generate release notes | `gemini_draft_release_notes` MCP tool |
 | General collab question | Answer from `rules/collab-workflow.md` |
 
-## Workflow
+## Workflow (2-Touch)
 
 ```
-1. Claude: /work-plan [topic(s)]
-   └─ Multiple topics → parallel agent generation + boundary overlap check
-   └─ (optional) Gemini: summarize design pack → derive contract draft
-   └─ Claude: review + sign contracts
-   └─ Output: work/dispatch.json with parallel groups
-2. User: link-work.sh (symlinks work/ to impl worktrees)
-3. User: codex-dispatch.sh FEAT-001 FEAT-002 ...  (or --from-manifest)
-   └─ Validates boundaries, prints per-terminal commands
-4. Codex (×N): reads AGENTS.md + work item → implements in parallel + updates status
-5. Claude: /work-status → checks progress across all items
-6. Claude: /work-review [FEAT-NNN]
-   └─ (optional) Gemini: audit implementation → review-gemini.md
-   └─ Claude: final review → review.md → MERGE/REVISE/REJECT
+Claude: /work-plan [topic(s)]
+  → parallel agents generate work items
+  → boundary overlap check
+  → output: bash codex-dispatch.sh FEAT-001 FEAT-002 FEAT-003
+
+TOUCH 1 — Human runs: bash codex-dispatch.sh FEAT-001 FEAT-002 FEAT-003
+  → auto: boundary check → link worktrees → parallel codex exec → monitor
+  → Codex implements, updates status.md (records doc changes needed)
+  → output: /work-review FEAT-001 FEAT-002 FEAT-003
+
+TOUCH 2 — Human pastes into Claude: /work-review FEAT-001 FEAT-002 FEAT-003
+  → parallel review agents
+  → handles doc changes from status.md
+  → MERGE / REVISE / REJECT
 ```
 
 ## Worktree Support

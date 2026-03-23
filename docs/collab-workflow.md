@@ -14,30 +14,45 @@ The `collab` bundle enables structured handoff between **Claude** (design/review
 | **Codex** | implementer farm | code, status.md |
 | **Gemini** | auditor, synthesizer, spec normalizer | review-gemini.md, contract (draft) |
 
+## 2-Touch Workflow
+
+Human intervention is minimized to exactly **2 points**:
+
+```
+Claude: /work-plan topic1, topic2, topic3
+  → parallel agent generation + boundary check + dispatch manifest
+                                          ↓
+TOUCH 1 — Human: bash codex-dispatch.sh FEAT-001 FEAT-002 FEAT-003
+  → auto: boundary check → link worktrees → parallel codex exec → monitor
+  → Codex implements per contract, records doc changes in status.md
+  → prints: /work-review FEAT-001 FEAT-002 FEAT-003
+                                          ↓
+TOUCH 2 — Human: /work-review FEAT-001 FEAT-002 FEAT-003
+  → Claude reviews in parallel, handles doc changes, merges
+```
+
 ## Architecture
 
 ```mermaid
 graph LR
     subgraph "1 Claude — Design"
-        A["/work-plan"] --> G1["Gemini MCP\nsummarize + derive"]
-        G1 --> B["brief.md\ncontract.md\nchecklist.md"]
+        A["/work-plan\n(parallel agents)"] --> G1["Gemini MCP\nsummarize + derive"]
+        G1 --> B["work items +\nboundary check"]
         A -.->|no Gemini| B
     end
 
-    subgraph "Shared Workspace"
-        B --> C["work/items/\nFEAT-NNN-slug/"]
-    end
-
-    subgraph "2 Codex — Implement"
-        C --> D["codex-implement.sh\nFEAT-NNN"]
+    subgraph "2 codex-dispatch.sh"
+        B --> BC["boundary check\n+ worktree link"]
+        BC --> D["codex exec ×N\n(parallel)"]
         D --> E["code +\nstatus.md"]
     end
 
-    subgraph "3 Review"
+    subgraph "3 Claude — Review"
         E --> G2["Gemini MCP\naudit"]
-        G2 --> F["Claude\n/work-review"]
+        G2 --> F["/work-review\n(parallel agents)"]
         E -.->|no Gemini| F
         F --> H["review.md\nMERGE / REVISE / REJECT"]
+        F --> DOC["doc changes\n(from status.md)"]
     end
 
     H -.->|REVISE| D

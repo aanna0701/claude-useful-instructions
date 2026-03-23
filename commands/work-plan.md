@@ -146,92 +146,26 @@ Create or update `work/dispatch.json`:
 
 **Single item**: Still generates dispatch.json (group of 1). This keeps the interface consistent.
 
-### Step 7: Output Dispatch Commands
+### Step 7: Summary & Single Dispatch Command
 
-**Single item:**
-```
-## Codex Command
+Print the summary table and a **single command** the user can copy-paste:
 
-bash codex-dispatch.sh FEAT-001
-```
-
-**Multiple items (no conflicts):**
-```
-## Parallel Dispatch
-
-bash codex-dispatch.sh FEAT-001 FEAT-002 FEAT-003
-```
-
-**Multiple items (with conflicts):**
-```
-## Parallel Dispatch
-
-# Group 1 (simultaneous):
-bash codex-dispatch.sh FEAT-001 FEAT-002
-
-# Group 2 (after group 1):
-bash codex-dispatch.sh FEAT-003
-```
-
-**Fallback** (if `codex-dispatch.sh` not available):
-```
-# Manual parallel execution:
-# Terminal 1:
-bash codex-implement.sh FEAT-001
-# Terminal 2:
-bash codex-implement.sh FEAT-002
-# Terminal 3 (after 1 & 2 complete):
-bash codex-implement.sh FEAT-003
-```
-
-### Step 8: Worktree Link Hint
-
-Check if the project uses git worktrees:
-
-```bash
-git worktree list 2>/dev/null | wc -l
-```
-
-If more than 1 worktree exists, print:
-
-```
-## Worktree Setup
-
-If Codex runs in a different worktree, ensure work/ is linked:
-
-  link-work.sh                    # Link all worktrees
-  link-work.sh <worktree-name>    # Link specific worktree
-```
-
-### Step 9: Summary
-
-**Single item:**
-```
-| File | Status |
-|------|--------|
-| brief.md | Created |
-| contract.md | Created |
-| checklist.md | Created |
-| status.md | Created |
-
-Next: Run the Codex command above.
-```
-
-**Multiple items:**
 ```
 Work Plan Complete
 ──────────────────────────────────────────────
-Created: 3 work items
   FEAT-001  duckdb-schema-cleanup      ✓ open
   FEAT-002  jwt-auth-middleware        ✓ open
   FEAT-003  refactor-logging           ✓ open
 
-Boundary check: 1 overlap (FEAT-002 × FEAT-003)
-Parallel groups: 2
-  Group 1: FEAT-001, FEAT-002  (parallel ✓)
-  Group 2: FEAT-003            (after group 1)
-
-Dispatch manifest: work/dispatch.json
+Boundary: ✓ all independent  (or: ⚠ 1 overlap, grouped sequentially)
+Dispatch: work/dispatch.json
 ──────────────────────────────────────────────
-Next: Run codex-dispatch.sh to start implementation.
+
+Next step — run this single command:
+
+  bash codex-dispatch.sh FEAT-001 FEAT-002 FEAT-003
+
+It will: check boundaries → link worktrees → run Codex in parallel → monitor → print review command.
 ```
+
+The dispatch script handles everything — worktree linking, boundary validation, parallel `codex exec`, completion monitoring, and outputting the `/work-review` command when all items finish. The user only needs to paste this one command.
