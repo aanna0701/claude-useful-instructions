@@ -81,6 +81,28 @@ Override the model with `GEMINI_MODEL` (default: `gemini-2.5-pro`):
 export GEMINI_MODEL='gemini-2.5-flash'  # cheaper, faster
 ```
 
+### Step 4: Set up worktree links (if using git worktrees)
+
+If the project uses git worktrees to isolate feature branches:
+
+```bash
+# From any worktree in the repo:
+bash link-work.sh              # Link work/ to all worktrees
+bash link-work.sh training     # Link to specific worktree (partial match)
+bash link-work.sh --status     # Show symlink status
+```
+
+Optionally install as a git alias:
+```bash
+bash link-work.sh --self-install   # Registers: git work-link
+git work-link --status             # Use from anywhere
+```
+
+Create a new worktree with work/ pre-linked:
+```bash
+bash link-work.sh --init VasIntelli-Eval feature-eval
+```
+
 ### Installed Layout
 
 ```
@@ -90,6 +112,7 @@ project/
 ├── codex-implement.sh                 # Codex entry point
 ├── codex-setup.sh                     # Codex setup script
 ├── gemini-setup.sh                    # Gemini MCP setup script
+├── link-work.sh                       # Worktree symlink manager
 ├── mcp/gemini-review/                 # Gemini MCP server
 │   ├── server.py                      #   5 tools wrapping Gemini API
 │   ├── prompts.py                     #   System prompts per tool
@@ -101,6 +124,58 @@ project/
     ├── skills/collab-workflow/
     └── templates/work-item/*.md       # Brief, contract, checklist, status, review, review-gemini
 ```
+
+The `post-checkout` hook is also installed to `.git/hooks/`, auto-linking `work/` when switching branches in new worktrees.
+
+---
+
+## Worktree Support
+
+When a repo uses **git worktrees** for feature isolation, each worktree maps to a collaboration role:
+
+```
+workspace/
+├── Project-Docs       (feature-docs)          ← Claude plans here
+│   └── work/items/FEAT-NNN-slug/              ← source of truth (real directory)
+├── Project-Training   (feature-training)       ← Codex implements here
+│   └── work/ → ../Project-Docs/work (symlink) ← reads plans via symlink
+├── Project-Inference  (feature-inference)
+└── Project-UI         (feature-ui)
+```
+
+### How it works
+
+- The **docs worktree** owns `work/items/` as a real, git-tracked directory
+- All other worktrees get `work/` as a **symlink** pointing to the docs worktree
+- Symlinks are auto-added to `.gitignore` — never committed to feature branches
+- When Claude updates a plan in Docs, Codex sees the change immediately in Training
+- Codex commits directly on its worktree branch — no sub-branches needed
+
+### Commands
+
+| Command | Description |
+|---------|-------------|
+| `link-work.sh` | Link `work/` to all worktrees |
+| `link-work.sh <filter>` | Link to matching worktree (partial match) |
+| `link-work.sh --status` | Show link status across all worktrees |
+| `link-work.sh --clean` | Remove all `work/` symlinks |
+| `link-work.sh --init <name> <branch>` | Create new worktree + link + gitignore |
+| `link-work.sh --self-install` | Install as `git work-link` alias |
+
+### End-to-end flow with worktrees
+
+```
+1. Claude (Docs)       /work-plan [topic]         → creates work/items/FEAT-NNN/
+2. Gemini (MCP)        gemini_derive_contract      → drafts contract.md
+3. Claude (Docs)       signs contract.md           → work item ready
+4. User                link-work.sh                → symlinks work/ to impl worktrees
+5. Codex (Training)    reads work/items/FEAT-NNN/  → implements on worktree branch
+6. Codex (Training)    updates status.md           → marks done
+7. Gemini (MCP)        gemini_audit_implementation → writes review-gemini.md
+8. Claude (Docs)       /work-review FEAT-NNN       → writes review.md, merge decision
+```
+
+> Step 4 is only needed once per worktree. The `post-checkout` hook auto-links on subsequent branch switches.
 
 ---
 
@@ -262,6 +337,8 @@ If **REVISE**, Claude outputs specific fix items and a new Codex prompt. Codex a
 | `/work-status [FEAT-NNN]` | Claude | Check progress (summary table or detail view) |
 | `/work-review [FEAT-NNN]` | Claude | Review implementation against contract |
 | `bash codex-implement.sh FEAT-NNN` | Codex | Load work item and start implementing |
+| `bash link-work.sh [filter]` | User | Manage work/ symlinks across worktrees |
+| `git work-link` | User | Same as link-work.sh (after --self-install) |
 | `gemini_summarize_design_pack` | Gemini (MCP) | Compress design docs into summary |
 | `gemini_derive_contract` | Gemini (MCP) | Generate contract draft |
 | `gemini_audit_implementation` | Gemini (MCP) | Neutral pre-review audit |
