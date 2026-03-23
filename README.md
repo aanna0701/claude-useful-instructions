@@ -53,25 +53,29 @@ cui-gemini-setup /path/to/my-project      # optional
 
 ### Gemini MCP Prerequisites
 
-`cui-gemini-setup` requires `GEMINI_API_KEY` in your shell environment:
+`cui-gemini-setup` requires a Gemini API key. Get one at https://aistudio.google.com/apikey.
+
+The setup script will prompt for the key if `GEMINI_API_KEY` is not set, or you can pass it:
 
 ```bash
-# 1. Get a key at https://aistudio.google.com/apikey
+# Option A: Let the script prompt you
+cui-gemini-setup /path/to/my-project
 
-# 2. Add to ~/.profile (NOT ~/.bashrc — see note below)
-echo 'export GEMINI_API_KEY="your-key-here"' >> ~/.profile
-source ~/.profile
-
-# 3. (Optional) Override default model (gemini-2.5-pro)
-echo 'export GEMINI_MODEL="gemini-2.5-flash"' >> ~/.profile  # cheaper, faster
+# Option B: Set it beforehand
+export GEMINI_API_KEY="your-key-here"
+cui-gemini-setup /path/to/my-project
 ```
 
-> **Why `~/.profile` instead of `~/.bashrc`?**
-> Most `.bashrc` files have a non-interactive shell guard (`case $- in *i*) ;; *) return;; esac`) near the top.
-> Claude Code launches MCP servers as non-interactive processes, so any exports below that guard are never loaded.
-> `~/.profile` is sourced for all login shells (including non-interactive), ensuring MCP servers can read the key.
+The key is written directly into `~/.claude/settings.json` (global), so it works across all projects and git worktrees.
 
-Without this, the MCP server will fail to start with `EnvironmentError`.
+> **Why global `settings.json` instead of per-project or env vars?**
+> - `.bashrc` has a non-interactive shell guard — Claude Code's MCP processes are non-interactive, so exports below the guard are never loaded.
+> - `.profile` is only sourced for login shells, which Claude Code may not use.
+> - Claude Code does **not** perform `${VAR}` substitution in MCP config `env` fields.
+> - Per-project `settings.local.json` doesn't work with git worktrees (Claude Code may resolve to the main repo root).
+> - Global `~/.claude/settings.json` is the only reliable approach.
+
+After setup, **restart Claude Code** for the MCP server to connect.
 
 ---
 
