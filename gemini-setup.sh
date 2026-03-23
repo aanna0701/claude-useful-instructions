@@ -8,7 +8,7 @@
 #   1. Installs Python dependencies via uv
 #   2. Validates GEMINI_API_KEY is set
 #   3. Copies MCP server to project
-#   4. Auto-registers MCP config in .claude/settings.local.json (skips if already present)
+#   4. Auto-registers MCP config in ~/.claude/settings.json (global, works across all projects/worktrees)
 
 set -e
 
@@ -35,14 +35,15 @@ fi
 # ── Validate API key ─────────────────────────────────────────────────────
 
 if [ -z "$GEMINI_API_KEY" ]; then
-  echo "WARNING: GEMINI_API_KEY is not set."
-  echo ""
-  echo "To set it, add to your shell profile (~/.bashrc or ~/.zshrc):"
-  echo "  export GEMINI_API_KEY='your-api-key-here'"
+  echo "GEMINI_API_KEY is not set in current shell."
   echo ""
   echo "Get a key at: https://aistudio.google.com/apikey"
   echo ""
-  echo "Continuing setup without API key validation..."
+  read -rp "Enter your Gemini API key: " GEMINI_API_KEY
+  if [ -z "$GEMINI_API_KEY" ]; then
+    echo "ERROR: API key is required." >&2
+    exit 1
+  fi
   echo ""
 fi
 
@@ -78,10 +79,10 @@ google-genai>=1.0") --python python3
 cd "$PROJECT_DIR"
 echo "Dependencies installed."
 
-# ── Register MCP config in settings.local.json ───────────────────────────
+# ── Register MCP config in global settings.json ──────────────────────────
 
-SETTINGS_FILE="$PROJECT_DIR/.claude/settings.local.json"
-mkdir -p "$PROJECT_DIR/.claude"
+SETTINGS_FILE="$HOME/.claude/settings.json"
+mkdir -p "$HOME/.claude"
 
 MCP_PERMISSIONS=(
   "mcp__gemini_review__gemini_summarize_design_pack"
@@ -107,17 +108,15 @@ if os.path.isfile(settings_file):
         except json.JSONDecodeError:
             settings = {}
 
-# Check if gemini-review is already registered
+# Add or update MCP server config (always update to refresh API key)
+api_key = "$GEMINI_API_KEY"
 mcp_servers = settings.get("mcpServers", {})
-if "gemini-review" in mcp_servers:
-    print("MCP config: gemini-review already registered — skipped.")
-    sys.exit(0)
+existing = "gemini-review" in mcp_servers
 
-# Add MCP server config
 mcp_servers["gemini-review"] = {
     "command": "uv",
     "args": ["run", "--directory", mcp_dst, "python", "server.py"],
-    "env": {"GEMINI_API_KEY": "\${GEMINI_API_KEY}"}
+    "env": {"GEMINI_API_KEY": api_key}
 }
 settings["mcpServers"] = mcp_servers
 
@@ -131,7 +130,9 @@ with open(settings_file, "w") as f:
     json.dump(settings, f, indent=2, ensure_ascii=False)
     f.write("\n")
 
-print(f"MCP config: registered gemini-review → {settings_file}")
+action = "updated" if existing else "registered"
+print(f"MCP config: {action} gemini-review → {settings_file}")
+print(f"  API key: {api_key[:10]}...{api_key[-4:]}")
 PYEOF
 
 # ── Summary ───────────────────────────────────────────────────────────────
