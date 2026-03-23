@@ -13,6 +13,7 @@ Usage:
 """
 
 import asyncio
+import hashlib
 import os
 import subprocess
 from pathlib import Path
@@ -86,18 +87,38 @@ def _collect_work_item(feat_id: str) -> str:
     return "\n".join(parts)
 
 
-MAX_RETRIES = int(os.environ.get("GEMINI_MAX_RETRIES", "2"))
-RETRY_DELAY = float(os.environ.get("GEMINI_RETRY_DELAY", "5"))
+MAX_RETRIES = int(os.environ.get("GEMINI_MAX_RETRIES", "3"))
+FALLBACK_MODELS = [m.strip() for m in os.environ.get(
+    "GEMINI_FALLBACK_MODELS", "gemini-2.0-flash"
+).split(",") if m.strip()]
+
+# In-memory response cache (keyed by model + content hash)
+_cache: dict[str, str] = {}
 
 
-async def _call_gemini(system_prompt: str, user_content: str) -> str:
-    """Call Gemini API with retry on transient errors."""
+def _cache_key(model: str, system_prompt: str, user_content: str) -> str:
+    h = hashlib.sha256(f"{model}:{system_prompt}:{user_content}".encode()).hexdigest()[:16]
+    return h
+
+
+def _is_rate_limit(e: Exception) -> bool:
+    s = str(e).lower()
+    return "429" in s or "resource exhausted" in s or "quota" in s or "too many" in s
+
+
+def _is_fatal(e: Exception) -> bool:
+    s = str(e).lower()
+    return any(k in s for k in ("invalid api key", "permission denied", "not found", "403"))
+
+
+async def _call_gemini_single(model: str, system_prompt: str, user_content: str) -> str:
+    """Call Gemini API with exponential backoff for 429 errors."""
     last_error = None
     for attempt in range(MAX_RETRIES + 1):
         try:
             response = await asyncio.to_thread(
                 client.models.generate_content,
-                model=MODEL,
+                model=model,
                 contents=user_content,
                 config=genai.types.GenerateContentConfig(
                     system_instruction=system_prompt,
@@ -106,26 +127,58 @@ async def _call_gemini(system_prompt: str, user_content: str) -> str:
             return response.text
         except Exception as e:
             last_error = e
-            error_str = str(e).lower()
-            # Non-retryable errors — fail immediately
-            if any(k in error_str for k in ("invalid api key", "permission", "not found")):
-                return f"[Gemini Error] {e}"
-            # Retryable errors — wait and retry
+            if _is_fatal(e):
+                raise
             if attempt < MAX_RETRIES:
-                await asyncio.sleep(RETRY_DELAY * (attempt + 1))
+                # 429: exponential backoff (10s, 30s, 60s)
+                # Other errors: shorter backoff (3s, 6s, 12s)
+                if _is_rate_limit(e):
+                    delay = 10 * (3 ** attempt)  # 10, 30, 90
+                else:
+                    delay = 3 * (2 ** attempt)   # 3, 6, 12
+                await asyncio.sleep(delay)
                 continue
-    # All retries exhausted
-    error_msg = str(last_error)
-    if "quota" in error_msg.lower() or "429" in error_msg:
-        return (
-            f"[Gemini Quota Exhausted] {error_msg}\n\n"
-            "Suggestions:\n"
-            "- Wait a few minutes and retry\n"
-            "- If using pro, switch to flash: export GEMINI_MODEL=gemini-2.5-flash\n"
-            "- Check quota at https://aistudio.google.com/apikey\n"
-            "- Skip Gemini: Claude can proceed without Gemini for all workflow steps"
-        )
-    return f"[Gemini Error] {error_msg} (after {MAX_RETRIES + 1} attempts)"
+    raise last_error  # type: ignore[misc]
+
+
+async def _call_gemini(system_prompt: str, user_content: str) -> str:
+    """Call Gemini with model fallback chain and caching."""
+    # Check cache
+    key = _cache_key(MODEL, system_prompt, user_content)
+    if key in _cache:
+        return _cache[key]
+
+    # Build model chain: primary → fallbacks (deduplicated, preserving order)
+    seen = set()
+    models = []
+    for m in [MODEL] + FALLBACK_MODELS:
+        if m not in seen:
+            seen.add(m)
+            models.append(m)
+
+    last_error = None
+    for model in models:
+        try:
+            result = await _call_gemini_single(model, system_prompt, user_content)
+            _cache[_cache_key(model, system_prompt, user_content)] = result
+            if model != MODEL:
+                result = f"[Used fallback model: {model}]\n\n{result}"
+            return result
+        except Exception as e:
+            last_error = e
+            if _is_fatal(e):
+                return f"[Gemini Error] {e}"
+            # Rate limited on this model → try next
+            continue
+
+    # All models exhausted
+    return (
+        f"[Gemini Unavailable] {last_error}\n\n"
+        "All models rate-limited. Suggestions:\n"
+        "- Wait a few minutes and retry\n"
+        "- Check quota at https://aistudio.google.com/apikey\n"
+        "- Skip Gemini: Claude can proceed without it for all workflow steps"
+    )
 
 
 # ── Tools ─────────────────────────────────────────────────────────────────
