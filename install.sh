@@ -14,12 +14,15 @@
 #   --exclude NAME  Exclude a bundle (repeatable, e.g. --exclude vla --exclude career)
 #   --interactive   Interactive mode: choose bundles from a menu
 #   --list          List available bundles and exit
+#   --uninstall     Remove installed files (respects bundle flags)
 #
 # Examples:
 #   ./install.sh                                  # Install all to ~/.claude
 #   ./install.sh --core --docs                    # Install core + docs only
 #   ./install.sh --exclude career --exclude vla   # Install all except career and vla
 #   ./install.sh --interactive ~/proj             # Interactive selection
+#   ./install.sh --uninstall ~/proj               # Uninstall all from ~/proj
+#   ./install.sh --uninstall --collab ~/proj      # Uninstall collab bundle only
 
 set -e
 
@@ -105,6 +108,7 @@ EXCLUDED_BUNDLES=()
 TARGET_DIR=""
 INTERACTIVE=false
 LIST_ONLY=false
+UNINSTALL=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -118,6 +122,7 @@ while [[ $# -gt 0 ]]; do
     --exclude)       shift; EXCLUDED_BUNDLES+=("$1"); shift ;;
     --interactive)   INTERACTIVE=true; shift ;;
     --list)          LIST_ONLY=true; shift ;;
+    --uninstall)     UNINSTALL=true; shift ;;
     -*)              echo "Unknown option: $1" >&2; exit 1 ;;
     *)               TARGET_DIR="$1"; shift ;;
   esac
@@ -337,6 +342,170 @@ install_hook() {
     echo "  Installed hook: $target_hook"
   fi
 }
+
+# ── Uninstall functions ────────────────────────────────────────────────────
+remove_file() {
+  local path="$1"
+  if [ -f "$path" ]; then
+    rm -v "$path"
+  fi
+}
+
+remove_dir_if_empty() {
+  local dir="$1"
+  [ -d "$dir" ] && rmdir --ignore-fail-on-non-empty -p "$dir" 2>/dev/null || true
+}
+
+remove_skill_dir() {
+  local skill_name="$1"
+  local dst="$CLAUDE_DIR/skills/$skill_name"
+  if [ -d "$dst" ]; then
+    rm -rv "$dst"
+  fi
+}
+
+remove_template_dir() {
+  local tpl_name="$1"
+  local dst="$CLAUDE_DIR/templates/$tpl_name"
+  if [ -d "$dst" ]; then
+    rm -rv "$dst"
+  fi
+}
+
+remove_root_file() {
+  local filename="$1"
+  local dst="$PROJECT_ROOT/$filename"
+  # Remove the file and any backups
+  remove_file "$dst"
+  for backup in "$PROJECT_ROOT"/"$filename".backup.*; do
+    if [ -f "$backup" ]; then
+      rm -v "$backup"
+    fi
+  done
+}
+
+remove_mcp_dir() {
+  local mcp_name="$1"
+  local dst="$PROJECT_ROOT/mcp/$mcp_name"
+  if [ -d "$dst" ]; then
+    rm -rv "$dst"
+  fi
+  remove_dir_if_empty "$PROJECT_ROOT/mcp"
+}
+
+remove_hook() {
+  local hook_name="$1"
+
+  local git_common_dir
+  git_common_dir=$(git -C "$PROJECT_ROOT" rev-parse --git-common-dir 2>/dev/null || true)
+  [ -z "$git_common_dir" ] && return 0
+
+  local target_hook
+  if [[ "$hook_name" == post-checkout* ]]; then
+    target_hook="post-checkout"
+  elif [[ "$hook_name" == pre-commit* ]]; then
+    target_hook="pre-commit"
+  fi
+
+  local dst="$git_common_dir/hooks/$target_hook"
+  [ -f "$dst" ] || return 0
+
+  # Detect our hook content by either marker
+  if grep -q "Auto-link work/ from docs worktree" "$dst" 2>/dev/null; then
+    if grep -q "work-link snippet (installed by claude-useful-instructions)" "$dst" 2>/dev/null; then
+      # Appended snippet — remove only the snippet block
+      local tmp="$dst.tmp"
+      sed '/# ─── work-link snippet (installed by claude-useful-instructions) ───/,$ d' "$dst" > "$tmp"
+      local remaining
+      remaining=$(grep -cv '^\(#!\|#\|$\)' "$tmp" 2>/dev/null || echo "0")
+      if [ "$remaining" -eq 0 ] || [ ! -s "$tmp" ]; then
+        rm -v "$dst"
+        rm -f "$tmp"
+        echo "  Removed hook: $target_hook"
+      else
+        mv "$tmp" "$dst"
+        chmod +x "$dst"
+        echo "  Removed work-link snippet from $target_hook hook"
+      fi
+    else
+      # Standalone install — remove the entire hook file
+      rm -v "$dst"
+      echo "  Removed hook: $target_hook"
+    fi
+  fi
+}
+
+remove_work_dir() {
+  # Remove work/ directory and symlinks from worktrees
+  local work_dir="$PROJECT_ROOT/work"
+  if [ -L "$work_dir" ]; then
+    rm -v "$work_dir"
+    echo "  Removed work/ symlink"
+  elif [ -d "$work_dir" ]; then
+    read -rp "  Remove work/ directory (contains work items)? [y/N] " confirm
+    if [[ "$confirm" =~ ^[Yy]$ ]]; then
+      rm -rv "$work_dir"
+    else
+      echo "  Skipped work/ directory"
+    fi
+  fi
+
+  # Clean symlinks in sibling worktrees
+  local git_common_dir
+  git_common_dir=$(git -C "$PROJECT_ROOT" rev-parse --git-common-dir 2>/dev/null || true)
+  if [ -n "$git_common_dir" ]; then
+    local worktree_list
+    worktree_list=$(git -C "$PROJECT_ROOT" worktree list --porcelain 2>/dev/null | grep "^worktree " | sed 's/^worktree //')
+    while IFS= read -r wt_path; do
+      [ -z "$wt_path" ] && continue
+      [ "$wt_path" = "$PROJECT_ROOT" ] && continue
+      if [ -L "$wt_path/work" ]; then
+        rm -v "$wt_path/work"
+        echo "  Removed work/ symlink from $(basename "$wt_path")"
+      fi
+    done <<< "$worktree_list"
+  fi
+}
+
+# ── Execute uninstall ─────────────────────────────────────────────────────
+if $UNINSTALL; then
+  echo "Uninstalling Claude settings from $CLAUDE_DIR"
+  echo "Bundles: ${SELECTED_BUNDLES[*]}"
+  echo "────────────────────────────────────────────────────────"
+
+  HAS_COLLAB=false
+  for entry in "${INSTALL_LIST[@]}"; do
+    type="${entry%%:*}"
+    path="${entry#*:}"
+
+    case "$type" in
+      rules)     remove_file "$CLAUDE_DIR/rules/$path" ;;
+      commands)  remove_file "$CLAUDE_DIR/commands/$path" ;;
+      agents)    remove_file "$CLAUDE_DIR/agents/$path" ;;
+      skills)    remove_skill_dir "$path" ;;
+      templates) remove_template_dir "$path" ;;
+      root-file) remove_root_file "$path" ;;
+      script)    remove_file "$PROJECT_ROOT/$path" ;;
+      hook)      remove_hook "$path" ;;
+      mcp)       remove_mcp_dir "$path"; HAS_COLLAB=true ;;
+    esac
+  done
+
+  # Remove work/ dir if collab bundle is being uninstalled
+  if $HAS_COLLAB; then
+    remove_work_dir
+  fi
+
+  # Clean up empty .claude subdirectories
+  for subdir in rules commands agents skills templates; do
+    remove_dir_if_empty "$CLAUDE_DIR/$subdir"
+  done
+  remove_dir_if_empty "$CLAUDE_DIR"
+
+  echo "────────────────────────────────────────────────────────"
+  echo "Done. Uninstalled bundles: ${SELECTED_BUNDLES[*]}"
+  exit 0
+fi
 
 # ── Execute installation ───────────────────────────────────────────────────
 echo "Installing Claude settings from $REPO_DIR → $CLAUDE_DIR"

@@ -100,6 +100,10 @@ After setup, **restart Claude Code** for the MCP server to connect.
 ./install.sh --core --docs                          # Specific bundles only
 ./install.sh --exclude career --exclude vla         # All except specific bundles
 ./install.sh --interactive                          # Interactive menu
+
+# Uninstall
+./install.sh --uninstall /path/to/project           # Remove all installed files
+./install.sh --uninstall --collab /path/to/project   # Remove collab bundle only
 ```
 
 ---
@@ -183,8 +187,7 @@ claude-useful-instructions/
 │   ├── codex/AGENTS.md
 │   └── claude/CLAUDE.md
 ├── mcp/gemini-review/               # Gemini MCP server
-├── install.sh                       # Bundle-based installer
-├── uninstall.sh                     # Clean uninstaller
+├── install.sh                       # Bundle-based installer (+ --uninstall)
 ├── codex-run.sh                     # Codex runner (single + parallel + boundary check)
 ├── link-work.sh                     # Worktree symlink manager
 └── gemini-setup.sh                  # Gemini MCP setup
