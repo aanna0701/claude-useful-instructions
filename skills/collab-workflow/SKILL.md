@@ -3,74 +3,37 @@ name: collab-workflow
 description: >
   Claude-Codex-Gemini collaboration workflow for structured design-implement-review cycles.
   Triggers on: "work item", "work plan", "work review", "work status", "codex", "gemini",
-  "hand off", "delegate", "FEAT-", "multi-agent", "claude codex collaboration",
-  "implementation handoff", "design and delegate", "audit", "compare diffs",
-  "release notes", "contract derivation", "worktree", "link work", "work-link",
-  "parallel", "dispatch", "boundary check", "batch plan", "concurrent".
+  "hand off", "delegate", "FEAT-", "multi-agent", "parallel", "dispatch", "boundary check",
+  "worktree", "link work", "concurrent".
 ---
 
 # Claude-Codex-Gemini Collaboration Workflow
-
-This skill manages the structured handoff between Claude (design/review), Codex (implementation), and Gemini (audit/synthesis via MCP).
 
 ## Routing
 
 | User Intent | Route To |
 |-------------|----------|
-| Create/plan work item(s) | `/work-plan` (single or batch) |
-| Check work item status | `/work-status` |
+| Plan work item(s) | `/work-plan` |
+| Check status | `/work-status` |
 | Review implementation | `/work-review` |
-| Check boundary conflicts | `codex-dispatch.sh --check` (suggest command) |
-| Dispatch to parallel Codex | `codex-dispatch.sh` (suggest command) |
-| Link worktrees / setup | `link-work.sh` (suggest command) |
-| Summarize design docs | `gemini_summarize_design_pack` MCP tool |
-| Compare branch diffs | `gemini_compare_diffs` MCP tool |
-| Generate release notes | `gemini_draft_release_notes` MCP tool |
-| General collab question | Answer from `rules/collab-workflow.md` |
+| Boundary check / dispatch | `codex-dispatch.sh` (suggest command) |
+| Link worktrees | `link-work.sh` (suggest command) |
+| Gemini tools | Corresponding `gemini_*` MCP tool |
 
 ## Workflow (2-Touch)
 
 ```
-Claude: /work-plan [topic(s)]
-  → parallel agents generate work items
-  → boundary overlap check
-  → output: bash codex-dispatch.sh FEAT-001 FEAT-002 FEAT-003
-
-TOUCH 1 — Human runs: bash codex-dispatch.sh FEAT-001 FEAT-002 FEAT-003
-  → auto: boundary check → link worktrees → parallel codex exec → monitor
-  → Codex implements, updates status.md (records doc changes needed)
-  → output: /work-review FEAT-001 FEAT-002 FEAT-003
-
-TOUCH 2 — Human pastes into Claude: /work-review FEAT-001 FEAT-002 FEAT-003
-  → parallel review agents
-  → handles doc changes from status.md
-  → MERGE / REVISE / REJECT
-```
-
-## Worktree Support
-
-When a project uses git worktrees, `work/` plans are shared via symlinks:
-
-- **Docs worktree**: owns `work/items/` (real directory)
-- **Other worktrees**: `work/` → symlink to docs worktree
-- **`link-work.sh`**: manages symlinks across worktrees
-- **`post-checkout` hook**: auto-links on branch switch
-
-```bash
-link-work.sh                            # Link all
-link-work.sh --init <name> <branch>     # New worktree + link
-link-work.sh --status                   # Show status
-git work-link                           # Same (after --self-install)
+/work-plan [topic(s)] → auto-split + boundary check + dispatch manifest
+  TOUCH 1: bash codex-dispatch.sh FEAT-001 FEAT-002 ...
+    → boundary check → link worktrees → parallel codex exec → monitor
+  TOUCH 2: /work-review FEAT-001 FEAT-002 ...
+    → parallel review → handle doc changes → MERGE/REVISE/REJECT
 ```
 
 ## References
 
-- Templates: `.claude/templates/work-item/`
-- Codex instructions: `AGENTS.md` (project root)
-- Claude instructions: `CLAUDE.md` (project root)
 - Rule: `.claude/rules/collab-workflow.md`
-- Dispatch script: `codex-dispatch.sh` (project root)
-- Dispatch manifest: `work/dispatch.json`
-- Worktree linker: `link-work.sh` (project root)
-- Hook template: `.claude/templates/hooks/post-checkout-work-link`
+- Docs: `docs/collab-workflow.md` (full setup guide + walkthrough)
+- Scripts: `codex-dispatch.sh`, `link-work.sh`
+- Templates: `.claude/templates/work-item/`
 - Gemini MCP: `mcp/gemini-review/`
