@@ -4,19 +4,10 @@
 
 You are an **implementation agent**. You receive work items designed by Claude and implement them precisely per contract. You do NOT make design decisions, broaden scope, or modify architectural boundaries.
 
-## Quick Start
-
-```bash
-bash codex-implement.sh FEAT-001
-```
-
-This script reads the work item, initializes status, and prints structured context. Run it first, then implement.
-
 ## Finding Work
 
-**Option A (recommended)**: Run `bash codex-implement.sh <FEAT-ID>` — auto-loads everything.
+You are dispatched via `codex-dispatch.sh` which provides your work item context. If reading manually:
 
-**Option B (manual)**:
 1. Check `work/items/` for directories matching `FEAT-NNN-*`
 2. Read `status.md` in each — look for `Status: open` and `Agent: Codex`
 3. Read the work item files **in this exact order**:

@@ -24,7 +24,7 @@ Replace `<CUI_DIR>` with your clone path (e.g., `~/claude-useful-instructions`).
 CUI_DIR=~/claude-useful-instructions  # ← adjust to your clone path
 cat >> ~/.bashrc << EOF
 alias cui-install='$CUI_DIR/install.sh'
-alias cui-codex-setup='bash $CUI_DIR/codex-setup.sh'
+
 alias cui-gemini-setup='bash $CUI_DIR/gemini-setup.sh'
 EOF
 source ~/.bashrc
@@ -33,7 +33,7 @@ source ~/.bashrc
 CUI_DIR=~/claude-useful-instructions  # ← adjust to your clone path
 cat >> ~/.zshrc << EOF
 alias cui-install='$CUI_DIR/install.sh'
-alias cui-codex-setup='bash $CUI_DIR/codex-setup.sh'
+
 alias cui-gemini-setup='bash $CUI_DIR/gemini-setup.sh'
 EOF
 source ~/.zshrc
@@ -45,9 +45,8 @@ source ~/.zshrc
 # 1. Global — coding standards, doc tools
 cui-install --core --docs
 
-# 2. Per-project — collab workflow + Codex + Gemini
+# 2. Per-project — collab workflow + Gemini
 cui-install --collab /path/to/my-project
-cui-codex-setup /path/to/my-project
 cui-gemini-setup /path/to/my-project      # optional
 ```
 
@@ -186,8 +185,8 @@ claude-useful-instructions/
 ├── mcp/gemini-review/               # Gemini MCP server
 ├── install.sh                       # Bundle-based installer
 ├── uninstall.sh                     # Clean uninstaller
-├── codex-setup.sh                   # Codex-side setup
-├── codex-implement.sh               # Codex entry point
+├── codex-dispatch.sh                # Codex dispatch (single + parallel + boundary check)
+├── link-work.sh                     # Worktree symlink manager
 └── gemini-setup.sh                  # Gemini MCP setup
 ```
 

@@ -68,17 +68,9 @@ graph LR
 ./install.sh --collab /path/to/project
 ```
 
-This copies all Claude-side artifacts (rules, commands, skills, templates) to `.claude/`, places `AGENTS.md`, `CLAUDE.md`, scripts, and the Gemini MCP server at the project root.
+This installs everything: `.claude/` artifacts, `AGENTS.md`, `CLAUDE.md`, scripts (`codex-dispatch.sh`, `link-work.sh`), and the Gemini MCP server. Creates `work/items/` directory.
 
-### Step 2: Set up Codex
-
-```bash
-bash codex-setup.sh /path/to/project
-```
-
-Places `AGENTS.md` + `codex-implement.sh` at project root. Creates `work/items/` directory. Run this once per project.
-
-### Step 3: Set up Gemini MCP (optional)
+### Step 2: Set up Gemini MCP (optional)
 
 ```bash
 # 1. Get a Gemini API key → https://aistudio.google.com/apikey
@@ -124,16 +116,14 @@ bash link-work.sh --init VasIntelli-Eval feature-eval
 project/
 ├── AGENTS.md                          # Codex reads this
 ├── CLAUDE.md                          # Claude reads this
-├── codex-implement.sh                 # Codex entry point (single item)
-├── codex-dispatch.sh                  # Parallel dispatch with boundary check
-├── codex-setup.sh                     # Codex setup script
+├── codex-dispatch.sh                  # Codex dispatch (single + parallel + boundary check)
 ├── gemini-setup.sh                    # Gemini MCP setup script
 ├── link-work.sh                       # Worktree symlink manager
 ├── mcp/gemini-review/                 # Gemini MCP server
 │   ├── server.py                      #   5 tools wrapping Gemini API
 │   ├── prompts.py                     #   System prompts per tool
 │   └── pyproject.toml                 #   Dependencies (mcp, google-generativeai)
-├── work/items/                        # Shared workspace (created by codex-setup.sh)
+├── work/items/                        # Shared workspace (created by install.sh)
 ├── work/dispatch.json                 # Parallel dispatch manifest (created by /work-plan)
 └── .claude/
     ├── rules/collab-workflow.md       # Auto-loaded 3-agent rules
@@ -244,13 +234,13 @@ Each Codex instance runs in its own terminal. With worktrees, each can also use 
 
 ```bash
 # Terminal 1 (VasIntelli-Training):
-bash codex-implement.sh FEAT-001
+bash codex-dispatch.sh FEAT-001
 
 # Terminal 2 (VasIntelli-Inference):
-bash codex-implement.sh FEAT-002
+bash codex-dispatch.sh FEAT-002
 
 # Terminal 3 (after 1 & 2 complete — boundary overlap):
-bash codex-implement.sh FEAT-003
+bash codex-dispatch.sh FEAT-003
 ```
 
 ---
@@ -296,13 +286,13 @@ Created work/items/FEAT-001-jwt-auth-middleware/
   status.md      — status: open
 
 Codex Command:
-  bash codex-implement.sh FEAT-001
+  bash codex-dispatch.sh FEAT-001
 ```
 
 ### Phase 2 — Implement (Codex)
 
 ```
-[Codex] bash codex-implement.sh FEAT-001
+[Codex] bash codex-dispatch.sh FEAT-001
 ```
 
 The script auto-reads brief, contract, checklist and initializes status:
@@ -313,7 +303,7 @@ sequenceDiagram
     participant X as Codex
     participant W as work/items/FEAT-001/
 
-    U->>X: bash codex-implement.sh FEAT-001
+    U->>X: bash codex-dispatch.sh FEAT-001
     X->>W: Read brief.md → contract.md → checklist.md
     X->>W: Update status.md (in-progress, Agent: Codex)
     X->>X: git checkout -b feat/FEAT-001-jwt-auth-middleware
@@ -412,10 +402,8 @@ If **REVISE**, Claude outputs specific fix items and a new Codex prompt. Codex a
 | `/work-plan [topic(s)]` | Claude | Create work item(s) — single or batch with boundary check |
 | `/work-status [FEAT-NNN]` | Claude | Check progress (summary table or detail view) |
 | `/work-review [FEAT-NNN]` | Claude | Review implementation against contract |
-| `bash codex-implement.sh FEAT-NNN` | Codex | Load single work item and start implementing |
-| `bash codex-dispatch.sh FEAT-IDs` | User | Boundary check + parallel dispatch commands |
+| `bash codex-dispatch.sh FEAT-IDs` | User | Boundary check + parallel dispatch (single or multi) |
 | `bash codex-dispatch.sh --check` | User | Boundary overlap check only (dry run) |
-| `bash codex-dispatch.sh --from-manifest` | User | Dispatch from work/dispatch.json |
 | `bash link-work.sh [filter]` | User | Manage work/ symlinks across worktrees |
 | `git work-link` | User | Same as link-work.sh (after --self-install) |
 | `gemini_summarize_design_pack` | Gemini (MCP) | Compress design docs into summary |
