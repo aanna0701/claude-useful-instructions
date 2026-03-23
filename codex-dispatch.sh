@@ -1,16 +1,26 @@
 #!/usr/bin/env bash
-# codex-dispatch.sh — Dispatch multiple work items to Codex with boundary validation
+# codex-dispatch.sh — Boundary check + parallel Codex execution + completion monitoring
 #
 # Usage:
-#   bash codex-dispatch.sh FEAT-001 FEAT-002 FEAT-003   # Check + dispatch all
+#   bash codex-dispatch.sh FEAT-001 FEAT-002 FEAT-003   # Run all in parallel
 #   bash codex-dispatch.sh --check FEAT-001 FEAT-002     # Boundary check only (dry run)
-#   bash codex-dispatch.sh --status                      # Show all open work items
-#   bash codex-dispatch.sh --from-manifest               # Dispatch from work/dispatch.json
+#   bash codex-dispatch.sh --status                      # Show all work item statuses
 #
-# For each FEAT, validates boundary overlaps between contracts, then prints
-# parallel-safe dispatch commands or runs codex-implement.sh directly.
+# What it does:
+#   1. Validates boundary overlaps between contracts
+#   2. Auto-links work/ across worktrees (if applicable)
+#   3. Spawns parallel `codex exec` processes for each FEAT
+#   4. Monitors status.md until all items are done
+#   5. Prints the /work-review command for Claude
+#
+# Human touches the workflow exactly twice:
+#   After /work-plan:  bash codex-dispatch.sh FEAT-001 FEAT-002
+#   After completion:  /work-review FEAT-001 FEAT-002
 
 set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+LOG_DIR="work/.dispatch-logs"
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -22,8 +32,6 @@ resolve_work_dir() {
   return 1
 }
 
-# Extract "Allowed Modifications" paths from a contract.md
-# Returns one path per line (trimmed, without leading "- ")
 extract_allowed() {
   local contract="$1"
   local in_section=false
@@ -33,16 +41,12 @@ extract_allowed() {
       continue
     fi
     if $in_section; then
-      # Stop at next section header
       [[ "$line" =~ ^### ]] && break
       [[ "$line" =~ ^## ]] && break
-      # Extract list items
       if [[ "$line" =~ ^[[:space:]]*-[[:space:]]+(.*) ]]; then
         local path="${BASH_REMATCH[1]}"
-        # Strip trailing comments/descriptions after " — " or " - "
         path="${path%% — *}"
         path="${path%% - *}"
-        # Trim whitespace
         path="${path#"${path%%[![:space:]]*}"}"
         path="${path%"${path##*[![:space:]]}"}"
         [ -n "$path" ] && echo "$path"
@@ -51,55 +55,30 @@ extract_allowed() {
   done < "$contract"
 }
 
-# Check if two paths overlap (one contains the other, or exact match)
 paths_overlap() {
   local a="$1" b="$2"
-  # Exact match
   [[ "$a" == "$b" ]] && return 0
-  # a is parent of b (a ends with /, b starts with a)
   [[ "$a" == */ && "$b" == "$a"* ]] && return 0
-  # b is parent of a
   [[ "$b" == */ && "$a" == "$b"* ]] && return 0
-  # a is parent of b (a without trailing /)
   [[ "$b" == "$a/"* ]] && return 0
   [[ "$a" == "$b/"* ]] && return 0
   return 1
 }
 
-# ─── Commands ─────────────────────────────────────────────────────────────────
-
-cmd_status() {
-  echo "Open Work Items"
-  echo "──────────────────────────────────────────────"
-  local count=0
-  for dir in work/items/FEAT-*/; do
-    [ -d "$dir" ] || continue
-    local slug
-    slug=$(basename "$dir")
-    local status="unknown"
-    if [ -f "$dir/status.md" ]; then
-      status=$(grep -oP '\| Status \| \K[^|]+' "$dir/status.md" 2>/dev/null | tr -d ' ' || echo "unknown")
-    fi
-    printf "  %-40s %s\n" "$slug" "$status"
-    ((count++)) || true
-  done
-  if [ "$count" -eq 0 ]; then
-    echo "  (no work items found)"
-  fi
-  echo "──────────────────────────────────────────────"
+get_item_status() {
+  local wdir="$1"
+  grep -oP '\| Status \| \K[^|]+' "$wdir/status.md" 2>/dev/null | tr -d ' ' || echo "unknown"
 }
 
-cmd_check() {
+# ─── Boundary Check ──────────────────────────────────────────────────────────
+
+boundary_check() {
   local feat_ids=("$@")
-  local -A feat_dirs=()
   local -A feat_paths=()
 
-  # Resolve directories and extract boundaries
   for fid in "${feat_ids[@]}"; do
     local wdir
     wdir=$(resolve_work_dir "$fid") || { echo "ERROR: Work item not found: $fid" >&2; exit 1; }
-    feat_dirs["$fid"]="$wdir"
-
     local contract="$wdir/contract.md"
     [ -f "$contract" ] || { echo "ERROR: No contract.md in $wdir" >&2; exit 1; }
 
@@ -110,7 +89,6 @@ cmd_check() {
     feat_paths["$fid"]="$paths_str"
   done
 
-  # Check pairwise overlaps
   local has_overlap=false
   local -A conflicts=()
 
@@ -139,7 +117,6 @@ cmd_check() {
 
       if [ ${#overlap_files[@]} -gt 0 ]; then
         has_overlap=true
-        # Join with newline delimiter to preserve multi-word entries
         local joined=""
         for of in "${overlap_files[@]}"; do
           joined="${joined:+$joined
@@ -150,16 +127,13 @@ cmd_check() {
     done
   done
 
-  # Print boundary matrix
+  # Print matrix
   echo ""
   echo "Boundary Check"
   echo "──────────────────────────────────────────────"
 
-  # Header
   printf "%-16s" ""
-  for fid in "${feat_ids[@]}"; do
-    printf "%-16s" "$fid"
-  done
+  for fid in "${feat_ids[@]}"; do printf "%-16s" "$fid"; done
   echo ""
 
   for fi in "${feat_ids[@]}"; do
@@ -168,8 +142,7 @@ cmd_check() {
       if [ "$fi" = "$fj" ]; then
         printf "%-16s" "—"
       else
-        local key="$fi|$fj"
-        local key_rev="$fj|$fi"
+        local key="$fi|$fj" key_rev="$fj|$fi"
         if [ -n "${conflicts[$key]:-}" ] || [ -n "${conflicts[$key_rev]:-}" ]; then
           printf "%-16s" "⚠ OVERLAP"
         else
@@ -179,7 +152,6 @@ cmd_check() {
     done
     echo ""
   done
-
   echo "──────────────────────────────────────────────"
 
   if $has_overlap; then
@@ -192,126 +164,264 @@ cmd_check() {
         [ -n "$line" ] && echo "    - $line"
       done <<< "${conflicts[$key]}"
     done
-    echo ""
-    echo "Conflicting items must run sequentially, not in parallel."
     return 1
   else
-    echo ""
     echo "✓ All boundaries independent — safe for parallel dispatch"
     return 0
   fi
 }
 
+# ─── Status ───────────────────────────────────────────────────────────────────
+
+cmd_status() {
+  echo "Work Items"
+  echo "──────────────────────────────────────────────"
+  local count=0
+  for dir in work/items/FEAT-*/; do
+    [ -d "$dir" ] || continue
+    local slug status
+    slug=$(basename "$dir")
+    status=$(get_item_status "$dir")
+    printf "  %-40s %s\n" "$slug" "$status"
+    ((count++)) || true
+  done
+  [ "$count" -eq 0 ] && echo "  (no work items found)"
+  echo "──────────────────────────────────────────────"
+}
+
+# ─── Auto-link worktrees ─────────────────────────────────────────────────────
+
+auto_link_worktrees() {
+  if [ -x "$SCRIPT_DIR/link-work.sh" ]; then
+    # Only run if we're in a multi-worktree setup
+    local wt_count
+    wt_count=$(git worktree list 2>/dev/null | wc -l)
+    if [ "$wt_count" -gt 1 ]; then
+      echo "Linking worktrees..."
+      bash "$SCRIPT_DIR/link-work.sh" 2>/dev/null || true
+    fi
+  fi
+}
+
+# ─── Build Codex prompt ──────────────────────────────────────────────────────
+
+build_codex_prompt() {
+  local feat_id="$1"
+  local wdir
+  wdir=$(resolve_work_dir "$feat_id")
+  local slug
+  slug=$(basename "$wdir")
+
+  cat << EOF
+You are implementing work item $slug. Read these files in order:
+
+1. $wdir/brief.md — understand objective and scope
+2. $wdir/contract.md — understand boundaries, interfaces, invariants
+3. $wdir/checklist.md — understand verification requirements
+
+Rules:
+- IMPLEMENT only what the contract specifies
+- MODIFY only files listed in "Allowed Modifications"
+- NEVER touch files in "Forbidden Zones"
+- WRITE tests per "Test Requirements"
+- COMMIT with: feat($feat_id): description
+- UPDATE $wdir/status.md after each milestone
+- When DONE: set Status to "done" in $wdir/status.md
+
+Begin implementation.
+EOF
+}
+
+# ─── Dispatch ─────────────────────────────────────────────────────────────────
+
 cmd_dispatch() {
   local feat_ids=("$@")
 
-  # Run boundary check first
-  if ! cmd_check "${feat_ids[@]}"; then
+  # Step 1: Boundary check
+  echo "Step 1/4: Boundary check"
+  if ! boundary_check "${feat_ids[@]}"; then
     echo ""
-    echo "──────────────────────────────────────────────"
     echo "Resolve boundary conflicts before dispatching."
-    echo "To dispatch sequentially despite conflicts, run each FEAT separately."
+    echo "To run sequentially despite conflicts: dispatch each FEAT separately."
     exit 1
   fi
 
+  # Step 2: Auto-link worktrees
   echo ""
-  echo "Dispatch Commands"
+  echo "Step 2/4: Worktree links"
+  auto_link_worktrees
+  echo "Done."
+
+  # Step 3: Spawn Codex processes
+  echo ""
+  echo "Step 3/4: Dispatching ${#feat_ids[@]} Codex instance(s)"
   echo "──────────────────────────────────────────────"
-  echo "Run these in separate terminals for parallel execution:"
-  echo ""
+
+  mkdir -p "$LOG_DIR"
+  local -A pids=()
 
   for fid in "${feat_ids[@]}"; do
     local wdir
     wdir=$(resolve_work_dir "$fid")
     local slug
     slug=$(basename "$wdir")
-    echo "  # Terminal — $slug"
-    echo "  bash codex-implement.sh $fid"
-    echo ""
+    local log_file="$LOG_DIR/${slug}.log"
+    local prompt
+    prompt=$(build_codex_prompt "$fid")
+
+    # Initialize status
+    sed -i 's/| Status | .*/| Status | in-progress |/' "$wdir/status.md"
+    sed -i 's/| Agent | .*/| Agent | Codex |/' "$wdir/status.md"
+    sed -i "s/^updated: .*/updated: $(date '+%Y-%m-%d %H:%M')/" "$wdir/status.md"
+
+    if command -v codex &>/dev/null; then
+      echo "  Spawning: $slug → $log_file"
+      codex exec --sandbox workspace-write -a auto-edit "$prompt" > "$log_file" 2>&1 &
+      pids["$fid"]=$!
+    else
+      echo "  [codex CLI not found] Manual execution required for $slug"
+      echo "  Prompt saved to: $log_file"
+      echo "$prompt" > "$log_file"
+    fi
   done
 
   echo "──────────────────────────────────────────────"
-  echo "Dispatching ${#feat_ids[@]} work items."
-  echo "Monitor progress: bash codex-dispatch.sh --status"
-}
 
-cmd_from_manifest() {
-  local manifest="work/dispatch.json"
-  [ -f "$manifest" ] || { echo "ERROR: $manifest not found" >&2; exit 1; }
+  # If no codex CLI, print manual instructions and exit
+  if ! command -v codex &>/dev/null; then
+    echo ""
+    echo "codex CLI not found. Run manually in separate terminals:"
+    echo ""
+    for fid in "${feat_ids[@]}"; do
+      local wdir
+      wdir=$(resolve_work_dir "$fid")
+      echo "  codex exec --sandbox workspace-write -a auto-edit < $LOG_DIR/$(basename "$wdir").log"
+    done
+    echo ""
+    echo "After all complete, run:"
+    echo "  /work-review ${feat_ids[*]}"
+    exit 0
+  fi
 
-  # Parse parallel_groups from JSON (minimal jq-free parsing)
-  if command -v jq &>/dev/null; then
-    local num_groups
-    num_groups=$(jq '.parallel_groups | length' "$manifest")
+  # Step 4: Monitor completion
+  echo ""
+  echo "Step 4/4: Monitoring progress"
+  echo "──────────────────────────────────────────────"
 
-    for ((g=0; g<num_groups; g++)); do
-      local group_items
-      group_items=$(jq -r ".parallel_groups[$g][]" "$manifest")
+  local all_done=false
+  while ! $all_done; do
+    sleep 10
+    all_done=true
+    local done_count=0
+    local total=${#feat_ids[@]}
 
-      echo ""
-      echo "═══ Group $((g+1)) of $num_groups ═══"
+    for fid in "${feat_ids[@]}"; do
+      local pid="${pids[$fid]:-}"
+      local wdir
+      wdir=$(resolve_work_dir "$fid")
+      local slug
+      slug=$(basename "$wdir")
+      local status
+      status=$(get_item_status "$wdir")
 
-      local ids=()
-      while IFS= read -r item; do
-        ids+=("$item")
-      done <<< "$group_items"
-
-      cmd_dispatch "${ids[@]}"
-
-      if [ $((g+1)) -lt "$num_groups" ]; then
-        echo ""
-        echo "⏳ Wait for Group $((g+1)) to complete before starting Group $((g+2))."
+      if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+        # Process still running
+        all_done=false
+        printf "  %-40s %s (pid %s)\n" "$slug" "$status" "$pid"
+      else
+        # Process exited
+        if [[ "$status" == "done" ]]; then
+          ((done_count++)) || true
+          printf "  %-40s ✓ done\n" "$slug"
+        else
+          printf "  %-40s ✗ exited (status: %s)\n" "$slug" "$status"
+          ((done_count++)) || true  # Count as done even if failed
+        fi
       fi
     done
-  else
-    echo "ERROR: jq is required for --from-manifest. Install with: apt install jq" >&2
-    echo "Alternative: specify FEAT IDs directly: bash codex-dispatch.sh FEAT-001 FEAT-002" >&2
-    exit 1
+
+    if ! $all_done; then
+      echo "  ... ($done_count/$total complete, checking again in 10s)"
+      echo ""
+    fi
+  done
+
+  echo "──────────────────────────────────────────────"
+  echo ""
+
+  # Collect results
+  local success=0 failed=0
+  local review_ids=()
+  for fid in "${feat_ids[@]}"; do
+    local wdir
+    wdir=$(resolve_work_dir "$fid")
+    local status
+    status=$(get_item_status "$wdir")
+    if [[ "$status" == "done" ]]; then
+      ((success++)) || true
+      review_ids+=("$fid")
+    else
+      ((failed++)) || true
+    fi
+  done
+
+  # Print summary + next step
+  echo "══════════════════════════════════════════════"
+  echo "  Dispatch Complete"
+  echo "  Success: $success  Failed: $failed"
+  echo "══════════════════════════════════════════════"
+  echo ""
+
+  if [ ${#review_ids[@]} -gt 0 ]; then
+    echo "Next step — paste this into Claude:"
+    echo ""
+    echo "  /work-review ${review_ids[*]}"
+    echo ""
+  fi
+
+  if [ "$failed" -gt 0 ]; then
+    echo "Check logs for failed items: ls $LOG_DIR/"
   fi
 }
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
 
-CHECK_ONLY=false
-FROM_MANIFEST=false
-
 case "${1:-}" in
   --check|-c)
-    CHECK_ONLY=true
     shift
+    boundary_check "$@"
     ;;
   --status|-s)
     cmd_status
-    exit 0
-    ;;
-  --from-manifest|-m)
-    cmd_from_manifest
-    exit 0
     ;;
   --help|-h)
-    echo "Usage: codex-dispatch.sh [options] FEAT-ID [FEAT-ID ...]"
-    echo ""
-    echo "Commands:"
-    echo "  FEAT-001 FEAT-002 ...    Check boundaries + dispatch"
-    echo "  --check, -c  FEAT-IDs   Boundary check only (dry run)"
-    echo "  --status, -s             Show all open work items"
-    echo "  --from-manifest, -m      Dispatch from work/dispatch.json"
-    echo "  --help, -h               Show this help"
-    exit 0
+    cat << 'HELP'
+Usage: codex-dispatch.sh [options] FEAT-ID [FEAT-ID ...]
+
+  FEAT-001 FEAT-002 ...    Boundary check + parallel dispatch + monitor
+  --check, -c  FEAT-IDs    Boundary check only (dry run)
+  --status, -s              Show all work item statuses
+  --help, -h                Show this help
+
+Flow:
+  1. Validates contract boundary overlaps
+  2. Auto-links worktrees (if applicable)
+  3. Spawns parallel codex exec processes
+  4. Monitors status.md until all items complete
+  5. Prints /work-review command for Claude
+HELP
+    ;;
+  -*)
+    echo "Unknown option: $1" >&2
+    exit 1
+    ;;
+  *)
+    if [ $# -eq 0 ]; then
+      echo "Usage: codex-dispatch.sh FEAT-ID [FEAT-ID ...]" >&2
+      echo "       codex-dispatch.sh --check FEAT-ID [FEAT-ID ...]" >&2
+      echo "       codex-dispatch.sh --status" >&2
+      exit 1
+    fi
+    cmd_dispatch "$@"
     ;;
 esac
-
-if [ $# -eq 0 ]; then
-  echo "Usage: codex-dispatch.sh [--check] FEAT-ID [FEAT-ID ...]" >&2
-  echo "       codex-dispatch.sh --status" >&2
-  echo "       codex-dispatch.sh --from-manifest" >&2
-  exit 1
-fi
-
-FEAT_IDS=("$@")
-
-if $CHECK_ONLY; then
-  cmd_check "${FEAT_IDS[@]}"
-else
-  cmd_dispatch "${FEAT_IDS[@]}"
-fi

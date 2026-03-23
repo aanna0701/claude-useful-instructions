@@ -36,6 +36,7 @@ This script reads the work item, initializes status, and prints structured conte
 
 - Modify **only** files listed in contract "Allowed Modifications"
 - **NEVER** touch files in contract "Forbidden Zones"
+- **NEVER** modify documentation files (`docs/`, `*.md` in project root, `README.md`) — if doc changes are needed, record them in `status.md` under "Doc Changes Needed" for Claude to handle
 - If a needed change falls outside allowed modifications, record it in `status.md` Ambiguities
 
 ### Ambiguity Handling
@@ -76,6 +77,7 @@ If this repo uses **git worktrees**, you are already on the correct branch for y
 
 - Do NOT write `review.md` or `review-gemini.md` — Claude and Gemini do that
 - Do NOT modify `brief.md`, `contract.md`, or `checklist.md`
+- Do NOT modify documentation (`docs/`, `README.md`, root `*.md`) — record needed changes in `status.md`
 - Do NOT merge your own branch
 - Do NOT make design decisions or propose alternatives
 - Do NOT modify files outside contract boundaries

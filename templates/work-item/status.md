@@ -28,3 +28,9 @@ None
 ## Changed Files
 
 (none yet)
+
+## Doc Changes Needed
+
+Record any documentation updates that should be made by Claude after implementation.
+
+(none)
