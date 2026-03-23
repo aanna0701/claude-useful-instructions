@@ -93,9 +93,9 @@ Diataxis type is specified via the `type` field in YAML frontmatter.
 |------|---------------|-------------------|
 | **Domain** (numbering) | By topic: context, architecture, implementation... | `docs/00-90_*/` |
 | **Diataxis** (purpose) | By reader goal: Tutorial, How-to, Explanation, Reference | within `docs/` categories |
-| **Delivery** (execution) | By workflow: Task, Contract, Checklist, Review | `planning/` |
+| **Delivery** (execution) | By workflow: Work Item bundles + standalone Task/Contract/Checklist/Review | `work/` |
 
-Domain and Diataxis axes intersect within `docs/`. Delivery axis lives in a separate root (`planning/`).
+Domain and Diataxis axes intersect within `docs/`. Delivery axis lives in a separate root (`work/`).
 **Same repo, different roots** — separates concerns while maintaining traceability.
 
 ---
@@ -229,37 +229,42 @@ Add `status: deprecated` to frontmatter and a warning block: replacement link, r
 
 ---
 
-## 7. Execution Document Directory (`planning/`)
+## 7. Execution Document Directory (`work/`)
 
-`docs/` contains **reader-facing documentation**. `planning/` contains **execution artifacts for assigning, tracking, and verifying work**.
-`planning/` sits outside the `00-90` numbering scheme and operates independently of Diataxis classification.
+`docs/` contains **reader-facing documentation**. `work/` contains **execution artifacts for assigning, tracking, and verifying work**.
+`work/` sits outside the `00-90` numbering scheme and operates independently of Diataxis classification.
 
 ### Structure
 
 ```
-planning/
+work/
 ├── index.md              # Overview + workflow diagram
-├── tasks/                # Work orders (derived from RFC/ADR)
+├── items/                # Work Item bundles (primary pattern)
+│   └── FEAT-001-slug/
+│       ├── brief.md      # What & why
+│       ├── contract.md   # Implementation boundaries
+│       ├── checklist.md  # Completion verification
+│       ├── status.md     # Real-time state
+│       └── review.md     # Post-completion assessment
+├── tasks/                # Standalone work orders
 │   └── T-001-slug.md
-├── contracts/            # Interface/schema/SLA contracts
+├── contracts/            # Standalone contracts
 │   └── domain-contract.md
-├── checklists/           # Per-task verification lists
+├── checklists/           # Standalone checklists
 │   └── T-001.md
-└── reviews/              # Post-completion reviews
+└── reviews/              # Standalone reviews
     └── T-001-review.md
 ```
 
-### Workflow
+### Multi-Agent Workflow
 
 ```mermaid
 flowchart LR
-    RFC["RFC/ADR<br/>(docs/10_architecture/)"] --> Contract["Contract<br/>(planning/contracts/)"]
-    RFC --> Task["Task<br/>(planning/tasks/)"]
-    Contract --> Task
-    Task --> Checklist["Checklist<br/>(planning/checklists/)"]
-    Task --> Impl["Implementation<br/>(code)"]
-    Impl --> Review["Review<br/>(planning/reviews/)"]
-    Checklist --> Review
+    RFC["RFC/ADR<br/>(docs/10_architecture/)"] --> WI["Work Item<br/>(work/items/FEAT-NNN/)"]
+    WI --> |"Claude writes"| B["brief + contract<br/>+ checklist"]
+    B --> |"Codex reads"| Impl["Implementation<br/>(code)"]
+    Impl --> |"Codex updates"| Status["status.md"]
+    Impl --> |"Claude writes"| Review["review.md"]
     Review --> Docs["Docs Update<br/>(docs/)"]
 ```
 
@@ -268,24 +273,22 @@ flowchart LR
 The source of truth is **RFC/ADR + Contract**:
 
 1. **RFC/ADR** (`docs/10_architecture/`) — Why, alternatives, tradeoffs
-2. **Contract** (`planning/contracts/`) — What is guaranteed
-3. **Task** (`planning/tasks/`) — What to do (derived)
-4. **Checklist** (`planning/checklists/`) — How to verify
-5. **Review** (`planning/reviews/`) — Result evaluation
+2. **Contract** (`work/items/FEAT-NNN/contract.md`) — What is guaranteed
+3. **Brief** (`work/items/FEAT-NNN/brief.md`) — What to do (derived)
+4. **Checklist** (`work/items/FEAT-NNN/checklist.md`) — How to verify
+5. **Review** (`work/items/FEAT-NNN/review.md`) — Result evaluation
 
 ### MkDocs nav Integration
 
-To include `planning/` docs in the MkDocs site:
+To include `work/` docs in the MkDocs site:
 
 ```yaml
 nav:
   # ... existing docs/ entries ...
-  - Planning:
-    - planning/index.md
-    - Tasks:
-      - planning/tasks/T-001-slug.md
-    - Contracts:
-      - planning/contracts/domain-contract.md
+  - Work Items:
+    - work/index.md
+    - FEAT-001:
+      - work/items/FEAT-001-slug/brief.md
 ```
 
-> Detailed rules (templates, naming, status lifecycle, linking): see `references/execution-rules.md`.
+> Detailed rules (templates, naming, multi-agent workflow, linking): see `references/execution-rules.md`.

@@ -1,6 +1,6 @@
-# write-doc — Diátaxis + Execution Artifacts Documentation
+# write-doc — Diátaxis + Work Item Documentation
 
-Write high-quality documents by determining type via the Diátaxis + Execution Artifacts framework and delegating to specialized agents.
+Write high-quality documents by determining type via the Diátaxis + Work Item framework and delegating to specialized agents.
 
 Target: $ARGUMENTS (doc topic, or "review [filepath]")
 
@@ -13,6 +13,7 @@ Analyze `$ARGUMENTS`:
 | Pattern | Mode | Action |
 |---------|------|--------|
 | `review [filepath]` | Review existing doc | → Step 5 |
+| `work-item [topic]` | Work Item bundle | → Step 3-WI |
 | `task [topic]` | Task creation | → Step 3 (Delivery, Task) |
 | `contract [topic]` | Contract creation | → Step 3 (Delivery, Contract) |
 | `checklist [T-NNN]` | Checklist creation | → Step 3 (Delivery, Checklist) |
@@ -76,6 +77,34 @@ Delegate to the matching agent per SKILL.md Phase 2, passing Step 1 context.
 
 ---
 
+## Step 3-WI: Work Item Bundle Creation
+
+For `work-item` mode. Creates all 3 design-phase files in sequence.
+
+1. **Assign ID**: Glob `work/items/` for existing directories, assign next `FEAT-NNN`
+2. **Create directory**: `work/items/FEAT-NNN-slug/`
+3. **Delegate brief**: → `doc-writer-task` (brief mode), passing topic + source RFC/ADR
+4. **Delegate contract**: → `doc-writer-contract` (bundle mode), passing brief context
+5. **Delegate checklist**: → `doc-writer-checklist` (bundle mode), passing brief + contract context
+6. **Create status.md**: Initialize with `status: open`, `agent: [TBD]`
+
+> `review.md` is NOT created now — written by Claude after implementation completes.
+
+Show to user:
+```
+Work Item FEAT-NNN created
+  work/items/FEAT-NNN-slug/
+    brief.md      ✓
+    contract.md   ✓
+    checklist.md  ✓
+    status.md     ✓ (initialized)
+    review.md     — (post-implementation)
+```
+
+→ Skip to Step 5.
+
+---
+
 ## Step 4: File Saving
 
 Save the agent's output to the appropriate project location.
@@ -107,17 +136,28 @@ docs/
 └── reference/      ← Reference
 ```
 
-### Execution docs → `planning/`
+### Work Item bundles → `work/items/`
 
 ```
-planning/
+work/items/FEAT-NNN-slug/
+├── brief.md        ← Work overview
+├── contract.md     ← Implementation boundaries
+├── checklist.md    ← Completion verification
+├── status.md       ← Real-time state
+└── review.md       ← Post-completion assessment
+```
+
+### Standalone execution docs → `work/`
+
+```
+work/
 ├── tasks/          ← Task (T-NNN-slug.md)
 ├── contracts/      ← Contract ({domain}-contract.md)
 ├── checklists/     ← Checklist (T-NNN.md)
 └── reviews/        ← Review (T-NNN-review.md)
 ```
 
-If `planning/` does not exist, prompt user to run `/init-docs` first.
+If `work/` does not exist, prompt user to run `/init-docs` first.
 
 ### Common rules
 
@@ -138,10 +178,10 @@ For existing doc review or new doc validation.
 - [ ] No opinions/recommendations inside Reference?
 
 ### Type purity (Delivery)
-- [ ] No design discussion in Task? (→ split to Explanation)
+- [ ] No design discussion in Brief/Task? (→ split to Explanation)
 - [ ] No procedural guides in Contract? (→ split to How-to)
 - [ ] No background explanations in Checklist?
-- [ ] No new requirements in Review? (→ split to new Task)
+- [ ] No new requirements in Review? (→ split to new Work Item)
 
 ### Common quality
 - [ ] Complete YAML frontmatter? (title, type, status + type-specific fields)
@@ -151,11 +191,17 @@ For existing doc review or new doc validation.
 - [ ] Valid in 6 months?
 
 ### Delivery-axis additional
-- [ ] Task has source link (RFC/ADR or Contract)?
-- [ ] Task has verifiable acceptance criteria?
-- [ ] Checklist/Review task_id matches actual Task file?
+- [ ] Brief/Task has source link (RFC/ADR or Contract)?
+- [ ] Completion criteria are verifiable?
+- [ ] Work Item files reference correct FEAT-NNN / T-NNN?
 - [ ] Contract has at least 1 invariant?
+- [ ] Contract specifies allowed/forbidden modification zones?
 - [ ] Review has at least 1 lesson learned?
+
+### Work Item bundle additional
+- [ ] All 5 files present in `work/items/FEAT-NNN-slug/`?
+- [ ] Status.md reflects actual state?
+- [ ] Brief → Contract → Checklist are internally consistent?
 
 ### Governance
 - [ ] `owner` field set?
@@ -172,12 +218,12 @@ Fix violations, confirm with user, then apply.
 Document complete
 ─────────────────────────────────
 Axis:     [Diátaxis / Delivery]
-Type:     [Tutorial / How-to / Explanation / Reference / Task / Contract / Checklist / Review]
-File:     [docs/ or planning/][path]/[filename].md
-Audience: [reader or assignee]
+Type:     [Tutorial / How-to / Explanation / Reference / Work Item / Task / Contract / Checklist / Review]
+File:     [docs/ or work/][path]/[filename].md
+Audience: [reader or assignee or implementing agent]
 Quality:  PASS (or WARN N items fixed)
 ─────────────────────────────────
 Suggested related docs:
   - [missing related doc type suggestions]
-  - [cross-axis link suggestions (e.g., Task → related RFC)]
+  - [cross-axis link suggestions (e.g., Brief → related RFC)]
 ```

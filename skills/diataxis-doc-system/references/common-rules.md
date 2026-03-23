@@ -115,13 +115,15 @@ The documentation system has two **orthogonal** axes:
 | Axis | Question | Types | Location |
 |------|----------|-------|----------|
 | **Diataxis** (reader purpose) | What kind of document for which reader? | Tutorial, How-to, Explanation, Reference | `docs/` |
-| **Delivery** (execution control) | How to control and verify this change? | Task, Contract, Checklist, Review | `planning/` |
+| **Delivery** (execution control) | How to control and verify this change? | Work Item bundle, Task, Contract, Checklist, Review | `work/` |
+
+**Work Item Bundle** (primary pattern for multi-agent work): 5 co-located files in `work/items/FEAT-NNN-slug/` — brief, contract, checklist, status, review. Claude designs and reviews; Codex implements by contract.
 
 ### Cross-Axis Linking
 
 Execution docs MUST link to related Diataxis docs (and vice versa is recommended):
 
-- Task → source Explanation (RFC/ADR), related Reference
+- Brief/Task → source Explanation (RFC/ADR), related Reference
 - Contract → related Reference (detailed spec)
 - Review → reflect lessons in Explanation
 
@@ -135,13 +137,13 @@ Document types are complementary — link actively:
 
 ```
 Diataxis axis:  Tutorial → How-to → Reference → Explanation → Tutorial
-Delivery axis:  RFC/ADR → Contract → Task → Checklist → Review
-Cross-Axis:     Task ↔ Explanation, Contract ↔ Reference, Review → Explanation
+Delivery axis:  RFC/ADR → Contract → Brief → Checklist → Review
+Cross-Axis:     Brief ↔ Explanation, Contract ↔ Reference, Review → Explanation
 ```
 
 - Use relative paths: `[Related guide](../howto/migrate-database.md)`
 - Absolute URLs for external links only
-- `docs/` ↔ `planning/` links use relative paths (e.g., `../../planning/tasks/T-001.md`)
+- `docs/` ↔ `work/` links use relative paths (e.g., `../../work/items/FEAT-001-slug/brief.md`)
 - Include broken link checks in CI/CD
 
 ---

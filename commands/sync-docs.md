@@ -1,6 +1,6 @@
 # sync-docs — Sync Documentation to Current Codebase
 
-Analyze current codebase state (including git worktrees, recent changes, dependency files) and update all `.md` files (both `docs/` and `planning/`) to match reality.
+Analyze current codebase state (including git worktrees, recent changes, dependency files) and update all `.md` files (both `docs/` and `work/`) to match reality.
 
 Target: $ARGUMENTS (if empty, update all stale `.md` files)
 
@@ -33,7 +33,7 @@ git worktree list
 
 ### Docs worktree scan (current directory)
 1. **File structure** — Glob source files (exclude `node_modules/`, `.venv/`, `dist/`, `build/`, `target/`)
-2. **All `.md` files** — Glob `**/*.md` (same exclusions), including `planning/**/*.md`
+2. **All `.md` files** — Glob `**/*.md` (same exclusions), including `work/**/*.md`
 3. **Dependency files** — All `requirements*.txt`, `pyproject.toml`, `package.json`, lock files, etc.
 4. **Build/CI files** — `Makefile`, `docker-compose*.yml`, `Dockerfile*`, CI workflow files
 5. **Test files** — Count test functions/macros across all test files
@@ -70,12 +70,14 @@ Check each `.md` file against actual codebase (all worktrees):
 - [ ] Completed tasks still marked TODO?
 - [ ] New features not documented?
 
-### Execution artifact consistency (planning/)
-- [ ] `done` Tasks without corresponding Review?
-- [ ] `done` Task checklists with unchecked items?
-- [ ] Tasks referencing superseded/deleted Contracts or RFC/ADR?
-- [ ] Orphaned Checklists (parent Task deleted)?
-- [ ] Task status mismatches code reality?
+### Execution artifact consistency (work/)
+- [ ] `done` Tasks/Briefs without corresponding Review?
+- [ ] `done` Work Item checklists with unchecked items?
+- [ ] Briefs/Tasks referencing superseded/deleted Contracts or RFC/ADR?
+- [ ] Orphaned Checklists (parent Brief/Task deleted)?
+- [ ] Status.md mismatches code reality? (Work Item bundles)
+- [ ] Work Item bundles missing required files (brief/contract/checklist/status)?
+- [ ] Contract boundaries violated by actual code changes?
 
 ### Cross-worktree (multi-worktree only)
 - [ ] Each worktree's modules match docs?
@@ -115,10 +117,12 @@ Check each `.md` file against actual codebase (all worktrees):
 ### Subproject docs
 - Sync with subproject state; ensure correct relative paths
 
-### Execution artifacts (planning/)
-- Update Task status from git evidence (merged feature branches → `done`)
+### Execution artifacts (work/)
+- Update Brief/Task status from git evidence (merged feature branches → `done`)
+- Sync Work Item status.md with actual branch/worktree state
 - Flag orphaned Checklists, unused Contracts, missing Reviews
-- Verify source links and task_id references
+- Verify source links and FEAT-NNN/T-NNN references
+- Detect Work Item bundles with stale status.md
 
 ---
 

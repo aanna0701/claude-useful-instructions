@@ -1,6 +1,6 @@
 # init-docs — Initialize Project Documentation Structure
 
-Create MkDocs-based doc site structure (numbered hierarchy + Diátaxis) and execution doc structure (`planning/`), with auto-generated mkdocs.yml and category index files.
+Create MkDocs-based doc site structure (numbered hierarchy + Diátaxis) and work item structure (`work/`), with auto-generated mkdocs.yml and category index files.
 
 Target: $ARGUMENTS (project root path; defaults to current directory)
 
@@ -28,7 +28,7 @@ Confirm with user (skip if already in conversation):
 - Language: en/ko — default: en
 - Theme: material (default)
 - Categories to include (default: all)
-- Include execution docs (`planning/`) — default: yes
+- Include work item structure (`work/`) — default: yes
 
 ---
 
@@ -53,35 +53,46 @@ mkdir -p docs/{00_context,10_architecture/{adr,rfc},20_implementation,30_guides/
 
 Create `index.md` per category using templates from `site-architecture.md`.
 
-### Execution doc structure (when planning/ included)
+### Work item structure (when work/ included)
 
 ```bash
-mkdir -p planning/{tasks,contracts,checklists,reviews}
+mkdir -p work/{items,tasks,contracts,checklists,reviews}
 ```
 
-Create `planning/index.md`:
+Create `work/index.md`:
 
 ```markdown
 ---
-title: "Planning"
+title: "Work Items"
 ---
 
-# Execution Artifacts
+# Work Items & Execution Artifacts
 
-Documents for assigning, tracking, and verifying work.
+Documents for assigning, tracking, and verifying work across agents (Claude, Codex, human).
 
-## Workflow
+## Multi-Agent Workflow
 
-RFC/ADR (docs/10_architecture/) -> Contract (planning/contracts/) -> Task (planning/tasks/) -> Checklist (planning/checklists/) -> Implementation -> Review (planning/reviews/) -> Docs Update (docs/)
+RFC/ADR (docs/10_architecture/) → Work Item (work/items/FEAT-NNN/) → Claude writes brief+contract+checklist → Codex implements+updates status → Claude writes review → Docs Update (docs/)
 
 ## Directories
 
 | Directory | Purpose | Naming |
 |-----------|---------|--------|
-| [tasks/](tasks/) | Work orders derived from RFC/ADR | `T-NNN-slug.md` |
-| [contracts/](contracts/) | Interface/schema/SLA agreements | `{domain}-contract.md` |
-| [checklists/](checklists/) | Task completion verification | `T-NNN.md` |
-| [reviews/](reviews/) | Post-completion assessments | `T-NNN-review.md` |
+| [items/](items/) | Work Item bundles (multi-agent) | `FEAT-NNN-slug/` with 5 fixed files |
+| [tasks/](tasks/) | Standalone work orders | `T-NNN-slug.md` |
+| [contracts/](contracts/) | Standalone contracts | `{domain}-contract.md` |
+| [checklists/](checklists/) | Standalone checklists | `T-NNN.md` |
+| [reviews/](reviews/) | Standalone reviews | `T-NNN-review.md` |
+
+## Work Item Bundle Files
+
+| File | Author | Phase | Purpose |
+|------|--------|-------|---------|
+| `brief.md` | Claude | Design | Scope, objectives, dependencies |
+| `contract.md` | Claude | Design | Interfaces, boundaries, invariants |
+| `checklist.md` | Claude | Design | Verification items (Yes/No) |
+| `status.md` | Codex | Impl | Progress, blockers, changed files |
+| `review.md` | Claude | Review | Compliance, lessons, merge decision |
 ```
 
 ---
@@ -209,9 +220,10 @@ Structure:
   ├── 40_operations/    (index.md)
   └── 90_archive/       (index.md)
 
-  planning/                         (Delivery - execution docs)
+  work/                             (Delivery - execution docs)
   ├── index.md
-  ├── tasks/
+  ├── items/            (Work Item bundles)
+  ├── tasks/            (Standalone)
   ├── contracts/
   ├── checklists/
   └── reviews/
@@ -223,6 +235,7 @@ Next steps:
   pip install mkdocs-material       # Install MkDocs
   mkdocs serve                      # Local preview
   /write-doc [topic]                # Write Diátaxis doc
-  /write-doc task [topic]           # Write Task
-  /write-doc contract [topic]       # Write Contract
+  /write-doc work-item [topic]      # Create Work Item bundle
+  /write-doc task [topic]           # Write standalone Task
+  /write-doc contract [topic]       # Write standalone Contract
 ```

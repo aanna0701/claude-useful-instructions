@@ -1,23 +1,53 @@
 # Execution Artifact Rules
 
-Rules for agents writing execution documents (task, contract, checklist, review). Read before authoring.
+Rules for Work Item bundles and standalone execution documents. Read before authoring.
 
 ---
 
-## Identity
+## Work Item Bundle (Primary Pattern)
 
-Execution Artifacts = documents for **Delivery Control** (assigning, tracking, verifying work).
-They are orthogonal to Diataxis docs (reader-facing knowledge).
+A Work Item groups 5 co-located files per feature for **multi-agent coordination** (e.g., Claude designs, Codex implements, Claude reviews).
 
-> For the full dual-axis model definition, see `references/common-rules.md` Section 4-1.
+### Directory Structure
+
+```
+work/items/FEAT-NNN-slug/
+  brief.md        ← What & why (scope, non-scope, design links)
+  contract.md     ← Implementation boundaries (interfaces, zones, test requirements)
+  checklist.md    ← Completion verification (Yes/No items)
+  status.md       ← Real-time state (status, agent, branch, blockers)
+  review.md       ← Post-completion assessment (compliance, lessons, merge decision)
+```
 
 ### Source of Truth Hierarchy
 
 ```
-RFC/ADR (why) → Contract (guarantees) → Task (what to do) → Checklist (how to verify) → Review (results)
+RFC/ADR (why) → Contract (guarantees) → Brief (scope) → Checklist (verify) → Review (results)
 ```
 
-The source of truth is **RFC/ADR + Contract**. Tasks are derived work orders.
+### Multi-Agent Workflow
+
+| Phase | Actor | Reads | Writes |
+|-------|-------|-------|--------|
+| 1. Design | Claude | RFC/ADR, codebase | brief + contract + checklist |
+| 2. Implement | Codex | brief → contract → checklist | code + status |
+| 3. Review | Claude | code + contract + checklist | review |
+
+**Principle:** Claude designs and reviews. Codex follows the contract — never makes design decisions.
+
+### Codex Prompt Template
+
+```
+Read in order:
+1. work/items/FEAT-NNN-slug/brief.md
+2. work/items/FEAT-NNN-slug/contract.md
+3. work/items/FEAT-NNN-slug/checklist.md
+
+Implement only what is required.
+Do not broaden scope.
+If the contract is ambiguous, do not invent behavior.
+Write ambiguities to work/items/FEAT-NNN-slug/status.md.
+```
 
 ---
 
@@ -25,50 +55,41 @@ The source of truth is **RFC/ADR + Contract**. Tasks are derived work orders.
 
 | DO | DON'T |
 |----|-------|
-| Include **source link** (RFC/ADR/Contract) | Create Tasks without a source |
-| Specify **acceptance criteria** concretely | Vague criteria like "works well" |
-| Update **status** lifecycle honestly | Neglect status, communicate only verbally |
-| Checklist items must be **Yes/No verifiable** | Subjective items like "is code quality good?" |
-| Record **lessons learned** in Reviews | Close with just "LGTM" |
-| State **invariants** in Contracts | Ambiguous "try to maintain" language |
+| Include **source link** (RFC/ADR/Contract) in brief | Create work items without a source |
+| Keep **brief** concise (< 1 page) | Dump entire RFC into brief |
+| **Contract** specifies boundaries explicitly | Vague "integrate well" language |
+| **Checklist** items Yes/No verifiable | Subjective "is code quality good?" |
+| **Status** updated on every state change | Communicate status only verbally |
+| **Review** records lessons learned | Close with just "LGTM" |
+| Keep Codex scoped to contract | Let Codex make design decisions |
 
 ---
 
-## Physical Structure
+## Subtype A: Brief
 
-See `references/site-architecture.md` Section 7 for directory structure.
-
----
-
-## Subtype A: Task Template
-
-Filename: `T-NNN-slug.md` (e.g., `T-001-dataset-ingest.md`)
+Filename: `brief.md` (within work item directory)
 
 ```markdown
 ---
-title: "T-NNN: [Task Title]"
-type: task
+title: "FEAT-NNN: [Title]"
+type: brief
 status: open
 source: "docs/10_architecture/rfc/RFC-NNN.md"
-assignee: "@handle"
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
 tags: []
 ---
 
-# T-NNN: [Task Title]
+# FEAT-NNN: [Title]
 
 ## Objective
-
-[What this task achieves. 1-3 sentences.]
+[1-3 sentences. What this work achieves.]
 
 ## Source
-
 - RFC/ADR: [link]
 - Contract: [link] (if applicable)
 
 ## Scope
-
 ### In-Scope
 - [Item 1]
 - [Item 2]
@@ -76,167 +97,171 @@ tags: []
 ### Out-of-Scope
 - [Item] — Reason: [...]
 
-## Acceptance Criteria
-
-- [ ] [Verifiable criterion 1]
-- [ ] [Verifiable criterion 2]
-- [ ] [Verifiable criterion 3]
-
 ## Dependencies
-
-- [Prerequisite tasks or external dependencies]
-
-## Notes
-
-[Additional context, references]
+- [Prerequisite work items or external dependencies]
 ```
 
-**Status lifecycle:** `open → in-progress → blocked → in-progress → done`
+**Status lifecycle:** `open → in-progress → blocked → done`
 
 ---
 
-## Subtype B: Contract Template
+## Subtype B: Contract
 
-Filename: `{domain}-contract.md` (e.g., `dataset-schema-contract.md`)
+Filename: `contract.md` (within work item directory)
 
 ```markdown
 ---
-title: "[Domain] Contract"
+title: "FEAT-NNN Contract"
 type: contract
 status: draft
-author: "@handle"
-owner: "@handle"
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
-tags: []
 ---
 
-# [Domain] Contract
+# FEAT-NNN Contract
 
-## Parties
+## Interfaces
 
-| Party | Role | Responsibility |
-|-------|------|----------------|
-| [Module/Team A] | Provider | [What they provide] |
-| [Module/Team B] | Consumer | [What they consume] |
+| Interface | Type | Owner | Spec |
+|-----------|------|-------|------|
+| [endpoint/schema/config] | [input/output/config] | [module] | [definition] |
 
-## Specification
+## Boundaries
 
-### Schema / API Surface
+### Allowed Modifications
+- [File/module/directory that may be changed]
 
-[Concrete schema, API endpoints, data format definitions]
-
-### SLA (if applicable)
-
-| Metric | Target | Measurement |
-|--------|--------|-------------|
-| [Metric] | [Target] | [Method] |
+### Forbidden Zones
+- [File/module that must NOT be changed] — Reason: [...]
 
 ## Invariants
-
-Conditions that **must never be violated** while this contract holds:
-
+Conditions that **must never be violated**:
 1. [Invariant 1]
 2. [Invariant 2]
 
-## Violation Handling
+## Test Requirements
+- [ ] [Test requirement 1]
+- [ ] [Test requirement 2]
 
-| Violation | Detection | Response |
-|-----------|-----------|----------|
-| [Type] | [Method] | [Procedure] |
+## Error Handling
 
-## Versioning
-
-- Current version: v1
-- On breaking change: create new Contract file + mark existing as `superseded`
+| Error Case | Expected Behavior |
+|-----------|------------------|
+| [Case] | [Behavior] |
 ```
 
-**Status lifecycle:** `draft → review → signed → superseded`
+**Status lifecycle:** `draft → signed → superseded`
 
 ---
 
-## Subtype C: Checklist Template
+## Subtype C: Checklist
 
-Filename: `T-NNN.md` (matches Task ID)
+Filename: `checklist.md` (within work item directory)
 
 ```markdown
 ---
-title: "Checklist: T-NNN"
+title: "FEAT-NNN Checklist"
 type: checklist
 status: open
-task_id: "T-NNN"
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
 ---
 
-# Checklist: T-NNN — [Task Title]
-
-## Task Reference
-
-- Task: [planning/tasks/T-NNN-slug.md](../tasks/T-NNN-slug.md)
+# FEAT-NNN Checklist
 
 ## Pre-conditions
-
 - [ ] [Pre-condition 1]
-- [ ] [Pre-condition 2]
 
 ## Verification Items
-
-- [ ] [Item 1 — must be Yes/No answerable]
-- [ ] [Item 2]
-- [ ] [Item 3]
+- [ ] [Item — must be Yes/No answerable]
+- [ ] [Item]
 
 ## Sign-off
 
 | Role | Name | Date | Approved |
 |------|------|------|----------|
-| [Role] | [@handle] | | [ ] |
+| [Role] | | | [ ] |
 ```
 
 **Status lifecycle:** `open → in-progress → done`
 
 ---
 
-## Subtype D: Review Template
+## Subtype D: Status
 
-Filename: `T-NNN-review.md`
+Filename: `status.md` (within work item directory)
 
 ```markdown
 ---
-title: "Review: T-NNN"
-type: review
-status: draft
-task_id: "T-NNN"
-created: YYYY-MM-DD
-updated: YYYY-MM-DD
+title: "FEAT-NNN Status"
+type: status
+updated: YYYY-MM-DD HH:MM
 ---
 
-# Review: T-NNN — [Task Title]
+# FEAT-NNN Status
 
-## Task Reference
+| Field | Value |
+|-------|-------|
+| Status | open / in-progress / blocked / review / done |
+| Agent | [Claude / Codex / human] |
+| Branch | [branch name] |
+| Worktree | [path] (if applicable) |
 
-- Task: [planning/tasks/T-NNN-slug.md](../tasks/T-NNN-slug.md)
-- Checklist: [planning/checklists/T-NNN.md](../checklists/T-NNN.md)
+## Progress
+- [x] [Completed item]
+- [ ] [Pending item]
 
-## Deliverables
+## Blockers
+[Blocker description, or "None"]
 
-| Deliverable | Status | Notes |
-|-------------|--------|-------|
-| [Item 1] | Done / Partial / Skipped | [Notes] |
+## Ambiguities
+[Questions about contract needing clarification from Claude]
 
-## Deviations from Plan
+## Changed Files
+- [path/to/file] — [what changed]
+```
 
-[Changes from the original plan. "None." if none.]
+**Update rule:** Agent updates on every state transition. Always reflects current state.
+
+---
+
+## Subtype E: Review
+
+Filename: `review.md` (within work item directory)
+
+```markdown
+---
+title: "FEAT-NNN Review"
+type: review
+status: draft
+created: YYYY-MM-DD
+---
+
+# FEAT-NNN Review
+
+## Contract Compliance
+
+| Contract Item | Status | Notes |
+|--------------|--------|-------|
+| [Interface/invariant] | Pass / Fail / Partial | [Notes] |
+
+## Deviations
+[Changes from contract. "None." if none.]
+
+## Quality
+- [ ] Naming/style consistent with codebase
+- [ ] No forbidden zone violations
+- [ ] Tests pass and cover requirements
+- [ ] No security issues introduced
 
 ## Lessons Learned
+- [At least 1 lesson]
 
-- [Lesson 1]
-- [Lesson 2]
+## Decision
+**[ ] MERGE** / **[ ] REVISE** (list items) / **[ ] REJECT** (reason)
 
 ## Follow-up Items
-
-- [ ] [Follow-up 1]
-- [ ] [Follow-up 2]
+- [ ] [Follow-up]
 ```
 
 **Status lifecycle:** `draft → published`
@@ -247,11 +272,22 @@ updated: YYYY-MM-DD
 
 | Item | Format | Example |
 |------|--------|---------|
-| Task ID | `T-NNN` (3-digit, monotonic) | `T-001`, `T-042` |
-| Task file | `T-NNN-slug.md` (kebab-case) | `T-001-dataset-ingest.md` |
-| Contract file | `{domain}-contract.md` | `dataset-schema-contract.md` |
-| Checklist file | `T-NNN.md` | `T-001.md` |
-| Review file | `T-NNN-review.md` | `T-001-review.md` |
+| Work Item ID | `FEAT-NNN` (3-digit, monotonic) | `FEAT-001` |
+| Directory | `FEAT-NNN-slug/` (kebab-case) | `FEAT-001-dataset-ingest/` |
+| Files within | `{brief,contract,checklist,status,review}.md` | Fixed names |
+
+### Standalone Execution Docs
+
+For standalone use outside work item bundles (backward compatible):
+
+| Item | Format | Location |
+|------|--------|----------|
+| Task | `T-NNN-slug.md` | `work/tasks/` |
+| Contract | `{domain}-contract.md` | `work/contracts/` |
+| Checklist | `T-NNN.md` | `work/checklists/` |
+| Review | `T-NNN-review.md` | `work/reviews/` |
+
+> Standalone templates follow the same field structure as bundle files. Use bundles for multi-agent work; standalone for simple single-agent tasks.
 
 ---
 
@@ -259,20 +295,20 @@ updated: YYYY-MM-DD
 
 | Document | MUST link to |
 |----------|-------------|
-| Task | Source RFC/ADR or Contract |
-| Checklist | Parent Task |
-| Review | Parent Task + Checklist |
-| Contract | Independent OK; link RFC/ADR if related |
+| Brief | Source RFC/ADR or Contract |
+| Contract | Brief (parent) |
+| Checklist | Brief (parent) |
+| Review | Brief + Checklist |
 
-Reverse linking recommended: list derived Tasks at the bottom of RFC/ADR documents.
+Reverse linking recommended: list derived Work Items at the bottom of RFC/ADR documents.
 
 ---
 
 ## Cross-Axis Linking
 
-| Execution Doc | Related Diataxis Doc |
+| Work Item Doc | Related Diataxis Doc |
 |--------------|---------------------|
-| Task | Explanation (design rationale), Reference (API spec) |
+| Brief | Explanation (design rationale), Reference (API spec) |
 | Contract | Reference (detailed spec) |
 | Checklist | How-to (operational procedures) |
 | Review | Explanation (reflect lessons learned) |
@@ -281,8 +317,10 @@ Reverse linking recommended: list derived Tasks at the bottom of RFC/ADR documen
 
 ## Anti-Patterns
 
-1. **Sourceless Task** — Task without RFC/ADR or Contract: no traceability for "why"
-2. **LGTM Review** — Review with no substance: no lesson accumulation
-3. **Vague Contract** — No concrete schema, just "integrate well": invariants unverifiable
-4. **Orphan Checklist** — Checklist remains after Task deletion: clean up periodically
-5. **Design in Task** — Alternative comparisons in a Task: separate into Explanation
+1. **Sourceless Brief** — No RFC/ADR link: no traceability for "why"
+2. **LGTM Review** — No substance: no lesson accumulation
+3. **Vague Contract** — No concrete boundaries: implementer makes design decisions
+4. **Orphan Checklist** — Checklist remains after work item deletion: clean up periodically
+5. **Design in Brief** — Alternative comparisons in Brief: separate into Explanation
+6. **Stale Status** — Status not updated: other agents make wrong assumptions
+7. **Scope Creep** — Implementer goes beyond contract: enforce via review
