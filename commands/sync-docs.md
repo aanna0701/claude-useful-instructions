@@ -1,192 +1,141 @@
-# sync-docs — Sync project documentation to current codebase state
+# sync-docs — Sync Documentation to Current Codebase
 
-Analyze the current codebase state (including git worktrees if present, recent git changes, and all dependency files) and update all `.md` documentation files (both `docs/` and `planning/`) to match reality.
+Analyze current codebase state (including git worktrees, recent changes, dependency files) and update all `.md` files (both `docs/` and `planning/`) to match reality.
 
-Target files: $ARGUMENTS (if empty, update all stale `.md` files)
+Target: $ARGUMENTS (if empty, update all stale `.md` files)
 
 ---
 
-## Step 0: Discover worktrees (if any)
-
-Check if the project uses git worktrees:
+## Step 0: Discover Worktrees
 
 ```bash
 git worktree list
 ```
 
-**If multiple worktrees exist** (multi-worktree mode):
-- Parse the output to build a worktree map: `{ "<branch-name>": "<absolute-path>" }`
-- The current working directory is the **docs worktree** (where docs changes are applied)
-- All other worktrees are **code worktrees** (scanned for code changes, never modified)
-- In Steps 1–2, scan ALL worktrees in parallel for a complete picture of the codebase
+**Multiple worktrees** (multi-worktree mode):
+- Build worktree map: `{ "<branch>": "<path>" }`
+- Current directory = **docs worktree** (apply changes here only)
+- Other worktrees = **code worktrees** (scan only, never modify)
+- Steps 1-2 scan ALL worktrees in parallel
 
-**If only one worktree exists** (single-repo mode):
-- Skip this step entirely
-- Proceed with Steps 1–2 scanning only the current directory
+**Single worktree**: Skip this step, scan current directory only.
 
 ---
 
-## Step 1: Scan current state (parallel)
-
-For EACH worktree discovered in Step 0 (or just the current directory in single-repo mode), scan in parallel:
+## Step 1: Scan Current State (parallel)
 
 ### Per-worktree scan
-- **Source files** — `find . -name "*.py" -o -name "*.ts" -o ... | grep -v __pycache__ | sort` (module structure)
-- **Test count** — `grep -r "def test_\|it(\|test(" tests/ --include="*.py" --include="*.ts" | wc -l`
+- **Source files** — Module structure (exclude `__pycache__`)
+- **Test count** — Count `def test_`, `it(`, `test(` in test files
 - **Dependencies** — Read `pyproject.toml` / `package.json` / `Cargo.toml` / `go.mod`
 - **Recent commits** — `git log --oneline -10`
-- **Branch name** — `git branch --show-current`
+- **Branch** — `git branch --show-current`
 
 ### Docs worktree scan (current directory)
-1. **File structure** — Glob `**/*.{cpp,h,sh,py,ts,js,yaml,yml,toml,json,proto,rs,go}`, `Makefile`, `Dockerfile*`, `docker-compose*.yml` — exclude `node_modules/`, `.venv/`, `**/googletest-*`, `dist/`, `build/`, `target/`
+1. **File structure** — Glob source files (exclude `node_modules/`, `.venv/`, `dist/`, `build/`, `target/`)
 2. **All `.md` files** — Glob `**/*.md` (same exclusions), including `planning/**/*.md`
-3. **Dependency files** — Read every file that matches:
-   - Python: `requirements*.txt`, `pyproject.toml`, `setup.py`, `setup.cfg`, `Pipfile`
-   - Node: `package.json`, `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`
-   - Rust: `Cargo.toml`, `Cargo.lock`
-   - Go: `go.mod`, `go.sum`
-   - Ruby: `Gemfile`, `Gemfile.lock`
-   - Generic: `*.toml`, `*.cfg`
-4. **Build/CI files** — `Makefile`, `docker-compose*.yml`, `Dockerfile*`, `.github/workflows/*.yml`, `.gitlab-ci.yml`
-5. **Test files** — All `test_*.py`, `*_test.py`, `*.test.ts`, `*.spec.ts`, `*_test.go`, `test_*.cpp` — count functions/macros
-6. **CLI entry points** — Files with `argparse`, `click`, `typer`, `cobra`, `clap`, or `--` option parsing
+3. **Dependency files** — All `requirements*.txt`, `pyproject.toml`, `package.json`, lock files, etc.
+4. **Build/CI files** — `Makefile`, `docker-compose*.yml`, `Dockerfile*`, CI workflow files
+5. **Test files** — Count test functions/macros across all test files
+6. **CLI entry points** — Files using `argparse`, `click`, `typer`, `cobra`, `clap`
 
 ---
 
-## Step 2: Git diff analysis
+## Step 2: Git Diff Analysis
 
-For EACH worktree (or just current directory in single-repo mode), run:
+Per worktree (or current directory in single mode):
 
 ```bash
-cd $WT_PATH   # skip cd in single-repo mode
 git log --oneline -20
 git diff HEAD~10..HEAD --stat
 git diff HEAD~10..HEAD -- "*.toml" "*.txt" "requirements*" "package.json" "go.mod" "Cargo.toml"
 git status --short
 ```
 
-Extract from the diffs:
-- **New files added** on any branch/worktree
-- **Deleted files**
-- **Dependency changes** (packages added/removed/upgraded)
-- **Config changes** (ports, env vars, services)
-- **Feature completion** (functions added, classes implemented)
-- **New modules** that need documentation
+Extract: new/deleted files, dependency changes, config changes, feature completions, new modules needing docs.
 
 ---
 
-## Step 3: Detect discrepancies
+## Step 3: Detect Discrepancies
 
-For each `.md` file, check against **actual codebase across all worktrees**:
+Check each `.md` file against actual codebase (all worktrees):
 
-### Structure changes
-- [ ] Source files in any worktree not mentioned in docs?
-- [ ] Files referenced in docs that no longer exist on any worktree?
+- [ ] Source files not mentioned in docs?
+- [ ] Files referenced in docs that no longer exist?
 - [ ] New directories/modules not documented?
-
-### Dependency changes (from all worktrees)
-- [ ] New packages in any worktree's dependency files not in docs?
-- [ ] Removed packages still mentioned in docs?
+- [ ] New/removed packages not reflected in docs?
 - [ ] Version pins changed?
-
-### Configuration changes
-- [ ] Build targets differ from docs?
-- [ ] Docker services changed?
-- [ ] Environment variables added/removed?
-- [ ] CLI options changed?
-
-### Implementation status
+- [ ] Build targets, Docker services, env vars, CLI options changed?
 - [ ] Code changes not reflected in status/plan docs?
-- [ ] Completed tasks still marked as TODO?
+- [ ] Completed tasks still marked TODO?
 - [ ] New features not documented?
 
 ### Execution artifact consistency (planning/)
-- [ ] Tasks marked `done` but no corresponding Review exists?
-- [ ] Checklists for `done` tasks with unchecked items?
-- [ ] Contracts referenced by tasks that have been `superseded`?
-- [ ] Tasks referencing deleted/archived RFC/ADR documents?
-- [ ] Orphaned checklists (parent task deleted)?
-- [ ] Task status not matching implementation reality (done in code but `open` in task)?
+- [ ] `done` Tasks without corresponding Review?
+- [ ] `done` Task checklists with unchecked items?
+- [ ] Tasks referencing superseded/deleted Contracts or RFC/ADR?
+- [ ] Orphaned Checklists (parent Task deleted)?
+- [ ] Task status mismatches code reality?
 
-### Cross-worktree consistency (multi-worktree mode only)
-- [ ] Each worktree's modules match their docs descriptions?
-- [ ] Test counts accurate across all worktrees?
-- [ ] Worktree-specific modules properly documented?
+### Cross-worktree (multi-worktree only)
+- [ ] Each worktree's modules match docs?
+- [ ] Test counts accurate across worktrees?
 
 ---
 
-## Step 4: Determine update targets
+## Step 4: Determine Update Targets
 
-If `$ARGUMENTS` is empty, update **all `.md` files** where changes were detected in Step 3.
-If `$ARGUMENTS` specifies filenames or glob patterns, update only matching files.
-
-Do not touch files where no changes were detected.
+- `$ARGUMENTS` empty → update all `.md` files with detected changes
+- `$ARGUMENTS` specified → update only matching files/patterns
+- Skip files with no detected changes
 
 ---
 
-## Step 5: Per-file update rules
+## Step 5: Per-file Update Rules
 
-### Project metadata docs (README.md, CLAUDE.md)
+### Project metadata (README.md, CLAUDE.md)
+- Reflect actual file list from all worktrees
+- Update feature/status sections, test counts, build commands, dependencies
 
-- Reflect actual file list from **all worktrees** (remove deleted, add new)
-- Update feature/status sections to match reality
-- Update test counts from actual test sources (use the worktree with the most tests in multi-worktree mode)
-- Align build/install commands with actual dependency files
-- Update dependency list from dependency files across worktrees
+### Plan/architecture docs
+- Mark completed phases/tasks as done (evidence from git log)
+- Update dependency lists from current lock/spec files
+- Flag plan items contradicted by current code
 
-### Plan/architecture docs (docs/plan.md, docs/tech-stack.md, etc.)
-
-- Mark completed phases/tasks as done (reference git log for completion evidence)
-- Update dependency lists to match current lock/spec files
-- Flag any plan items contradicted by current code
-
-### Module docs (docs/modules/*.md)
-
-- Update module structure trees to match actual code on the relevant worktree
-- Update API examples if interfaces changed
-- Update test commands and test counts
+### Module docs
+- Update structure trees, API examples, test commands/counts
 
 ### Operational docs (RUNBOOK.md, CONTRIBUTING.md)
+- Update CLI command tables, setup instructions, alias tables
 
-- Update command tables to match actual CLI options
-- Update setup instructions to match current dependency files
-- Update alias/shortcut tables
+### CODEMAPS
+- Full rewrite if >30% change rate; otherwise edit specific sections
+- Update metadata: `<!-- Generated: YYYY-MM-DD | Files scanned: N -->`
 
-### CODEMAPS (docs/CODEMAPS/*.md)
+### Subproject docs
+- Sync with subproject state; ensure correct relative paths
 
-- Overwrite only if change rate > 30%; otherwise Edit specific sections
-- Update metadata header: `<!-- Generated: YYYY-MM-DD | Files scanned: N -->`
-
-### Subproject docs (e.g., env/frame_sync/README.md)
-
-- Sync with subproject's actual state
-- Ensure paths are correct relative to the subproject
-
-### Execution artifacts (planning/**/*.md)
-
-- Update Task status based on git log evidence (e.g., feature branches merged → `done`)
-- Flag orphaned Checklists (parent task deleted or moved)
-- Flag Contracts with no referencing Tasks (unused contracts)
-- Flag `done` Tasks without corresponding Reviews
-- Verify source links in Tasks still point to valid RFC/ADR files
-- Verify task_id references in Checklists and Reviews match existing Tasks
+### Execution artifacts (planning/)
+- Update Task status from git evidence (merged feature branches → `done`)
+- Flag orphaned Checklists, unused Contracts, missing Reviews
+- Verify source links and task_id references
 
 ---
 
-## Step 6: Apply updates
+## Step 6: Apply Updates
 
-For each file determined in Step 4, apply edits using the Edit tool.
+Use Edit tool for each target file.
 
 Rules:
 - Replace only auto-generated sections (`<!-- AUTO-GENERATED -->`); preserve hand-written prose
-- Edit only changed portions — do not rewrite entire files
+- Edit changed portions only — no full rewrites
 - Preserve UTF-8 encoding
-- Do not add emojis unless already present in the file
-- All changes go to the docs worktree only (in multi-worktree mode)
+- No emoji additions unless already present
+- All changes go to docs worktree only (multi-worktree mode)
 
 ---
 
-## Step 7: Print summary
+## Step 7: Summary
 
 ### Single-repo mode
 ```
@@ -194,11 +143,10 @@ Documentation sync complete
 ─────────────────────────────────────────
 Updated:  README.md (dependencies updated, 2 features added)
 Updated:  docs/plan.md (3 tasks marked complete)
-Updated:  docs/tech-stack.md (added kornia, removed opencv-python)
 Skipped:  CONTRIBUTING.md (no changes detected)
 ─────────────────────────────────────────
 Files scanned: N source, M docs
-Dependencies scanned: requirements.txt, pyproject.toml
+Dependencies: requirements.txt, pyproject.toml
 Git range: HEAD~10..HEAD (N commits)
 Next: review updated files and commit
 ```
@@ -207,17 +155,17 @@ Next: review updated files and commit
 ```
 Documentation sync complete (cross-worktree)
 ─────────────────────────────────────────
-Worktrees discovered: N
-  [docs]  /path/to/docs-wt        branch-name  (current)
-  [code]  /path/to/code-wt-1      branch-name  (X tests, Y files)
-  [code]  /path/to/code-wt-2      branch-name  (X tests, Y files)
+Worktrees: N
+  [docs]  /path/to/docs-wt        branch  (current)
+  [code]  /path/to/code-wt-1      branch  (X tests, Y files)
+  [code]  /path/to/code-wt-2      branch  (X tests, Y files)
 
 Updated:  README.md (dependencies updated, 2 features added)
 Updated:  docs/plan.md (3 tasks marked complete)
 Skipped:  CONTRIBUTING.md (no changes detected)
 ─────────────────────────────────────────
 Files scanned: N source, M docs
-Max test count: Z (from branch-name)
-Dependencies scanned: pyproject.toml × N worktrees
+Max test count: Z (from branch)
+Dependencies: pyproject.toml x N worktrees
 Next: review updated files and commit
 ```

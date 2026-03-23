@@ -217,56 +217,15 @@ Documents no longer valid but preserved for reference.
 
 ### Archived Document Header
 
-```markdown
----
-status: deprecated
----
-
-> **This document is no longer valid.**
-> Replacement: [v2 API Reference](../20_implementation/api-reference.md)
-> Reason: v1 spec retired after v2 API launch
-> Archive date: 2025-03-18
-```
+Add `status: deprecated` to frontmatter and a warning block: replacement link, reason, archive date.
 
 ---
 
 ## 6. CI/CD Automation (Optional)
 
-```yaml
-# .github/workflows/docs.yml
-name: docs
-on:
-  push:
-    branches: [main]
-    paths: ['docs/**', 'mkdocs.yml']
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - run: pip install mkdocs-material mkdocs-git-revision-date-localized-plugin
-      - run: mkdocs gh-deploy --force
-```
+**Deploy workflow** (`.github/workflows/docs.yml`): On push to `main` (paths: `docs/**`, `mkdocs.yml`), checkout with `fetch-depth: 0`, install `mkdocs-material` + `mkdocs-git-revision-date-localized-plugin`, run `mkdocs gh-deploy --force`.
 
-### Link Validation
-
-```yaml
-# .github/workflows/docs-lint.yml
-name: docs-lint
-on: pull_request
-jobs:
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: pip install mkdocs-material
-      - run: mkdocs build --strict   # Detects broken links
-```
+**Link validation** (`.github/workflows/docs-lint.yml`): On PR, run `mkdocs build --strict` to detect broken links.
 
 ---
 
