@@ -38,35 +38,19 @@ Read in parallel:
 - `checklist.md` — verification items
 - `status.md` — changed files, progress, ambiguities
 
-### Step 4: Gemini Pre-Review (optional)
-
-If Gemini MCP is available, call for neutral third-party audit:
-
-```
-gemini_audit_implementation(
-  contract_path="work/items/FEAT-NNN-slug/contract.md",
-  changed_files=[...from status.md Changed Files...],
-  checklist_path="work/items/FEAT-NNN-slug/checklist.md"
-)
-```
-
-Save Gemini's raw audit to `work/items/FEAT-NNN-slug/review-gemini.md`.
-Use findings to inform Claude's own review in the next step.
-**Skip if**: Gemini MCP not available.
-
-### Step 5: Review Changed Files
+### Step 4: Review Changed Files
 
 From `status.md` "Changed Files" section, read each modified file.
 If "Changed Files" is empty, use `git diff main...HEAD` or `git log --name-only` to find changes.
 
-Check against contract (informed by Gemini audit if available):
+Check against contract:
 1. **Boundary compliance**: Only "Allowed Modifications" files changed? Any "Forbidden Zone" violations?
 2. **Interface compliance**: Do implementations match interface specs?
 3. **Invariant compliance**: Are all invariants preserved?
 4. **Test compliance**: Do tests exist per "Test Requirements"?
 5. **Checklist verification**: Walk through each checklist item, mark pass/fail.
 
-### Step 6: Generate Review
+### Step 5: Generate Review
 
 **Preferred**: Spawn `doc-writer-review` agent with `bundle: true` and findings.
 
@@ -79,13 +63,13 @@ Check against contract (informed by Gemini audit if available):
 
 Write to `work/items/FEAT-NNN-slug/review.md`
 
-### Step 7: Update Status
+### Step 6: Update Status
 
 Update `status.md`:
 - Status: `review`
 - Agent: `Claude`
 
-### Step 8: Execute Decision
+### Step 7: Execute Decision
 
 **MERGE**:
 1. Ask user: "FEAT-NNN: MERGE decision. Merge, delete branch, and clean up work item? [Y/n]"
@@ -105,7 +89,7 @@ bash codex-run.sh FEAT-NNN
 
 **REJECT**: State reason. Remove work item directory: `rm -r work/items/FEAT-NNN-slug/`.
 
-### Step 9: Batch Summary (when reviewing multiple items)
+### Step 8: Batch Summary (when reviewing multiple items)
 
 When reviewing multiple items, also check for "Doc Changes Needed" in each `status.md` and consolidate:
 

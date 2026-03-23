@@ -1,13 +1,13 @@
 ---
 name: collab-workflow
 description: >
-  Claude-Codex-Gemini collaboration workflow for structured design-implement-review cycles.
-  Triggers on: "work item", "work plan", "work review", "work status", "codex", "gemini",
+  Claude-Codex collaboration workflow for structured design-implement-review cycles.
+  Triggers on: "work item", "work plan", "work review", "work status", "codex",
   "hand off", "delegate", "FEAT-", "multi-agent", "parallel", "dispatch", "boundary check",
   "worktree", "link work", "concurrent".
 ---
 
-# Claude-Codex-Gemini Collaboration Workflow
+# Claude-Codex Collaboration Workflow
 
 ## Routing
 
@@ -18,7 +18,6 @@ description: >
 | Review + merge | `/work-review` |
 | Boundary check / dispatch | `codex-run.sh` (suggest command) |
 | Link worktrees | `link-work.sh` (suggest command) |
-| Gemini tools | Corresponding `gemini_*` MCP tool |
 
 ## Workflow (2-Touch)
 
@@ -36,4 +35,3 @@ description: >
 - Docs: `docs/collab-workflow.md` (full setup guide + walkthrough)
 - Scripts: `codex-run.sh`, `link-work.sh`
 - Templates: `.claude/templates/work-item/`
-- Gemini MCP: `mcp/gemini-review/`

@@ -66,15 +66,10 @@ If this repo uses **git worktrees**, you are already on the correct branch for y
 
 ## What You Must NOT Do
 
-- Do NOT write `review.md` or `review-gemini.md` — Claude and Gemini do that
+- Do NOT write `review.md` — Claude does that
 - Do NOT modify `brief.md`, `contract.md`, or `checklist.md`
 - Do NOT modify documentation (`docs/`, `README.md`, root `*.md`) — record needed changes in `status.md`
 - Do NOT merge your own branch
 - Do NOT make design decisions or propose alternatives
 - Do NOT modify files outside contract boundaries
 
-## About Gemini Reviews
-
-After you set status to `done`, Gemini may audit your implementation before Claude reviews.
-Gemini writes `review-gemini.md` — a neutral compliance check. If Claude requests revisions
-based on Gemini's findings, follow the same REVISE process as for Claude's `review.md`.

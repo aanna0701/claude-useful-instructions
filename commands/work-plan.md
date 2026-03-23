@@ -91,18 +91,7 @@ FEAT-003-duckdb-enum-removal
 FEAT-004-duckdb-migration
 ```
 
-### Step 4: Summarize Design Docs (Gemini, optional)
-
-If multiple source documents exist (RFC, ADR, references), call Gemini to compress:
-
-```
-gemini_summarize_design_pack(file_paths=["docs/rfc/RFC-012.md", "docs/adr/ADR-005.md", ...])
-```
-
-Use the summary as input for brief and contract generation.
-**Skip if**: single source doc or no Gemini MCP available.
-
-### Step 5: Generate Work Items (parallel)
+### Step 4: Generate Work Items (parallel)
 
 Spawn **parallel agents**, one per FEAT:
 ```
@@ -114,13 +103,13 @@ Agent 4: Generate FEAT-004 (brief + contract + checklist + status)
 
 Each agent:
 1. **Generate Brief** — Spawn `doc-writer-task` agent with `bundle: true`, or fill from `.claude/templates/work-item/brief.md`
-2. **Generate Contract** — Call `gemini_derive_contract` for draft → Claude signs, or spawn `doc-writer-contract`, or fill template. **Ensure Allowed Modifications are disjoint** from sibling FEATs.
+2. **Generate Contract** — Spawn `doc-writer-contract`, or fill from `.claude/templates/work-item/contract.md`. **Ensure Allowed Modifications are disjoint** from sibling FEATs.
 3. **Generate Checklist** — Spawn `doc-writer-checklist` agent, or fill from template
 4. **Initialize Status** — From `.claude/templates/work-item/status.md`, set status=open, agent=TBD
 
 Write all files to `work/items/FEAT-NNN-slug/`.
 
-### Step 6: Boundary Overlap Check
+### Step 5: Boundary Overlap Check
 
 **Always run when 2+ work items exist** (including previously existing open items in `work/items/`).
 
@@ -155,7 +144,7 @@ dep = dependency (FEAT-004 depends on 001, 002, 003)
 2. Suggest: narrow one contract's boundaries, or merge the overlapping FEATs back into one
 3. Ask user to confirm or adjust
 
-### Step 7: Generate Dispatch Manifest
+### Step 6: Generate Dispatch Manifest
 
 Create or update `work/dispatch.json`:
 
@@ -191,7 +180,7 @@ Create or update `work/dispatch.json`:
 - `depends_on`: Sub-tasks that must complete before this one starts.
 - Group ordering follows dependency topology — independent items first, dependents last.
 
-### Step 8: Summary & Single Dispatch Command
+### Step 7: Summary & Single Dispatch Command
 
 Print the summary table and a **single command** the user can copy-paste:
 

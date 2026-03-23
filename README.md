@@ -25,7 +25,6 @@ CUI_DIR=~/claude-useful-instructions  # ← adjust to your clone path
 cat >> ~/.bashrc << EOF
 alias cui-install='$CUI_DIR/install.sh'
 
-alias cui-gemini-setup='bash $CUI_DIR/gemini-setup.sh'
 EOF
 source ~/.bashrc
 
@@ -33,8 +32,6 @@ source ~/.bashrc
 CUI_DIR=~/claude-useful-instructions  # ← adjust to your clone path
 cat >> ~/.zshrc << EOF
 alias cui-install='$CUI_DIR/install.sh'
-
-alias cui-gemini-setup='bash $CUI_DIR/gemini-setup.sh'
 EOF
 source ~/.zshrc
 ```
@@ -45,35 +42,9 @@ source ~/.zshrc
 # 1. Global — coding standards, doc tools
 cui-install --core --docs
 
-# 2. Per-project — collab workflow + Gemini
+# 2. Per-project — collab workflow
 cui-install --collab /path/to/my-project
-cui-gemini-setup /path/to/my-project      # optional
 ```
-
-### Gemini MCP Prerequisites
-
-`cui-gemini-setup` requires a Gemini API key. Get one at https://aistudio.google.com/apikey.
-
-The setup script will prompt for the key if `GEMINI_API_KEY` is not set, or you can pass it:
-
-```bash
-# Option A: Let the script prompt you
-cui-gemini-setup /path/to/my-project
-
-# Option B: Set it beforehand
-export GEMINI_API_KEY="your-key-here"
-cui-gemini-setup /path/to/my-project
-```
-
-The script uses `claude mcp add -s user` to register the server in `~/.claude.json` (user scope), which works across all projects and git worktrees.
-
-> **Why `claude mcp add` instead of editing config files?**
-> - `~/.claude/settings.json`'s `mcpServers` field is **not** where Claude Code reads MCP servers.
-> - Per-project `settings.local.json` doesn't work with git worktrees.
-> - Shell env vars (`.bashrc`/`.profile`) are unreliable for non-interactive MCP processes.
-> - `claude mcp add -s user` writes to `~/.claude.json`, the correct location Claude Code reads.
-
-After setup, **restart Claude Code** for the MCP server to connect.
 
 ---
 
@@ -84,7 +55,7 @@ After setup, **restart Claude Code** for the MCP server to connect.
 | `core` | coding-style, smart-git-commit-push, optimize-tokens | Global (`~/.claude/`) |
 | `docs` | diataxis-doc-system, diagram-architect, doc/diagram agents, write-doc, init-docs, sync-docs | Global |
 | `data-pipeline` | data-pipeline-architect skill | Global |
-| `collab` | Claude-Codex-Gemini collaboration, work items, AGENTS.md, CLAUDE.md, Gemini MCP | Per-project |
+| `collab` | Claude-Codex collaboration, work items, AGENTS.md, CLAUDE.md | Per-project |
 | `career` | career-docs skill, career agents | Either |
 | `vla` | vla-code-standards, vla agents (6 domains) | Either |
 
@@ -186,11 +157,9 @@ claude-useful-instructions/
 │   ├── work-item/                   # brief, contract, checklist, status, review
 │   ├── codex/AGENTS.md
 │   └── claude/CLAUDE.md
-├── mcp/gemini-review/               # Gemini MCP server
 ├── install.sh                       # Bundle-based installer (+ --uninstall)
 ├── codex-run.sh                     # Codex runner (single + parallel + boundary check)
-├── link-work.sh                     # Worktree symlink manager
-└── gemini-setup.sh                  # Gemini MCP setup
+└── link-work.sh                     # Worktree symlink manager
 ```
 
 ---
@@ -199,7 +168,7 @@ claude-useful-instructions/
 
 | Guide | Description |
 |-------|-------------|
-| [Collab Workflow](docs/collab-workflow.md) | Claude-Codex-Gemini architecture, setup, and walkthrough |
+| [Collab Workflow](docs/collab-workflow.md) | Claude-Codex architecture, setup, and walkthrough |
 | [Skills Reference](docs/skills.md) | Full skill documentation |
 | [Agents Reference](docs/agents.md) | Full agent documentation |
 | [Commands Reference](docs/commands.md) | Full command documentation |

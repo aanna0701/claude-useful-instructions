@@ -86,10 +86,8 @@ BUNDLE_COLLAB=(
   "root-file:AGENTS.md"
   "root-file:CLAUDE.md"
   "script:codex-run.sh"
-  "script:gemini-setup.sh"
   "script:link-work.sh"
   "hook:post-checkout-work-link"
-  "mcp:gemini-review"
 )
 
 BUNDLE_NAMES=("core" "docs" "data-pipeline" "career" "vla" "collab")

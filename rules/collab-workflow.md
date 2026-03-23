@@ -1,4 +1,4 @@
-# Claude-Codex-Gemini Collaboration
+# Claude-Codex Collaboration
 
 ## 2-Touch Workflow
 
@@ -10,7 +10,6 @@
 
 - **Claude**: spec owner, integrator — designs work items, reviews, merges, handles doc changes
 - **Codex**: implementer — per contract only, never modifies docs (records in `status.md`)
-- **Gemini**: auditor (via MCP) — drafts contracts, audits implementations, never modifies code
 
 ## Commands
 
@@ -23,7 +22,7 @@
 ## Work Items
 
 - Location: `work/items/FEAT-NNN-slug/`
-- Files: `brief.md`, `contract.md`, `checklist.md`, `status.md`, `review.md`, `review-gemini.md`
+- Files: `brief.md`, `contract.md`, `checklist.md`, `status.md`, `review.md`
 - Dispatch: `work/dispatch.json` (parallel groups + dependencies)
 
 ## Parallel Execution
@@ -41,7 +40,7 @@
 ## Principles
 
 - Contract = single source of truth for boundaries
-- Claude signs contracts; Codex implements; Gemini audits
+- Claude signs contracts; Codex implements
 - Codex: code + `status.md` only — **never docs**; records doc needs in "Doc Changes Needed"
 - Ambiguities recorded in `status.md`, never resolved by implementer
 - `review.md` required before merge

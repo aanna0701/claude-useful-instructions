@@ -1,8 +1,8 @@
-# Claude-Codex-Gemini Collaboration Workflow
+# Claude-Codex Collaboration Workflow
 
 > **Doc type**: Explanation + Tutorial | **Audience**: Developers setting up multi-agent workflows
 
-The `collab` bundle enables structured handoff between **Claude** (design/review), **Codex** (implementation), and **Gemini** (audit/synthesis via MCP).
+The `collab` bundle enables structured handoff between **Claude** (design/review) and **Codex** (implementation).
 
 ---
 
@@ -12,7 +12,6 @@ The `collab` bundle enables structured handoff between **Claude** (design/review
 |-------|------|--------|
 | **Claude** | spec owner, integrator, final authority | brief.md, contract.md (signed), checklist.md, review.md |
 | **Codex** | implementer farm | code, status.md |
-| **Gemini** | auditor, synthesizer, spec normalizer | review-gemini.md, contract.md (draft) |
 
 ## 2-Touch Workflow
 
@@ -38,9 +37,7 @@ TOUCH 2 — Human: /work-review FEAT-001 FEAT-002 FEAT-003
 ```mermaid
 graph LR
     subgraph "1 Claude — Design"
-        A["/work-plan\n(parallel agents)"] --> G1["Gemini MCP\nsummarize + derive"]
-        G1 --> B["work items +\nboundary check"]
-        A -.->|no Gemini| B
+        A["/work-plan\n(parallel agents)"] --> B["work items +\nboundary check"]
     end
 
     subgraph "2 codex-run.sh"
@@ -50,9 +47,7 @@ graph LR
     end
 
     subgraph "3 Claude — Review + Merge"
-        E --> G2["Gemini MCP\naudit"]
-        G2 --> F["/work-review\n(parallel agents)"]
-        E -.->|no Gemini| F
+        E --> F["/work-review\n(parallel agents)"]
         F --> H["MERGE:\ngit merge + branch -d"]
         F --> DOC["doc changes\n(from status.md)"]
     end
@@ -70,27 +65,9 @@ graph LR
 ./install.sh --collab /path/to/project
 ```
 
-This installs everything: `.claude/` artifacts, `AGENTS.md`, `CLAUDE.md`, scripts (`codex-run.sh`, `link-work.sh`), and the Gemini MCP server. Creates `work/items/` directory.
+This installs everything: `.claude/` artifacts, `AGENTS.md`, `CLAUDE.md`, scripts (`codex-run.sh`, `link-work.sh`). Creates `work/items/` directory.
 
-### Step 2: Set up Gemini MCP (optional)
-
-```bash
-# 1. Get a Gemini API key → https://aistudio.google.com/apikey
-# 2. Set environment variable (add to ~/.bashrc or ~/.zshrc)
-export GEMINI_API_KEY='your-api-key-here'
-
-# 3. Run setup (installs deps, auto-registers MCP config)
-bash gemini-setup.sh /path/to/project
-```
-
-The script automatically registers the MCP server and permissions in `.claude/settings.local.json`. If `gemini-review` is already registered, the step is skipped.
-
-Override the model with `GEMINI_MODEL` (default: `gemini-2.5-flash`):
-```bash
-export GEMINI_MODEL='gemini-2.5-pro'  # deeper reasoning
-```
-
-### Step 3: Set up worktree links (if using git worktrees)
+### Step 2: Set up worktree links (if using git worktrees)
 
 See [Worktree Support](#worktree-support) for `link-work.sh` commands.
 
@@ -101,19 +78,14 @@ project/
 ├── AGENTS.md                          # Codex reads this
 ├── CLAUDE.md                          # Claude reads this
 ├── codex-run.sh                       # Codex runner (single + parallel + boundary check)
-├── gemini-setup.sh                    # Gemini MCP setup script
 ├── link-work.sh                       # Worktree symlink manager
-├── mcp/gemini-review/                 # Gemini MCP server
-│   ├── server.py                      #   5 tools wrapping Gemini API
-│   ├── prompts.py                     #   System prompts per tool
-│   └── pyproject.toml                 #   Dependencies (mcp, google-generativeai)
 ├── work/items/                        # Shared workspace (created by install.sh)
 ├── work/dispatch.json                 # Parallel dispatch manifest (created by /work-plan)
 └── .claude/
-    ├── rules/collab-workflow.md       # Auto-loaded 3-agent rules
+    ├── rules/collab-workflow.md       # Auto-loaded 2-agent rules
     ├── commands/work-{plan,review,status}.md
     ├── skills/collab-workflow/
-    └── templates/work-item/*.md       # Brief, contract, checklist, status, review, review-gemini
+    └── templates/work-item/*.md       # Brief, contract, checklist, status, review
 ```
 
 The `post-checkout` hook is also installed to `.git/hooks/`, auto-linking `work/` when switching branches in new worktrees.
@@ -200,35 +172,16 @@ bash codex-run.sh FEAT-003
 
 ---
 
-## Gemini MCP Tools
-
-| Tool | Insertion Point | Purpose |
-|------|----------------|---------|
-| `gemini_summarize_design_pack` | Before /work-plan | Compress RFC/ADR bundle into implementation-ready summary |
-| `gemini_derive_contract` | During /work-plan | Generate contract.md draft from design summary |
-| `gemini_audit_implementation` | Before /work-review | Neutral third-party compliance audit |
-| `gemini_compare_diffs` | Before integration | Cross-compare parallel branch diffs |
-| `gemini_draft_release_notes` | After merge | Generate release notes with migration steps |
-| `gemini_polish_career_doc` | After career-docs-writer refinement | Polish career docs for natural, authentic tone |
-
----
-
 ## Walkthrough: JWT Authentication Middleware
 
 > Follow this end-to-end example to understand the full workflow.
 
-### Phase 1 — Design (Claude + Gemini)
+### Phase 1 — Design (Claude)
 
 ```
 [Claude] /work-plan "Add JWT authentication middleware"
 
-Gemini: summarize_design_pack(["docs/rfc/RFC-012.md", "docs/adr/ADR-005.md"])
-  → Implementation-ready summary
-
-Gemini: derive_contract(summary, scope, boundaries)
-  → contract.md draft (status: draft)
-
-Claude: reviews + signs contract (status: draft → signed)
+Claude: reviews scope → generates contract → signs (status: draft → signed)
 
 Created work/items/FEAT-001-jwt-auth-middleware/
   brief.md, contract.md (signed), checklist.md, status.md (open)
@@ -247,15 +200,12 @@ Codex Command: bash codex-run.sh FEAT-001
   → Updates status.md → done (5/5 checklist items)
 ```
 
-### Phase 3 — Review + Merge (Gemini + Claude)
+### Phase 3 — Review + Merge (Claude)
 
 ```
 [Claude] /work-review FEAT-001
 
-Gemini: audit_implementation(contract, changed_files, checklist)
-  → review-gemini.md: 5/5 Pass, no boundary violations
-
-Claude (informed by Gemini audit):
+Claude:
   → review.md: MERGE
   → asks user to confirm → git merge + delete branch
   → applies doc changes from status.md
@@ -280,4 +230,3 @@ Decision flow:
 | `codex-run.sh --from-manifest` | User | Dispatch from manifest (respects parallel groups) |
 | `codex-run.sh --status` | User | Show all open work items |
 | `link-work.sh` | User | Manage work/ symlinks (see [commands](#link-worksh-commands)) |
-| `gemini_*` tools | Gemini (MCP) | See [Gemini MCP Tools](#gemini-mcp-tools) |
