@@ -29,6 +29,21 @@ bash gemini-setup.sh /path/to/my-project     # Gemini MCP (optional)
 
 > `collab` installs CLAUDE.md, AGENTS.md, and scripts at the project root — these define per-project contracts, boundaries, and work items that are specific to each codebase.
 
+### Quick Alias (optional)
+
+```bash
+# Add to ~/.bashrc or ~/.zshrc for quick access
+echo "alias cui-install='~/workspace/claude-useful-instructions/install.sh'" >> ~/.bashrc
+source ~/.bashrc
+```
+
+Then use `cui-install` anywhere instead of the full path:
+
+```bash
+cui-install --core --docs
+cui-install --collab /path/to/project
+```
+
 ### All Options
 
 ```bash
