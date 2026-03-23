@@ -109,7 +109,8 @@ bash link-work.sh --init VasIntelli-Eval feature-eval
 project/
 ├── AGENTS.md                          # Codex reads this
 ├── CLAUDE.md                          # Claude reads this
-├── codex-implement.sh                 # Codex entry point
+├── codex-implement.sh                 # Codex entry point (single item)
+├── codex-dispatch.sh                  # Parallel dispatch with boundary check
 ├── codex-setup.sh                     # Codex setup script
 ├── gemini-setup.sh                    # Gemini MCP setup script
 ├── link-work.sh                       # Worktree symlink manager
@@ -118,6 +119,7 @@ project/
 │   ├── prompts.py                     #   System prompts per tool
 │   └── pyproject.toml                 #   Dependencies (mcp, google-generativeai)
 ├── work/items/                        # Shared workspace (created by codex-setup.sh)
+├── work/dispatch.json                 # Parallel dispatch manifest (created by /work-plan)
 └── .claude/
     ├── rules/collab-workflow.md       # Auto-loaded 3-agent rules
     ├── commands/work-{plan,review,status}.md
@@ -176,6 +178,65 @@ workspace/
 ```
 
 > Step 4 is only needed once per worktree. The `post-checkout` hook auto-links on subsequent branch switches.
+
+---
+
+## Parallel Codex Execution
+
+`/work-plan` natively supports multiple topics — they are planned in parallel using concurrent agents, and the system automatically validates that their boundaries don't conflict.
+
+### How it works
+
+1. **Batch planning**: Pass multiple topics to `/work-plan` → each gets its own FEAT item, generated in parallel
+2. **Boundary check**: After contracts are generated, the system checks that "Allowed Modifications" paths don't overlap between any pair of items
+3. **Dispatch grouping**: Items with no boundary overlap are grouped for parallel execution; conflicting items are placed in sequential groups
+4. **Dispatch manifest**: `work/dispatch.json` records parallel groups, dependencies, and conflicts
+
+### Dispatch commands
+
+```bash
+# Check boundaries + print parallel dispatch commands
+bash codex-dispatch.sh FEAT-001 FEAT-002 FEAT-003
+
+# Boundary check only (dry run)
+bash codex-dispatch.sh --check FEAT-001 FEAT-002
+
+# Dispatch from manifest (respects parallel groups)
+bash codex-dispatch.sh --from-manifest
+
+# Show all open work items
+bash codex-dispatch.sh --status
+```
+
+### Boundary matrix example
+
+```
+Boundary Check
+──────────────────────────────────────────────
+          FEAT-001    FEAT-002    FEAT-003
+FEAT-001     —           ✓           ✓
+FEAT-002     ✓           —           ⚠ OVERLAP
+FEAT-003     ✓           ⚠ OVERLAP   —
+
+⚠ FEAT-002 × FEAT-003: both modify src/utils/logger.py
+```
+
+Items with overlaps must run sequentially. The dispatch script enforces this automatically.
+
+### Parallel execution with worktrees
+
+Each Codex instance runs in its own terminal. With worktrees, each can also use its own worktree branch:
+
+```bash
+# Terminal 1 (VasIntelli-Training):
+bash codex-implement.sh FEAT-001
+
+# Terminal 2 (VasIntelli-Inference):
+bash codex-implement.sh FEAT-002
+
+# Terminal 3 (after 1 & 2 complete — boundary overlap):
+bash codex-implement.sh FEAT-003
+```
 
 ---
 
@@ -333,10 +394,13 @@ If **REVISE**, Claude outputs specific fix items and a new Codex prompt. Codex a
 
 | Command/Tool | Actor | Description |
 |-------------|-------|-------------|
-| `/work-plan [topic]` | Claude | Create work item bundle for Codex delegation |
+| `/work-plan [topic(s)]` | Claude | Create work item(s) — single or batch with boundary check |
 | `/work-status [FEAT-NNN]` | Claude | Check progress (summary table or detail view) |
 | `/work-review [FEAT-NNN]` | Claude | Review implementation against contract |
-| `bash codex-implement.sh FEAT-NNN` | Codex | Load work item and start implementing |
+| `bash codex-implement.sh FEAT-NNN` | Codex | Load single work item and start implementing |
+| `bash codex-dispatch.sh FEAT-IDs` | User | Boundary check + parallel dispatch commands |
+| `bash codex-dispatch.sh --check` | User | Boundary overlap check only (dry run) |
+| `bash codex-dispatch.sh --from-manifest` | User | Dispatch from work/dispatch.json |
 | `bash link-work.sh [filter]` | User | Manage work/ symlinks across worktrees |
 | `git work-link` | User | Same as link-work.sh (after --self-install) |
 | `gemini_summarize_design_pack` | Gemini (MCP) | Compress design docs into summary |

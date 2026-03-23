@@ -5,7 +5,8 @@ description: >
   Triggers on: "work item", "work plan", "work review", "work status", "codex", "gemini",
   "hand off", "delegate", "FEAT-", "multi-agent", "claude codex collaboration",
   "implementation handoff", "design and delegate", "audit", "compare diffs",
-  "release notes", "contract derivation", "worktree", "link work", "work-link".
+  "release notes", "contract derivation", "worktree", "link work", "work-link",
+  "parallel", "dispatch", "boundary check", "batch plan", "concurrent".
 ---
 
 # Claude-Codex-Gemini Collaboration Workflow
@@ -16,9 +17,11 @@ This skill manages the structured handoff between Claude (design/review), Codex 
 
 | User Intent | Route To |
 |-------------|----------|
-| Create/plan a work item | `/work-plan` |
+| Create/plan work item(s) | `/work-plan` (single or batch) |
 | Check work item status | `/work-status` |
 | Review implementation | `/work-review` |
+| Check boundary conflicts | `codex-dispatch.sh --check` (suggest command) |
+| Dispatch to parallel Codex | `codex-dispatch.sh` (suggest command) |
 | Link worktrees / setup | `link-work.sh` (suggest command) |
 | Summarize design docs | `gemini_summarize_design_pack` MCP tool |
 | Compare branch diffs | `gemini_compare_diffs` MCP tool |
@@ -28,13 +31,16 @@ This skill manages the structured handoff between Claude (design/review), Codex 
 ## Workflow
 
 ```
-1. Claude: /work-plan [topic]
+1. Claude: /work-plan [topic(s)]
+   └─ Multiple topics → parallel agent generation + boundary overlap check
    └─ (optional) Gemini: summarize design pack → derive contract draft
-   └─ Claude: review + sign contract
+   └─ Claude: review + sign contracts
+   └─ Output: work/dispatch.json with parallel groups
 2. User: link-work.sh (symlinks work/ to impl worktrees)
-3. User: hands Codex prompt to Codex
-4. Codex: reads AGENTS.md + work item → implements + updates status
-5. Claude: /work-status [FEAT-NNN] → checks progress
+3. User: codex-dispatch.sh FEAT-001 FEAT-002 ...  (or --from-manifest)
+   └─ Validates boundaries, prints per-terminal commands
+4. Codex (×N): reads AGENTS.md + work item → implements in parallel + updates status
+5. Claude: /work-status → checks progress across all items
 6. Claude: /work-review [FEAT-NNN]
    └─ (optional) Gemini: audit implementation → review-gemini.md
    └─ Claude: final review → review.md → MERGE/REVISE/REJECT
@@ -62,6 +68,8 @@ git work-link                           # Same (after --self-install)
 - Codex instructions: `AGENTS.md` (project root)
 - Claude instructions: `CLAUDE.md` (project root)
 - Rule: `.claude/rules/collab-workflow.md`
+- Dispatch script: `codex-dispatch.sh` (project root)
+- Dispatch manifest: `work/dispatch.json`
 - Worktree linker: `link-work.sh` (project root)
 - Hook template: `.claude/templates/hooks/post-checkout-work-link`
 - Gemini MCP: `mcp/gemini-review/`

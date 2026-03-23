@@ -83,6 +83,7 @@ BUNDLE_COLLAB=(
   "root-file:AGENTS.md"
   "root-file:CLAUDE.md"
   "script:codex-implement.sh"
+  "script:codex-dispatch.sh"
   "script:codex-setup.sh"
   "script:gemini-setup.sh"
   "script:link-work.sh"

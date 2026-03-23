@@ -10,7 +10,7 @@
 
 | Command | Action |
 |---------|--------|
-| `/work-plan [topic]` | Create work item (brief + contract + checklist + status) |
+| `/work-plan [topic(s)]` | Create work item(s) — single or batch with parallel agent generation |
 | `/work-status [FEAT-NNN]` | Check work item progress (all or specific) |
 | `/work-review [FEAT-NNN]` | Review implementation against contract |
 
@@ -28,7 +28,32 @@
 
 - Location: `work/items/FEAT-NNN-slug/`
 - Files: `brief.md`, `contract.md`, `checklist.md`, `status.md`, `review.md`, `review-gemini.md`
+- Dispatch manifest: `work/dispatch.json` (parallel groups, dependencies, conflicts)
 - ID format: `FEAT-NNN` (3-digit, zero-padded, monotonic)
+
+## Parallel Execution
+
+Multiple Codex instances can implement different FEAT items concurrently when their contract boundaries don't overlap.
+
+### Boundary Overlap Check
+
+Before parallel dispatch, `/work-plan` automatically checks that "Allowed Modifications" paths across contracts don't intersect. If they do, conflicting items are placed in sequential groups.
+
+### Dispatch
+
+```bash
+codex-dispatch.sh FEAT-001 FEAT-002 FEAT-003   # Check + dispatch
+codex-dispatch.sh --check FEAT-001 FEAT-002     # Boundary check only
+codex-dispatch.sh --status                       # Show open items
+codex-dispatch.sh --from-manifest                # Use work/dispatch.json groups
+```
+
+### Rules
+
+- Items in the same parallel group: independent boundaries, safe to run simultaneously
+- Items in different groups: must run sequentially (boundary overlap or explicit dependency)
+- `work/dispatch.json` is the source of truth for dispatch ordering
+- Each Codex instance runs in its own terminal / worktree
 
 ## Worktree Layout (optional)
 
