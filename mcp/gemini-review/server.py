@@ -17,7 +17,7 @@ import os
 import subprocess
 from pathlib import Path
 
-import google.generativeai as genai
+from google import genai
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
 
@@ -32,7 +32,7 @@ if not API_KEY:
         "Set it before starting the server."
     )
 
-genai.configure(api_key=API_KEY)
+client = genai.Client(api_key=API_KEY)
 
 server = Server("gemini-review")
 
@@ -89,12 +89,13 @@ def _collect_work_item(feat_id: str) -> str:
 
 async def _call_gemini(system_prompt: str, user_content: str) -> str:
     """Call Gemini API with system prompt and user content."""
-    model = genai.GenerativeModel(
-        model_name=MODEL,
-        system_instruction=system_prompt,
-    )
     response = await asyncio.to_thread(
-        model.generate_content, user_content
+        client.models.generate_content,
+        model=MODEL,
+        contents=user_content,
+        config=genai.types.GenerateContentConfig(
+            system_instruction=system_prompt,
+        ),
     )
     return response.text
 
