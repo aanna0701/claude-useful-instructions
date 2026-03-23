@@ -15,6 +15,7 @@
 #   --interactive   Interactive mode: choose bundles from a menu
 #   --list          List available bundles and exit
 #   --uninstall     Remove installed files (respects bundle flags)
+#   -y, --yes       Skip confirmation prompts (e.g. work/ directory removal)
 #
 # Examples:
 #   ./install.sh                                  # Install all to ~/.claude
@@ -109,6 +110,7 @@ TARGET_DIR=""
 INTERACTIVE=false
 LIST_ONLY=false
 UNINSTALL=false
+FORCE_YES=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -123,6 +125,7 @@ while [[ $# -gt 0 ]]; do
     --interactive)   INTERACTIVE=true; shift ;;
     --list)          LIST_ONLY=true; shift ;;
     --uninstall)     UNINSTALL=true; shift ;;
+    -y|--yes)        FORCE_YES=true; shift ;;
     -*)              echo "Unknown option: $1" >&2; exit 1 ;;
     *)               TARGET_DIR="$1"; shift ;;
   esac
@@ -436,34 +439,24 @@ remove_hook() {
 }
 
 remove_work_dir() {
-  # Remove work/ directory and symlinks from worktrees
+  # Remove work/ from the target project only (no sibling worktrees)
   local work_dir="$PROJECT_ROOT/work"
   if [ -L "$work_dir" ]; then
     rm -v "$work_dir"
     echo "  Removed work/ symlink"
   elif [ -d "$work_dir" ]; then
-    read -rp "  Remove work/ directory (contains work items)? [y/N] " confirm
-    if [[ "$confirm" =~ ^[Yy]$ ]]; then
+    if $FORCE_YES; then
       rm -rv "$work_dir"
-    else
-      echo "  Skipped work/ directory"
-    fi
-  fi
-
-  # Clean symlinks in sibling worktrees
-  local git_common_dir
-  git_common_dir=$(git -C "$PROJECT_ROOT" rev-parse --git-common-dir 2>/dev/null || true)
-  if [ -n "$git_common_dir" ]; then
-    local worktree_list
-    worktree_list=$(git -C "$PROJECT_ROOT" worktree list --porcelain 2>/dev/null | grep "^worktree " | sed 's/^worktree //')
-    while IFS= read -r wt_path; do
-      [ -z "$wt_path" ] && continue
-      [ "$wt_path" = "$PROJECT_ROOT" ] && continue
-      if [ -L "$wt_path/work" ]; then
-        rm -v "$wt_path/work"
-        echo "  Removed work/ symlink from $(basename "$wt_path")"
+    elif [ -t 0 ]; then
+      read -rp "  Remove work/ directory (contains work items)? [y/N] " confirm
+      if [[ "$confirm" =~ ^[Yy]$ ]]; then
+        rm -rv "$work_dir"
+      else
+        echo "  Skipped work/ directory (use -y to force)"
       fi
-    done <<< "$worktree_list"
+    else
+      echo "  Skipped work/ directory (run interactively or use -y to force)"
+    fi
   fi
 }
 

@@ -86,17 +86,46 @@ def _collect_work_item(feat_id: str) -> str:
     return "\n".join(parts)
 
 
+MAX_RETRIES = int(os.environ.get("GEMINI_MAX_RETRIES", "2"))
+RETRY_DELAY = float(os.environ.get("GEMINI_RETRY_DELAY", "5"))
+
+
 async def _call_gemini(system_prompt: str, user_content: str) -> str:
-    """Call Gemini API with system prompt and user content."""
-    response = await asyncio.to_thread(
-        client.models.generate_content,
-        model=MODEL,
-        contents=user_content,
-        config=genai.types.GenerateContentConfig(
-            system_instruction=system_prompt,
-        ),
-    )
-    return response.text
+    """Call Gemini API with retry on transient errors."""
+    last_error = None
+    for attempt in range(MAX_RETRIES + 1):
+        try:
+            response = await asyncio.to_thread(
+                client.models.generate_content,
+                model=MODEL,
+                contents=user_content,
+                config=genai.types.GenerateContentConfig(
+                    system_instruction=system_prompt,
+                ),
+            )
+            return response.text
+        except Exception as e:
+            last_error = e
+            error_str = str(e).lower()
+            # Non-retryable errors — fail immediately
+            if any(k in error_str for k in ("invalid api key", "permission", "not found")):
+                return f"[Gemini Error] {e}"
+            # Retryable errors — wait and retry
+            if attempt < MAX_RETRIES:
+                await asyncio.sleep(RETRY_DELAY * (attempt + 1))
+                continue
+    # All retries exhausted
+    error_msg = str(last_error)
+    if "quota" in error_msg.lower() or "429" in error_msg:
+        return (
+            f"[Gemini Quota Exhausted] {error_msg}\n\n"
+            "Suggestions:\n"
+            "- Wait a few minutes and retry\n"
+            "- Switch to a cheaper model: export GEMINI_MODEL=gemini-2.5-flash\n"
+            "- Check quota at https://aistudio.google.com/apikey\n"
+            "- Skip Gemini: Claude can proceed without Gemini for all workflow steps"
+        )
+    return f"[Gemini Error] {error_msg} (after {MAX_RETRIES + 1} attempts)"
 
 
 # ── Tools ─────────────────────────────────────────────────────────────────
