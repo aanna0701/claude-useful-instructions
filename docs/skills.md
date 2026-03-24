@@ -132,3 +132,52 @@ All 8 principles reflected, schema contracts at boundaries, raw immutability, re
 ### Final Output
 
 Single markdown file (`{project}_pipeline_instructions.md`) containing: diagnosis table, stage definitions, agent structure, instruction set, verification checklist, usage guide.
+
+---
+
+## html-presentation
+
+HTML presentation formatting skill. Converts existing HTML slides into a standard 16:9 dark-theme slide deck using `base-template.html` CSS/JS system.
+
+**Triggers**: "PPT 포맷 맞춰줘", "슬라이드 변환해줘", "format-presentation", "HTML 슬라이드 변환", "템플릿에 맞춰줘"
+
+### Workflow
+
+```
+[Input HTML] → Phase 1: Parse    → Phase 2: Map           → Phase 3: Regenerate      → Phase 4: Verify
+               (slide extraction)   (component selection)     (base-template based)      (rule check)
+```
+
+### Core Rules
+
+1. Use `base-template.html` CSS/JS as-is — no custom styles
+2. All slides use `.slide-dark` class
+3. Only the first slide gets `.active`
+4. All slides include `.slide-label` for header label updates
+5. 16:9 aspect ratio maintained
+6. Content taken from source HTML verbatim — no text modifications
+
+### Component Catalog
+
+| Content Pattern | Component |
+|----------------|-----------|
+| Title + presenter info | `title` |
+| 3 items listed | `cards-3` |
+| 6 items listed | `grid-2x3` |
+| Linear steps | `pipeline` |
+| A → B → C data flow | `flow` |
+| Two-way comparison | `brain-split` |
+| Key numbers highlight | `stats` |
+| Item status (done/in-progress/planned) | `table` |
+| Chronological steps | `timeline` |
+| Short/mid/long-term plan | `roadmap` |
+| 4 differentiators | `advantages` |
+| Paragraph + callout box | `section + callout` |
+| Final summary | `summary` |
+
+### Related
+
+- **`/create-presentation`** command: Generate new presentation from content
+- **`/format-presentation`** command: Convert existing HTML to standard format
+- **`/edit-presentation`** command: Modify content in formatted presentations
+- **`/export-pdf`** command: Convert to PDF

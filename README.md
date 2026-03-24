@@ -58,6 +58,7 @@ cui-install --collab /path/to/my-project
 | `collab` | Claude-Codex collaboration, work items, AGENTS.md, CLAUDE.md | Per-project |
 | `slack` | Slack notifications (session summary, confirmation alerts) | Global |
 | `career` | career-docs skill, career agents | Either |
+| `presentation` | html-presentation skill, create/format/edit/export-pdf commands | Global |
 | `vla` | vla-code-standards, vla agents (6 domains) | Either |
 
 > **Global** (`~/.claude/`): language-agnostic tools usable everywhere.
@@ -89,6 +90,7 @@ Auto-triggered by Claude Code based on conversation context.
 | `diataxis-doc-system` | "Write docs", "Design doc", "API docs" |
 | `diagram-architect` | "Draw diagram", "System structure", "ERD" |
 | `data-pipeline-architect` | "Design data pipeline", "ETL architecture" |
+| `html-presentation` | "PPT format", "Slide conversion", "format-presentation" |
 | `collab-workflow` | "Work item", "Codex", "Hand off", "Delegate" |
 
 > Full reference: [docs/skills.md](docs/skills.md)
@@ -119,6 +121,10 @@ Subagents delegated by Claude for specific tasks.
 | `/sync-docs` | Sync docs to current codebase state |
 | `/cover-letter` | Multi-agent cover letter pipeline (Korean) |
 | `/smart-git-commit-push` | Auto-split commits by feature and push |
+| `/create-presentation` | Generate HTML slide deck from content |
+| `/format-presentation` | Convert HTML to standard 16:9 dark-theme format |
+| `/edit-presentation` | Modify content in formatted presentations |
+| `/export-pdf` | Convert HTML slides to PDF (1920×1080) |
 | `/optimize-tokens` | Analyze and reduce token waste in instructions |
 
 > Full reference: [docs/commands.md](docs/commands.md)
@@ -146,7 +152,10 @@ claude-useful-instructions/
 │   ├── diagram-architect/           # C4 Mermaid architecture diagrams
 │   ├── data-pipeline-architect/     # Data pipeline design + subagent generation
 │   ├── collab-workflow/             # Claude-Codex collaboration workflow
+│   ├── html-presentation/           # 16:9 dark-theme slide deck formatter + PDF export
 │   └── career-docs/                 # Cover letter & career documents (Korean)
+├── scripts/                         # Standalone utility scripts
+│   └── html_to_pdf.py               # Playwright-based HTML→PDF slide converter
 ├── agents/                          # Subagents delegated by Claude
 │   ├── doc-writer-*.md              # Diataxis doc writers (4 types + delivery agents)
 │   ├── diagram-writer.md            # Mermaid diagram generation

@@ -197,3 +197,105 @@ Analyze changes, auto-split by feature into separate commits, and push.
 /smart-git-commit-push              # Commit + push to current branch
 /smart-git-commit-push main         # Push to main branch
 ```
+
+---
+
+## /create-presentation
+
+Generate a new HTML slide deck from content (text or file). Free-form design with 16:9 ratio and keyboard navigation.
+
+**Usage**:
+```
+/create-presentation [file_path or text]
+```
+
+### Workflow
+
+| Step | Action |
+|------|--------|
+| 1 | Content analysis (topic, flow, audience) |
+| 2 | Slide structure design (6-12 slides, one message per slide) |
+| 3 | HTML generation (16:9, dark/light, keyboard nav) |
+| 4 | Save as `{topic}-presentation.html` |
+
+### Layout Selection
+
+| Content Pattern | Layout |
+|----------------|--------|
+| 3-way comparison | 3-column cards |
+| Sequential steps | Arrow flow / timeline |
+| Key numbers | Large stat blocks |
+| Lists | Icon cards |
+| Tabular data | Styled table (zebra stripe) |
+
+> Upgrade to standard format: `/format-presentation topic-presentation.html logo.png`
+
+---
+
+## /format-presentation
+
+Convert an existing HTML presentation to the standard 16:9 dark-theme slide deck format using `base-template.html`.
+
+**Usage**:
+```
+/format-presentation [input.html] [logo_path]
+```
+
+### Workflow
+
+| Step | Action |
+|------|--------|
+| 1 | Read input HTML + validate logo path |
+| 2 | Execute `html-presentation` skill (Phase 0-4) |
+| 3 | Save as `{original}-formatted.html` with slide summary |
+
+Content is preserved as-is; only CSS/JS/layout is replaced with the standard template.
+
+> Export to PDF: `/export-pdf {filename}`
+
+---
+
+## /edit-presentation
+
+Modify content in a formatted HTML presentation. CSS/JS/template structure is never touched.
+
+**Usage**:
+```
+/edit-presentation [input.html] [instructions]
+```
+
+### Absolute Rules
+
+1. CSS `<style>` block — never modify
+2. `<script>` block — never modify
+3. `.slide-header` / `.slide-nav` structure — never modify
+4. Unmentioned slides — never touch
+5. Class names, `data-slide` numbers, `.slide-label` — never change
+
+### Workflow
+
+| Step | Action |
+|------|--------|
+| 1 | Read file, verify standard format |
+| 2 | Parse instructions into change table (slide / target / before / after) |
+| 3 | Apply edits via Edit tool (text only, preserve HTML tags) |
+| 4 | Verify: CSS/JS unchanged, `data-slide` continuity, `.slide-label` consistency |
+
+---
+
+## /export-pdf
+
+Convert an HTML slide deck to PDF. Captures only the 16:9 slide area at 1920×1080 (no letterbox).
+
+**Usage**:
+```
+/export-pdf [input.html] [output.pdf]    # output defaults to {input}.pdf
+```
+
+### Prerequisites
+
+```bash
+uv run playwright install chromium
+```
+
+Requires `playwright` and `pillow` (auto-installed via `pyproject.toml`).
