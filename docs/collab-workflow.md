@@ -229,15 +229,4 @@ Decision flow:
 
 ---
 
-## Quick Reference
-
-| Command/Tool | Actor | Description |
-|-------------|-------|-------------|
-| `/work-plan [topic(s)]` | Claude | Create work item(s) with boundary check |
-| `/work-status [FEAT-NNN]` | Claude | Check progress |
-| `/work-review [FEAT-NNN]` | Claude | Review implementation against contract |
-| `codex-run.sh FEAT-IDs` | User | Boundary check + parallel dispatch |
-| `codex-run.sh --check` | User | Boundary overlap check only (dry run) |
-| `codex-run.sh --from-manifest` | User | Dispatch from manifest (respects parallel groups) |
-| `codex-run.sh --status` | User | Show all open work items |
-| `link-work.sh` | User | Manage work/ symlinks (see [commands](#link-worksh-commands)) |
+See `rules/collab-workflow.md` for the compact command table and `link-work.sh --help` for symlink commands.
