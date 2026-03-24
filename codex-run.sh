@@ -309,12 +309,8 @@ You are implementing work item $slug. Read these files in order:
 1. $wdir/brief.md — understand objective and scope
 2. $wdir/contract.md — understand boundaries, interfaces, invariants
 3. $wdir/checklist.md — understand verification requirements
-$review_instructions
-Rules:
-- IMPLEMENT only what the contract specifies
-- MODIFY only files listed in "Allowed Modifications"
-- NEVER touch files in "Forbidden Zones"
-- WRITE tests per "Test Requirements"
+${review_instructions}
+Follow AGENTS.md for all implementation rules. Additionally:
 - COMMIT with: feat($feat_id): description
 - UPDATE $wdir/status.md after each milestone
 - When DONE: set Status to "done" in $wdir/status.md

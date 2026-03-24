@@ -30,6 +30,13 @@ You are dispatched via `codex-run.sh` which provides your work item context. If 
 - **NEVER** modify documentation files (`docs/`, `*.md` in project root, `README.md`) — if doc changes are needed, record them in `status.md` under "Doc Changes Needed" for Claude to handle
 - If a needed change falls outside allowed modifications, record it in `status.md` Ambiguities
 
+### Worktree Resolution
+
+- Determine the implementation worktree from the contract's "Allowed Modifications" paths first
+- Verify which repo/worktree actually contains those allowed paths before editing anything
+- Treat `work/` symlinks as the location of planning artifacts only, not as proof of the implementation worktree
+- If `review.md`, `status.md`, or other planning docs mention a worktree that conflicts with the contract paths, follow the contract paths and record the mismatch in `status.md`
+
 ### Ambiguity Handling
 
 - If the contract is ambiguous, do NOT invent behavior
@@ -68,8 +75,5 @@ If this repo uses **git worktrees**, you are already on the correct branch for y
 
 - Do NOT write `review.md` — Claude does that
 - Do NOT modify `brief.md`, `contract.md`, or `checklist.md`
-- Do NOT modify documentation (`docs/`, `README.md`, root `*.md`) — record needed changes in `status.md`
 - Do NOT merge your own branch
 - Do NOT make design decisions or propose alternatives
-- Do NOT modify files outside contract boundaries
-

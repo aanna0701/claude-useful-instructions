@@ -49,21 +49,12 @@ Decomposition strategy:
 
 Each sub-task becomes its own FEAT with its own contract boundaries.
 
-**Example** — single topic "DuckDB schema cleanup":
+**Running example** — "DuckDB schema cleanup" (removes dead columns from 3 tables + ENUMs):
 ```
-Input:  "DuckDB schema cleanup" (removes dead columns from 3 tables + ENUMs)
-
-Analysis:
-  frames table changes     → src/models/frames.py, tests/models/test_frames.py
-  windows table changes    → src/models/windows.py, tests/models/test_windows.py
-  ENUM removal             → src/schema/enums.py
-  migration script         → migrations/ (depends on all above)
-
-Decomposition:
-  FEAT-001  frames-column-cleanup     (independent)
-  FEAT-002  windows-column-cleanup    (independent)
-  FEAT-003  enum-removal              (independent)
-  FEAT-004  schema-migration          (depends_on: 001, 002, 003)
+FEAT-001  frames-column-cleanup   → src/models/frames.py      (independent)
+FEAT-002  windows-column-cleanup  → src/models/windows.py     (independent)
+FEAT-003  enum-removal            → src/schema/enums.py       (independent)
+FEAT-004  schema-migration        → migrations/               (depends_on: 001-003)
 ```
 
 **When NOT to split:**
@@ -81,27 +72,11 @@ ls work/items/ 2>/dev/null | grep -oP 'FEAT-\K\d+' | sort -n | tail -1
 ```
 
 Assign sequential `FEAT-NNN` (3-digit, zero-padded). First item is `FEAT-001`.
-Create slug from sub-task: lowercase, kebab-case, max 30 chars.
-
-For sub-tasks from the same parent topic, use a consistent prefix:
-```
-FEAT-001-duckdb-frames-cleanup
-FEAT-002-duckdb-windows-cleanup
-FEAT-003-duckdb-enum-removal
-FEAT-004-duckdb-migration
-```
+Create slug from sub-task: lowercase, kebab-case, max 30 chars. Use consistent prefix for sibling FEATs (e.g., `FEAT-001-duckdb-frames-cleanup`).
 
 ### Step 4: Generate Work Items (parallel)
 
-Spawn **parallel agents**, one per FEAT:
-```
-Agent 1: Generate FEAT-001 (brief + contract + checklist + status)
-Agent 2: Generate FEAT-002 (brief + contract + checklist + status)
-Agent 3: Generate FEAT-003 (brief + contract + checklist + status)
-Agent 4: Generate FEAT-004 (brief + contract + checklist + status)
-```
-
-Each agent:
+Spawn **parallel agents** (one per FEAT). Each agent:
 1. **Generate Brief** — Spawn `doc-writer-task` agent with `bundle: true`, or fill from `.claude/templates/work-item/brief.md`
 2. **Generate Contract** — Spawn `doc-writer-contract`, or fill from `.claude/templates/work-item/contract.md`. **Ensure Allowed Modifications are disjoint** from sibling FEATs.
 3. **Generate Checklist** — Spawn `doc-writer-checklist` agent, or fill from template
@@ -123,21 +98,7 @@ Path matching rules:
 - `src/models/user.py` overlaps with `src/models/user.py` (exact match)
 - `src/models/` does NOT overlap with `src/views/` (independent)
 
-Print the **boundary matrix**:
-
-```
-Boundary Check
-──────────────────────────────────────────────
-          FEAT-001    FEAT-002    FEAT-003    FEAT-004
-FEAT-001     —           ✓           ✓         dep
-FEAT-002     ✓           —           ✓         dep
-FEAT-003     ✓           ✓           —         dep
-FEAT-004    dep         dep         dep          —
-
-dep = dependency (FEAT-004 depends on 001, 002, 003)
-──────────────────────────────────────────────
-✓ All boundaries independent — safe for parallel dispatch
-```
+Print a **boundary matrix** (✓ = independent, ⚠ = overlap, dep = dependency).
 
 **If overlaps found:**
 1. Print conflicting files and which FEATs touch them
@@ -146,61 +107,12 @@ dep = dependency (FEAT-004 depends on 001, 002, 003)
 
 ### Step 6: Generate Dispatch Manifest
 
-Create or update `work/dispatch.json`:
-
-```json
-{
-  "batch_id": "BATCH-YYYYMMDD-HHMM",
-  "created": "YYYY-MM-DD HH:MM",
-  "parent_topic": "DuckDB schema cleanup",
-  "items": [
-    {
-      "feat_id": "FEAT-001",
-      "slug": "FEAT-001-duckdb-frames-cleanup",
-      "status": "open",
-      "depends_on": [],
-      "conflicts_with": []
-    },
-    {
-      "feat_id": "FEAT-004",
-      "slug": "FEAT-004-duckdb-migration",
-      "status": "open",
-      "depends_on": ["FEAT-001", "FEAT-002", "FEAT-003"],
-      "conflicts_with": []
-    }
-  ],
-  "parallel_groups": [
-    ["FEAT-001", "FEAT-002", "FEAT-003"],
-    ["FEAT-004"]
-  ]
-}
-```
-
-- `parallel_groups`: Items in the same group run concurrently. Different groups run sequentially.
-- `depends_on`: Sub-tasks that must complete before this one starts.
-- Group ordering follows dependency topology — independent items first, dependents last.
+Create or update `work/dispatch.json` with fields: `batch_id`, `created`, `parent_topic`, `items` (array of `{feat_id, slug, status, depends_on, conflicts_with}`), and `parallel_groups` (array of arrays — same group = concurrent, different groups = sequential, topology-ordered).
 
 ### Step 7: Summary & Single Dispatch Command
 
-Print the summary table and a **single command** the user can copy-paste:
+Print summary table (FEAT IDs, slugs, statuses, boundary result, parallel groups) and a single copy-paste command:
 
 ```
-Work Plan Complete — "DuckDB schema cleanup"
-──────────────────────────────────────────────
-  FEAT-001  duckdb-frames-cleanup     ✓ open
-  FEAT-002  duckdb-windows-cleanup    ✓ open
-  FEAT-003  duckdb-enum-removal       ✓ open
-  FEAT-004  duckdb-migration          ✓ open  (after 001, 002, 003)
-
-Boundary: ✓ all independent
-Parallel groups: 2
-  Group 1: FEAT-001, FEAT-002, FEAT-003  (parallel)
-  Group 2: FEAT-004                      (sequential)
-──────────────────────────────────────────────
-
-Next step — run this single command:
-
-  bash codex-run.sh FEAT-001 FEAT-002 FEAT-003 FEAT-004
-
-It will: check boundaries → link worktrees → run Codex in parallel (respecting dependencies) → monitor → print review command.
+bash codex-run.sh FEAT-001 FEAT-002 FEAT-003 FEAT-004
 ```
