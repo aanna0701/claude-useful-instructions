@@ -114,6 +114,17 @@ workspace/
 - When Claude updates a plan in Docs, Codex sees the change immediately in Training
 - Codex commits directly on its worktree branch — no sub-branches needed
 
+### Worktree Resolution Rules
+
+When deciding where Codex should implement a FEAT, use this order:
+
+1. Read `contract.md` and extract the "Allowed Modifications" paths
+2. Identify which repo/worktree actually contains those paths
+3. Treat `work/` symlinks as the source of planning artifacts only
+4. If `review.md`, `status.md`, or other planning docs mention a conflicting worktree, ignore that claim and follow the contract paths instead
+
+This prevents a common failure mode: `work/` often points to the docs worktree even when the implementation must happen in a different code worktree such as Training or UI.
+
 ### link-work.sh commands
 
 | Command | Description |

@@ -36,6 +36,9 @@
 - Docs worktree owns `work/items/` (real directory)
 - Other worktrees get `work/` as symlink (`.gitignore`d)
 - `link-work.sh` manages symlinks; `post-checkout` hook auto-links
+- Implementation worktree is resolved from contract "Allowed Modifications" paths, not from the location of `work/`
+- `work/` symlinks are planning-artifact links only; they do not redefine where Codex must implement
+- If planning docs mention a worktree that conflicts with the contract paths, the contract paths win
 
 ## Principles
 
