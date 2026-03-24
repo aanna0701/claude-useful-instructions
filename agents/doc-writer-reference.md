@@ -28,12 +28,9 @@ Read `skills/diataxis-doc-system/references/` — `reference-rules.md`, `common-
 
 ## Writing Order
 
-1. **Analyze source** — Use Grep/Glob to extract actual interfaces from code path
-2. **Design structure** — Apply identical table structure to all items
-3. **Write tables** — Required columns: Name, Type, Required, Default, Description (with constraints)
-4. **Write examples** — At least 1 example per item
-5. **Add version/date** — Target version + last updated at top
-6. **Verify** — Cross-check code against documentation
+1. Analyze source (Grep/Glob) → 2. Design structure → 3. Write tables → 4. Examples → 5. Version/date → 6. Verify vs code
+
+Apply rules from `reference-rules.md`. Frontmatter per `common-rules.md` §4, type: `reference`, add `version` field.
 
 ## Code Extraction (when code path provided)
 
@@ -52,15 +49,3 @@ grep -rn "class.*BaseModel" src/ --include="*.py"
 ```
 
 Notify user of possible extraction gaps.
-
-## Output Rules
-
-- No prose-only parameter descriptions — use tables
-- No blank defaults — use `—` if none
-- No partial enum listings — list all values
-- No partial documentation — all-or-nothing principle
-- No opinions/recommendations — extract to How-to
-
-## YAML Frontmatter
-
-Per `common-rules.md` §4. Type: `reference`. Add `version` field.

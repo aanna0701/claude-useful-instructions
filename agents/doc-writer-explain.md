@@ -26,38 +26,12 @@ Read `skills/diataxis-doc-system/references/` — `explain-rules.md`, `common-ru
 - "Record rationale for a specific technical choice" — **ADR**
 - If unclear, ask the user
 
-## Writing Order (Design Doc)
+## Writing Order
 
-1. **Metadata** — Status, author, reviewers, date
-2. **Background & Goals** — Why this design is needed
-3. **Non-Goals** — What is excluded + reasons
-4. **Detailed Design** — System overview, data model, interfaces, key flows
-5. **Alternatives Considered** — At least 1 rejected alternative + comparison table
-6. **Cross-cutting Concerns** — Security, performance, cost, monitoring
-7. **Migration Plan** — Transition from existing to new design
-8. **Open Questions** — Checklist format
+Follow templates from `explain-rules.md`:
+- **Design Doc**: Metadata → Background & Goals → Non-Goals → Detailed Design → Alternatives → Cross-cutting → Migration → Open Questions
+- **ADR**: Metadata → Context → Decision → Rationale → Consequences
 
-## Writing Order (ADR)
+Diagrams: delegate to diagram-architect skill (Mermaid only).
 
-1. **Metadata** — Status, date
-2. **Context** — Situation requiring a decision, constraints
-3. **Decision** — What was decided (concise)
-4. **Rationale** — Why, alternatives, trade-offs
-5. **Consequences** — Positive, negative, risks
-
-## Diagrams
-
-- Delegate to diagram-architect skill when architecture diagrams are needed
-- Use separate diagrams per view when applying 4+1 View Model
-- All diagrams in Mermaid/PlantUML (no image files)
-
-## Output Rules
-
-- No Design Doc without alternatives comparison
-- No Design Doc without Non-Goals
-- If only "what" without "why" — that belongs in Reference, not Explanation
-- If code-level procedures outweigh design philosophy — extract to How-to
-
-## YAML Frontmatter
-
-Per `common-rules.md` §4. Type: `explanation`.
+Frontmatter per `common-rules.md` §4, type: `explanation`.

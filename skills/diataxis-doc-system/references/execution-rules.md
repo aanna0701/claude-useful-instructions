@@ -61,20 +61,6 @@ Write ambiguities to work/items/FEAT-NNN-slug/status.md.
 
 ---
 
-## DO / DON'T
-
-| DO | DON'T |
-|----|-------|
-| Include **source link** (RFC/ADR/Contract) in brief | Create work items without a source |
-| Keep **brief** concise (< 1 page) | Dump entire RFC into brief |
-| **Contract** specifies boundaries explicitly | Vague "integrate well" language |
-| **Checklist** items Yes/No verifiable | Subjective "is code quality good?" |
-| **Status** updated on every state change | Communicate status only verbally |
-| **Review** records lessons learned | Close with just "LGTM" |
-| Keep Codex scoped to contract | Let Codex make design decisions |
-
----
-
 ## Subtype A: Brief
 
 Filename: `brief.md` (within work item directory)

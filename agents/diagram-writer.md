@@ -22,18 +22,9 @@ Read before writing:
 
 ## Writing Order
 
-1. **Set direction** — LR for data flow, TB for hierarchy
-2. **Define nodes** — Max 5 words per label, use abbreviations
-3. **Define relationships** — Consistent line styles by meaning (solid/dashed/bold)
-4. **Apply colors** — Use classDef for role-based colors, max 4 colors
-5. **Add subgraphs** — Logical groups, max 1 level of nesting
-6. **Number flows** — Sequential order markers
+1. Direction → 2. Nodes → 3. Relationships → 4. Colors → 5. Subgraphs → 6. Number flows
 
-## Output Rules
-
-- Over 15 shapes — refuse and request splitting
-- No output without a legend
-- No output without flow description
+Apply rules from `diagram-rules.md`.
 
 ## Output Format
 

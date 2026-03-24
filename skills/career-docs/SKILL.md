@@ -25,8 +25,7 @@ User Input (doc type + JD/context + constraints)
   → Final Output
 ```
 
-Every writing output passes through `gemini_polish_career_doc` for natural tone smoothing.
-Fallback: if Gemini MCP is unavailable, skip all polish steps and proceed with unpolished output.
+**Gemini Polish**: Every writing output passes through `gemini_polish_career_doc(document, doc_type, char_limit)` for natural tone smoothing. If Gemini MCP is unavailable, skip all polish steps and proceed with unpolished output.
 
 ---
 
@@ -66,7 +65,7 @@ If NLM MCP call fails:
 When new material is provided:
 1. Query NLM to cross-reference new info against existing context
 2. Generate an updated context/career doc incorporating the delta
-3. **Gemini Polish**: `gemini_polish_career_doc(updated_doc, doc_type, 0)` — smooth the merged context doc for natural tone before uploading
+3. Apply Gemini Polish (see pipeline diagram above)
 4. Upload the polished version to NLM (overwrite old source)
 5. Proceed with draft request using the refreshed context
 
@@ -96,13 +95,7 @@ Common pattern:
 nlm query "자소서" "{type-specific prompt with user inputs}"
 ```
 
-After receiving the NLM draft, immediately pass it through Gemini for initial polish:
-
-**Call**: `gemini_polish_career_doc(nlm_draft, doc_type, char_limit)`
-
-This smooths NLM's raw output into natural prose before the Writer agent begins structural refinement. The Writer starts from a better baseline, reducing iteration count.
-
-**If user provided their own draft**: skip NLM query but still apply Gemini Polish to the user draft before passing to Step 2.
+After receiving the NLM draft (or user-provided draft), apply Gemini Polish before passing to Step 2.
 
 ---
 
@@ -116,13 +109,7 @@ The writer applies the 6-step refinement checklist sequentially (grammar → flo
 
 ## Step 3: Gemini Polish (via MCP)
 
-After the writer agent's 6-step refinement, pass the result through Gemini for natural tone polishing.
-
-**Call**: `gemini_polish_career_doc(document, doc_type, char_limit)`
-
-Smooths tone for natural rhythm, authentic voice, and organic flow. Preserves all facts, structure, and character count. See `POLISH_CAREER_DOC` prompt in `mcp/gemini-review/prompts.py` for full polishing principles.
-
-**Fallback**: If Gemini MCP is unavailable, skip and proceed with unpolished output.
+After the writer agent's 6-step refinement, apply Gemini Polish (see pipeline diagram above).
 
 ---
 
@@ -138,11 +125,10 @@ Smooths tone for natural rhythm, authentic voice, and organic flow. Preserves al
 iteration = 0, best_score = 0, no_improve_streak = 0
 
 WHILE iteration < 5:
-    iteration 0: NLM draft → Refiner (Step 2) → Gemini Polish (Step 3)
+    iteration 0: NLM draft → Refiner (Step 2) → Gemini Polish
     iteration 1+: restart from best_draft if score drops
 
-    Gemini polish (Step 3)
-    Reviewer evaluation (6 dimensions, 0-100 continuous)
+    Gemini Polish → Reviewer evaluation (6 dimensions, 0-100 continuous)
     update best or no_improve_streak++
     iteration++
 

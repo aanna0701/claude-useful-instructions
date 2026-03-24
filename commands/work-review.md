@@ -43,23 +43,9 @@ Read in parallel:
 From `status.md` "Changed Files" section, read each modified file.
 If "Changed Files" is empty, use `git diff main...HEAD` or `git log --name-only` to find changes.
 
-Check against contract:
-1. **Boundary compliance**: Only "Allowed Modifications" files changed? Any "Forbidden Zone" violations?
-2. **Interface compliance**: Do implementations match interface specs?
-3. **Invariant compliance**: Are all invariants preserved?
-4. **Test compliance**: Do tests exist per "Test Requirements"?
-5. **Checklist verification**: Walk through each checklist item, mark pass/fail.
-
 ### Step 5: Generate Review
 
-**Preferred**: Spawn `doc-writer-review` agent with `bundle: true` and findings.
-
-**Fallback**: Read template from `.claude/templates/work-item/review.md`, fill in:
-- Contract compliance table (item → Pass/Fail/Partial)
-- Deviations from contract
-- Quality checks
-- At least 1 lesson learned
-- Decision: MERGE / REVISE / REJECT
+Spawn `doc-writer-review` agent with `bundle: true`, passing contract + checklist + changed files as findings. The agent handles compliance checks, quality assessment, and decision (MERGE/REVISE/REJECT).
 
 Write to `work/items/FEAT-NNN-slug/review.md`
 
@@ -109,4 +95,4 @@ Revisions needed:
 ──────────────────────────────────────────────
 ```
 
-Handle doc changes that Codex recorded but could not make (since Codex is forbidden from modifying docs). Apply these changes directly or delegate to doc agents.
+Apply doc changes that Codex recorded but could not make (per collab-workflow rule).

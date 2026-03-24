@@ -19,16 +19,6 @@ description: >
 | Boundary check / dispatch | `codex-run.sh` (suggest command) |
 | Link worktrees | `link-work.sh` (suggest command) |
 
-## Workflow (2-Touch)
-
-```
-/work-plan [topic(s)] → auto-split + boundary check + dispatch manifest
-  TOUCH 1: bash codex-run.sh FEAT-001 FEAT-002 ...
-    → boundary check → link worktrees → parallel codex exec → monitor
-  TOUCH 2: /work-review FEAT-001 FEAT-002 ...
-    → parallel review → MERGE: git merge + branch -d / REVISE / REJECT
-```
-
 ## References
 
 - Rule: `.claude/rules/collab-workflow.md`

@@ -104,19 +104,10 @@ dlq: true/false  # 비정상 데이터 격리 필요 여부
 quality_checks:  # 출력 품질 검증 항목
   - "null_ratio < 0.05"
   - "value_range: 0~150"
-parallelism:  # 병렬 처리 분석
-  intra_stage:
-    applicable: true/false
-    type: "cpu_bound" | "io_bound" | "mixed"
-    unit: "per_file" | "per_record" | "per_batch" | "per_partition"
-    shared_state: true/false  # false = safe to parallelize
-    pattern: "ProcessPoolExecutor" | "ThreadPoolExecutor" | "asyncio"
-  inter_stage:
-    independent_of: ["Stage X"]  # 병렬 실행 가능한 단계
-    depends_on: ["Stage Y"]
-  data_parallelism:
-    applicable: true/false
-    partition_key: "date" | "source_id" | null
+parallelism:  # see references/parallelism.md for full schema
+  intra_stage: { applicable, type, unit, shared_state, pattern }
+  inter_stage: { independent_of, depends_on }
+  data_parallelism: { applicable, partition_key }
 ```
 
 ---

@@ -35,22 +35,22 @@ This skill separates docs into **two axes** and delegates to specialized agents.
 
 ### Diátaxis Axis (reader-oriented — informational docs)
 
-| Type | Purpose | Reader State | Agent |
-|------|---------|-------------|-------|
-| **Tutorial** | Learning | First encounter | `doc-writer-tutorial` |
-| **How-to Guide** | Problem solving | Knows basics, has specific problem | `doc-writer-howto` |
-| **Explanation** | Understanding | Wants to know "why" | `doc-writer-explain` |
-| **Reference** | Information lookup | Needs exact specs | `doc-writer-reference` |
+| Type | Purpose | Reader State |
+|------|---------|-------------|
+| **Tutorial** | Learning | First encounter |
+| **How-to Guide** | Problem solving | Knows basics, has specific problem |
+| **Explanation** | Understanding | Wants to know "why" |
+| **Reference** | Information lookup | Needs exact specs |
 
 ### Delivery Axis (execution-oriented — action docs)
 
-| Type | Purpose | When Used | Agent |
-|------|---------|-----------|-------|
-| **Work Item** | Multi-agent coordination | Feature requiring Claude↔Codex handoff | bundle (5 agents) |
-| **Task** | Standalone work assignment | Simple work derived from RFC/ADR | `doc-writer-task` |
-| **Contract** | Interface agreement | Cross-module/team alignment | `doc-writer-contract` |
-| **Checklist** | Completion verification | Task acceptance | `doc-writer-checklist` |
-| **Review** | Result assessment | Post-task completion | `doc-writer-review` |
+| Type | Purpose | When Used |
+|------|---------|-----------|
+| **Work Item** | Multi-agent coordination | Feature requiring Claude↔Codex handoff |
+| **Task** | Standalone work assignment | Simple work derived from RFC/ADR |
+| **Contract** | Interface agreement | Cross-module/team alignment |
+| **Checklist** | Completion verification | Task acceptance |
+| **Review** | Result assessment | Post-task completion |
 
 **Work Item Bundle** = `brief.md` + `contract.md` + `checklist.md` + `status.md` + `review.md` co-located in `work/items/FEAT-NNN-slug/`. Primary pattern for multi-agent workflows.
 
