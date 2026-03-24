@@ -27,14 +27,55 @@ SLACK_HOOKS_DIR="$HOME/.claude/hooks"
 
 notify_slack() {
   local message="$1"
-  [ -f "$SLACK_HOOKS_DIR/slack_common.py" ] || return 0
-  SLACK_MSG="$message" python3 -c "
-import os, sys; sys.path.insert(0, os.environ.get('HOME','') + '/.claude/hooks')
-from slack_common import load_config, send_slack
+
+  if [ ! -f "$SLACK_HOOKS_DIR/slack_common.py" ]; then
+    if [ "${CODEX_RUN_SLACK_DEBUG:-0}" = "1" ]; then
+      echo "[codex-run] Slack helper missing: $SLACK_HOOKS_DIR/slack_common.py" >&2
+    fi
+    return 0
+  fi
+
+  local err_file
+  err_file="$(mktemp)"
+
+  if ! SLACK_MSG="$message" python3 - <<'PY' 2>"$err_file"
+import os
+import sys
+
+hooks_dir = os.path.join(os.environ.get("HOME", ""), ".claude", "hooks")
+sys.path.insert(0, hooks_dir)
+
+from slack_common import load_config, send_slack  # type: ignore
+
 token, channel = load_config()
-if token and channel:
-    send_slack(token, channel, os.environ['SLACK_MSG'], 'codex-run')
-" 2>/dev/null || true
+if not token or not channel:
+    raise RuntimeError("Slack config missing: ~/.claude/hooks/slack_config.json")
+
+send_slack(token, channel, os.environ["SLACK_MSG"], "codex-run")
+PY
+  then
+    if [ "${CODEX_RUN_SLACK_DEBUG:-0}" = "1" ]; then
+      echo "[codex-run] Slack send failed:" >&2
+      sed -n '1,40p' "$err_file" >&2
+    fi
+  elif [ -s "$err_file" ] && [ "${CODEX_RUN_SLACK_DEBUG:-0}" = "1" ]; then
+    echo "[codex-run] Slack send output:" >&2
+    sed -n '1,40p' "$err_file" >&2
+  fi
+
+  rm -f "$err_file"
+}
+
+cmd_notify_test() {
+  local test_text="🧪 *Codex Slack Test*
+• Host: $(hostname)
+• Repo: $(basename "$PWD")
+• Path: $PWD
+• Time: $(date '+%Y-%m-%d %H:%M:%S')"
+
+  echo "Sending Slack test notification..."
+  notify_slack "$test_text"
+  echo "Slack test notification attempted."
 }
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -377,6 +418,11 @@ cmd_dispatch() {
   auto_link_worktrees
   echo "Done."
 
+  notify_slack "🚀 *Codex Dispatch Started*
+• Items: ${feat_ids[*]}
+• Host: $(hostname)
+• Repo: $(basename "$PWD")"
+
   # Step 3: Resolve groups and dispatch
   echo ""
   echo "Step 3/4: Dispatching ${#feat_ids[@]} Codex instance(s)"
@@ -495,6 +541,9 @@ case "${1:-}" in
   --status|-s)
     cmd_status
     ;;
+  --notify-test)
+    cmd_notify_test
+    ;;
   --help|-h)
     cat << 'HELP'
 Usage: codex-run.sh [options] FEAT-ID [FEAT-ID ...]
@@ -502,6 +551,7 @@ Usage: codex-run.sh [options] FEAT-ID [FEAT-ID ...]
   FEAT-001 FEAT-002 ...    Boundary check + parallel dispatch + monitor
   --check, -c  FEAT-IDs    Boundary check only (dry run)
   --status, -s              Show all work item statuses
+  --notify-test             Send a Slack test notification
   --help, -h                Show this help
 
 Flow:
