@@ -307,7 +307,7 @@ dispatch_group() {
 
     if command -v codex &>/dev/null; then
       echo "  Spawning: $slug → $log_file"
-      codex exec --sandbox workspace-write -a auto-edit "$prompt" > "$log_file" 2>&1 &
+      codex exec --sandbox workspace-write --full-auto "$prompt" > "$log_file" 2>&1 &
       pids["$fid"]=$!
     else
       echo "  [manual] $slug → $log_file"
@@ -424,7 +424,7 @@ cmd_dispatch() {
       for fid in "${gids[@]}"; do
         local wdir
         wdir=$(resolve_work_dir "$fid")
-        echo "  codex exec --sandbox workspace-write -a auto-edit < $LOG_DIR/$(basename "$wdir").log"
+        echo "  codex exec --sandbox workspace-write --full-auto < $LOG_DIR/$(basename "$wdir").log"
       done
       if [ "$gn" -lt "$num_groups" ]; then
         echo "  # Wait for group $gn to finish before starting group $((gn+1))"
