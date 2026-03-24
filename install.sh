@@ -97,6 +97,7 @@ BUNDLE_SLACK=(
 
 BUNDLE_PRESENTATION=(
   "skills:html-presentation"
+  "commands:create-presentation.md"
   "commands:format-presentation.md"
   "commands:edit-presentation.md"
   "commands:export-pdf.md"
