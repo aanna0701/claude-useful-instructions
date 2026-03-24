@@ -72,6 +72,7 @@ Update `status.md`:
 ```
 bash codex-run.sh FEAT-NNN
 ```
+When writing `review.md`, include an explicit `MUST-fix` section with concrete file-level actions. On re-dispatch, `codex-run.sh` must inject `review.md` into the Codex prompt and Codex must treat every `MUST-fix` item as required before any optional cleanup.
 
 **REJECT**: State reason. Remove work item directory: `rm -r work/items/FEAT-NNN-slug/`.
 

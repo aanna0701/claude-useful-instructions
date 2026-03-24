@@ -287,6 +287,21 @@ build_codex_prompt() {
   wdir=$(resolve_work_dir "$feat_id")
   local slug
   slug=$(basename "$wdir")
+  local review_file="$wdir/review.md"
+  local review_instructions=""
+
+  if [ -f "$review_file" ]; then
+    review_instructions=$(cat <<EOF
+4. $wdir/review.md — latest review feedback; treat every MUST-fix item as required
+
+Additional revise-loop rules:
+- On re-dispatch, review.md is the authoritative delta over the original implementation state
+- FIX every MUST-fix item from review.md before optional cleanup
+- UPDATE $wdir/status.md to reflect each review item you resolved
+
+EOF
+)
+  fi
 
   cat << EOF
 You are implementing work item $slug. Read these files in order:
@@ -294,7 +309,7 @@ You are implementing work item $slug. Read these files in order:
 1. $wdir/brief.md — understand objective and scope
 2. $wdir/contract.md — understand boundaries, interfaces, invariants
 3. $wdir/checklist.md — understand verification requirements
-
+$review_instructions
 Rules:
 - IMPLEMENT only what the contract specifies
 - MODIFY only files listed in "Allowed Modifications"

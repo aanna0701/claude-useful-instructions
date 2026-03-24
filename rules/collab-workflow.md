@@ -44,6 +44,7 @@
 - Codex: code + `status.md` only — **never docs**; records doc needs in "Doc Changes Needed"
 - Ambiguities recorded in `status.md`, never resolved by implementer
 - `review.md` required before merge
+- On `REVISE`, the latest `review.md` becomes the mandatory delta for the next Codex run; every `MUST-fix` item must be injected into the re-dispatch prompt and resolved before optional work
 - MERGE decision: ask user → `git merge` → `git branch -d` → apply doc changes → remove work item dir
 - Worktree setups: commit on worktree branch, no sub-branches
 - Human intervention: dispatch + review only

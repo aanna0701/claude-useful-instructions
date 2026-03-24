@@ -29,7 +29,7 @@ TOUCH 1 — Human: bash codex-run.sh FEAT-001 FEAT-002 FEAT-003
 TOUCH 2 — Human: /work-review FEAT-001 FEAT-002 FEAT-003
   → Claude reviews in parallel, handles doc changes
   → MERGE: asks confirm → git merge + delete branch
-  → REVISE: outputs fix items + codex-run.sh command
+  → REVISE: writes `review.md` MUST-fix items + re-runs `codex-run.sh`, which injects `review.md` into the next Codex prompt
 ```
 
 ## Architecture
@@ -213,7 +213,7 @@ Claude:
 
 Decision flow:
 - **MERGE** → ask user → `git merge feat/FEAT-NNN-*` → `git branch -d feat/FEAT-NNN-*` → apply doc changes → done
-- **REVISE** → output fix items + `bash codex-run.sh FEAT-NNN` → Codex fixes → re-review
+- **REVISE** → write concrete `MUST-fix` items to `review.md` + `bash codex-run.sh FEAT-NNN` → `codex-run.sh` injects `review.md` into the prompt → Codex fixes those items first → re-review
 - **REJECT** → close work item with reason
 
 ---
