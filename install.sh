@@ -98,6 +98,7 @@ BUNDLE_SLACK=(
 BUNDLE_PRESENTATION=(
   "skills:html-presentation"
   "commands:format-presentation.md"
+  "commands:edit-presentation.md"
   "script:scripts/html_to_pdf.py"
 )
 
