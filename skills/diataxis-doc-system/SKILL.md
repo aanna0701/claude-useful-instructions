@@ -141,6 +141,7 @@ After draft completion, run the full review checklist from `references/common-ru
 | "Write a doc" | Full Phase 0→3 |
 | "Determine this doc's type" | Phase 0.5→1 only |
 | "Review this doc" | Phase 3 only |
+| "Polish this doc" | Delegate to `/polish-doc` |
 | "Add a Reference" | Phase 2 direct (type known) |
 | "Write a Task" | Phase 2 direct (Delivery axis, Task) |
 | "Create work item" | Phase 2 direct (Delivery axis, Work Item bundle) |
@@ -162,8 +163,10 @@ Both handled by `doc-writer-explain` with internal template branching.
 ## Related Skills/Commands
 
 - **`/init-docs`**: Initialize doc site structure (numbered hierarchy + MkDocs) + work item structure (`work/`)
+- **`/polish-doc`**: Apply writing-style and structural fixes directly to existing docs (counterpart to review)
 - **diagram-architect**: Delegate for architecture diagrams in Explanation docs
-- **doc-reviewer**: Comprehensive review of existing docs (both axes)
+- **doc-reviewer**: Comprehensive review of existing docs (both axes, suggestions only)
+- **doc-polisher**: Apply fixes directly to docs (used by `/polish-doc`)
 
 ## Doc Site Architecture
 
