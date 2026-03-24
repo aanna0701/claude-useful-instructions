@@ -99,6 +99,7 @@ BUNDLE_PRESENTATION=(
   "skills:html-presentation"
   "commands:format-presentation.md"
   "commands:edit-presentation.md"
+  "commands:export-pdf.md"
   "script:scripts/html_to_pdf.py"
 )
 
