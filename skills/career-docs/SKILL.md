@@ -4,7 +4,7 @@ description: >
   Korean career document generation & refinement skill.
   Supports cover letters (자소서), career descriptions (경력기술서),
   portfolios (포트폴리오), cover letters (커버레터), and HR essays (인사관점 에세이).
-  NotebookLM drafts; AI refines through a 6-step checklist and iterative review loop.
+  NotebookLM drafts; AI refines through a 6-step checklist and iterative review loop (Writer + Reviewer agents).
   Triggers: "자소서 써줘", "경력기술서 작성", "포트폴리오 정리", "커버레터 작성",
   "cover letter", "career description", "portfolio", "자소서 다듬어줘",
   "자소서 검토", "자기소개서", "이력서 정리"
@@ -17,15 +17,13 @@ Supports multiple document types with shared refinement process and type-specifi
 
 ```
 User Input (doc type + JD/context + constraints)
-  → [Optional] Context Update (new CV/info → NLM merge → Gemini Polish)
-  → NLM Draft Request (type-specific prompt) → Gemini Polish
-  → 6-Step AI Refinement (career-docs-writer agent) → Gemini Polish
+  → [Optional] Context Update (new CV/info → NLM merge)
+  → NLM Draft Request (type-specific prompt)
+  → 6-Step AI Refinement (career-docs-writer agent)
   → Reviewer Evaluation (career-docs-reviewer agent)
-  → Iteration Loop (min 3, max 5, each: Writer → Gemini Polish → Reviewer)
+  → Iteration Loop (min 3, max 5, each: Writer → Reviewer)
   → Final Output
 ```
-
-**Gemini Polish**: Every writing output passes through `gemini_polish_career_doc(document, doc_type, char_limit)` for natural tone smoothing. If Gemini MCP is unavailable, skip all polish steps and proceed with unpolished output.
 
 ---
 
@@ -65,8 +63,7 @@ If NLM MCP call fails:
 When new material is provided:
 1. Query NLM to cross-reference new info against existing context
 2. Generate an updated context/career doc incorporating the delta
-3. Apply Gemini Polish (see pipeline diagram above)
-4. Upload the polished version to NLM (overwrite old source)
+3. Upload the updated version to NLM (overwrite old source)
 5. Proceed with draft request using the refreshed context
 
 When no new material is provided: skip — use existing NLM sources as-is.
@@ -95,7 +92,7 @@ Common pattern:
 nlm query "자소서" "{type-specific prompt with user inputs}"
 ```
 
-After receiving the NLM draft (or user-provided draft), apply Gemini Polish before passing to Step 2.
+After receiving the NLM draft (or user-provided draft), pass to Step 2.
 
 ---
 
@@ -107,17 +104,11 @@ The writer applies the 6-step refinement checklist sequentially (grammar → flo
 
 ---
 
-## Step 3: Gemini Polish (via MCP)
-
-After the writer agent's 6-step refinement, apply Gemini Polish (see pipeline diagram above).
+## Step 3: Reviewer Evaluation → delegate to `career-docs-reviewer` agent
 
 ---
 
-## Step 4: Reviewer Evaluation → delegate to `career-docs-reviewer` agent
-
----
-
-## Step 5: Iteration Loop
+## Step 4: Iteration Loop
 
 **Always run at least 3 iterations. Max 5.**
 
@@ -125,10 +116,10 @@ After the writer agent's 6-step refinement, apply Gemini Polish (see pipeline di
 iteration = 0, best_score = 0, no_improve_streak = 0
 
 WHILE iteration < 5:
-    iteration 0: NLM draft → Refiner (Step 2) → Gemini Polish
+    iteration 0: NLM draft → Refiner (Step 2)
     iteration 1+: restart from best_draft if score drops
 
-    Gemini Polish → Reviewer evaluation (6 dimensions, 0-100 continuous)
+    Reviewer evaluation (6 dimensions, 0-100 continuous)
     update best or no_improve_streak++
     iteration++
 
@@ -139,7 +130,7 @@ WHILE iteration < 5:
 
 ---
 
-## Step 6: Final Output
+## Step 5: Final Output
 
 - Final document (best version)
 - `글자수: [N]자 / [limit]자 (공백 포함)` (if character limit applies)
