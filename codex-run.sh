@@ -123,7 +123,27 @@ paths_overlap() {
 
 get_item_status() {
   local wdir="$1"
-  grep -oP '\| Status \| \K[^|]+' "$wdir/status.md" 2>/dev/null | tr -d ' ' || echo "unknown"
+  python3 - "$wdir/status.md" <<'PY' 2>/dev/null || echo "unknown"
+import re
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+text = path.read_text(encoding="utf-8")
+
+for line in text.splitlines():
+    match = re.match(r'^\|\s*Status\s*\|\s*([^|]+?)\s*\|$', line)
+    if match:
+        print(match.group(1).strip())
+        raise SystemExit(0)
+
+match = re.search(r'^\|\s*Status\s*\|\s*([^|]+?)\s*\|$', text, re.MULTILINE)
+if match:
+    print(match.group(1).strip())
+    raise SystemExit(0)
+
+print("unknown")
+PY
 }
 
 # ─── Boundary Check ──────────────────────────────────────────────────────────
