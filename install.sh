@@ -11,6 +11,7 @@
 #   --career        Career document tools (career-docs skill, career agents)
 #   --vla           VLA robotics project (vla-code-standards, vla agents)
 #   --collab        Claude-Codex collaboration (work items, AGENTS.md, CLAUDE.md)
+#   --slack         Slack notifications (session summary, confirmation alerts)
 #   --exclude NAME  Exclude a bundle (repeatable, e.g. --exclude vla --exclude career)
 #   --interactive   Interactive mode: choose bundles from a menu
 #   --list          List available bundles and exit
@@ -90,7 +91,11 @@ BUNDLE_COLLAB=(
   "hook:post-checkout-work-link"
 )
 
-BUNDLE_NAMES=("core" "docs" "data-pipeline" "career" "vla" "collab")
+BUNDLE_SLACK=(
+  "claude-hook:slack"
+)
+
+BUNDLE_NAMES=("core" "docs" "data-pipeline" "career" "vla" "collab" "slack")
 BUNDLE_DESCRIPTIONS=(
   "Core utilities (smart-git-commit-push, optimize-tokens)"
   "Documentation & diagrams (diataxis framework, doc agents, diagram-architect)"
@@ -98,6 +103,7 @@ BUNDLE_DESCRIPTIONS=(
   "Career document tools (cover letters, Korean)"
   "VLA robotics project (vla agents, code standards)"
   "Claude-Codex collaboration (work items, AGENTS.md, CLAUDE.md)"
+  "Slack notifications (session summary, confirmation alerts)"
 )
 
 # ── Parse arguments ─────────────────────────────────────────────────────────
@@ -118,6 +124,7 @@ while [[ $# -gt 0 ]]; do
     --career)        SELECTED_BUNDLES+=("career"); shift ;;
     --vla)           SELECTED_BUNDLES+=("vla"); shift ;;
     --collab)        SELECTED_BUNDLES+=("collab"); shift ;;
+    --slack)         SELECTED_BUNDLES+=("slack"); shift ;;
     --exclude)       shift; EXCLUDED_BUNDLES+=("$1"); shift ;;
     --interactive)   INTERACTIVE=true; shift ;;
     --list)          LIST_ONLY=true; shift ;;
@@ -226,6 +233,7 @@ get_bundle_items() {
     career)        printf '%s\n' "${BUNDLE_CAREER[@]}" ;;
     vla)           printf '%s\n' "${BUNDLE_VLA[@]}" ;;
     collab)        printf '%s\n' "${BUNDLE_COLLAB[@]}" ;;
+    slack)         printf '%s\n' "${BUNDLE_SLACK[@]}" ;;
   esac
 }
 
@@ -361,6 +369,135 @@ install_hook() {
   fi
 }
 
+install_claude_hook() {
+  local hook_name="$1"
+  local src="$REPO_DIR/hooks/$hook_name"
+  local dst_dir="$HOME/.claude/hooks"
+
+  [ -d "$src" ] || { echo "WARNING: Claude hook dir not found: $src" >&2; return 0; }
+
+  mkdir -p "$dst_dir"
+
+  # Copy Python hook files (skip example config)
+  for f in "$src"/*.py; do
+    [ -f "$f" ] || continue
+    local basename
+    basename="$(basename "$f")"
+    cp -v "$f" "$dst_dir/$basename"
+    chmod +x "$dst_dir/$basename"
+  done
+
+  # Copy example config if actual config doesn't exist
+  if [ -f "$src/slack_config.json.example" ] && [ ! -f "$dst_dir/slack_config.json" ]; then
+    cp -v "$src/slack_config.json.example" "$dst_dir/slack_config.json.example"
+
+    # Interactive config setup
+    if [ -t 0 ]; then
+      echo ""
+      echo "  ━━━ Slack notification config ━━━"
+      echo ""
+      echo "  Slack Bot Token (xoxb-...):"
+      read -rp "    > " BOT_TOKEN
+      echo "  Slack Channel ID (C...):"
+      read -rp "    > " CHANNEL_ID
+      echo ""
+
+      if [ -n "$BOT_TOKEN" ] && [ -n "$CHANNEL_ID" ]; then
+        cat > "$dst_dir/slack_config.json" <<SLACKEOF
+{
+  "bot_token": "$BOT_TOKEN",
+  "channel_id": "$CHANNEL_ID"
+}
+SLACKEOF
+        echo "  Config saved: $dst_dir/slack_config.json"
+      else
+        echo "  Skipped config — edit $dst_dir/slack_config.json.example manually"
+      fi
+    else
+      echo "  Non-interactive: edit $dst_dir/slack_config.json.example → slack_config.json"
+    fi
+  fi
+
+  # Patch ~/.claude/settings.json with hook entries
+  local settings_file="$HOME/.claude/settings.json"
+  mkdir -p "$(dirname "$settings_file")"
+  [ -f "$settings_file" ] || echo "{}" > "$settings_file"
+
+  python3 - <<'PYEOF'
+import json, os
+
+settings_path = os.path.expanduser("~/.claude/settings.json")
+hooks_dir = os.path.expanduser("~/.claude/hooks")
+
+with open(settings_path) as f:
+    settings = json.load(f)
+
+new_hooks = {
+    "PostToolUse": [
+        {
+            "matcher": "Edit|Write|NotebookEdit|Bash",
+            "hooks": [
+                {
+                    "type": "command",
+                    "command": f"python3 {hooks_dir}/slack_buffer.py"
+                }
+            ]
+        }
+    ],
+    "Notification": [
+        {
+            "hooks": [
+                {
+                    "type": "command",
+                    "command": f"python3 {hooks_dir}/slack_notify.py"
+                }
+            ]
+        }
+    ],
+    "Stop": [
+        {
+            "hooks": [
+                {
+                    "type": "command",
+                    "command": f"python3 {hooks_dir}/slack_stop.py"
+                }
+            ]
+        }
+    ]
+}
+
+existing_hooks = settings.get("hooks", {})
+
+MANAGED_SCRIPTS = {"slack_buffer.py", "slack_notify.py", "slack_stop.py", "slack_common.py"}
+
+def is_managed_command(cmd: str) -> bool:
+    return any(s in cmd for s in MANAGED_SCRIPTS)
+
+def replace_hook_list(existing: list, new_entries: list) -> list:
+    filtered = [
+        entry for entry in existing
+        if not any(
+            is_managed_command(h.get("command", ""))
+            for h in entry.get("hooks", [])
+        )
+    ]
+    return filtered + new_entries
+
+for event, entries in new_hooks.items():
+    existing_hooks[event] = replace_hook_list(
+        existing_hooks.get(event, []), entries
+    )
+
+settings["hooks"] = existing_hooks
+
+with open(settings_path, "w") as f:
+    json.dump(settings, f, indent=2, ensure_ascii=False)
+    f.write("\n")
+
+print("  settings.json hooks registered")
+PYEOF
+}
+
 # ── Uninstall functions ────────────────────────────────────────────────────
 remove_file() {
   local path="$1"
@@ -453,6 +590,68 @@ remove_hook() {
   fi
 }
 
+remove_claude_hook() {
+  local hook_name="$1"
+  local dst_dir="$HOME/.claude/hooks"
+
+  # Remove Python hook files
+  for f in slack_common.py slack_buffer.py slack_stop.py slack_notify.py; do
+    if [ -f "$dst_dir/$f" ]; then
+      rm -v "$dst_dir/$f"
+    fi
+  done
+
+  # Remove config files
+  for f in slack_config.json slack_config.json.example; do
+    if [ -f "$dst_dir/$f" ]; then
+      rm -v "$dst_dir/$f"
+    fi
+  done
+
+  # Remove slack hooks from settings.json
+  local settings_file="$HOME/.claude/settings.json"
+  if [ -f "$settings_file" ]; then
+    python3 - <<'PYEOF'
+import json, os
+
+settings_path = os.path.expanduser("~/.claude/settings.json")
+
+with open(settings_path) as f:
+    settings = json.load(f)
+
+hooks = settings.get("hooks", {})
+
+def remove_slack_hooks(entries: list) -> list:
+    result = []
+    for entry in entries:
+        filtered = [
+            h for h in entry.get("hooks", [])
+            if "slack_" not in h.get("command", "")
+        ]
+        if filtered:
+            result.append({**entry, "hooks": filtered})
+    return result
+
+changed = False
+for event in list(hooks.keys()):
+    cleaned = remove_slack_hooks(hooks[event])
+    if cleaned != hooks[event]:
+        hooks[event] = cleaned
+        changed = True
+    if not hooks[event]:
+        del hooks[event]
+        changed = True
+
+if changed:
+    settings["hooks"] = hooks
+    with open(settings_path, "w") as f:
+        json.dump(settings, f, indent=2, ensure_ascii=False)
+        f.write("\n")
+    print("  Removed slack hooks from settings.json")
+PYEOF
+  fi
+}
+
 remove_work_dir() {
   # Remove work/ from the target project only (no sibling worktrees)
   local work_dir="$PROJECT_ROOT/work"
@@ -494,8 +693,9 @@ if $UNINSTALL; then
       templates) remove_template_dir "$path" ;;
       root-file) remove_root_file "$path" ;;
       script)    remove_file "$PROJECT_ROOT/$path" ;;
-      hook)      remove_hook "$path" ;;
-      mcp)       remove_mcp_dir "$path"; HAS_COLLAB=true ;;
+      hook)        remove_hook "$path" ;;
+      claude-hook) remove_claude_hook "$path" ;;
+      mcp)         remove_mcp_dir "$path"; HAS_COLLAB=true ;;
     esac
   done
 
@@ -549,6 +749,9 @@ for entry in "${INSTALL_LIST[@]}"; do
       ;;
     hook)
       install_hook "$path"
+      ;;
+    claude-hook)
+      install_claude_hook "$path"
       ;;
     mcp)
       install_mcp_dir "$path"

@@ -56,6 +56,7 @@ cui-install --collab /path/to/my-project
 | `docs` | diataxis-doc-system, diagram-architect, doc/diagram agents, write-doc, init-docs, sync-docs | Global |
 | `data-pipeline` | data-pipeline-architect skill | Global |
 | `collab` | Claude-Codex collaboration, work items, AGENTS.md, CLAUDE.md | Per-project |
+| `slack` | Slack notifications (session summary, confirmation alerts) | Global |
 | `career` | career-docs skill, career agents | Either |
 | `vla` | vla-code-standards, vla agents (6 domains) | Either |
 
@@ -157,6 +158,8 @@ claude-useful-instructions/
 │   ├── work-item/                   # brief, contract, checklist, status, review
 │   ├── codex/AGENTS.md
 │   └── claude/CLAUDE.md
+├── hooks/                           # Claude Code hooks
+│   └── slack/                       # Slack notification hooks (buffer, stop, notify)
 ├── install.sh                       # Bundle-based installer (+ --uninstall)
 ├── codex-run.sh                     # Codex runner (single + parallel + boundary check)
 └── link-work.sh                     # Worktree symlink manager
