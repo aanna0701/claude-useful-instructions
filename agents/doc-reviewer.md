@@ -52,6 +52,7 @@ Based on Google Developer Documentation and Microsoft Writing Style guides:
 - **Tables:** For comparisons, not single-dimension lists
 - **Code blocks:** Language specified, copy-pasteable, obvious placeholders
 - **Language:** Bias-free, global-ready (no idioms/slang)
+- **Heading emoji:** H1 = doc-type icon (🎓/🔧/💡/📖/📋), H2 = section-role icon (no numbers), H3 = always 🔹
 
 ### 3. Terminology
 

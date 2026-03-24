@@ -51,7 +51,7 @@ Headings are the skeleton of the document — they must work standalone.
   | Level | Format | Icon rule | Example |
   |-------|--------|-----------|---------|
   | H1 | `# {type-emoji} Title` | Doc-type icon (fixed per type) | `# 🔧 카메라 캡처 설정하는 방법` |
-  | H2 | `## {role-emoji}{N} Title` | Section-role icon + number (no §) | `## 🎯1 사전 조건` |
+  | H2 | `## {role-emoji} Title` | Section-role icon (no number — emoji provides enough visual signal) | `## 🎯 사전 조건` |
   | H3 | `### 🔹 Title` | Always 🔹 (uniform, no variation) | `### 🔹 Key Decisions` |
 
   **H1 doc-type icons** (determined by frontmatter `type` field):
@@ -64,7 +64,7 @@ Headings are the skeleton of the document — they must work standalone.
   | reference | 📖 |
   | plan | 📋 |
 
-  **H2 section-role icons** (assigned by section content — emoji replaces `§`):
+  **H2 section-role icons** (assigned by section content — emoji only, no sequential numbers):
 
   | Role | Icon | Keywords |
   |------|------|----------|
@@ -98,7 +98,7 @@ Emojis serve as **functional icons** — visual anchors that let readers identif
 
 **Two contexts for emoji usage:**
 
-1. **Headings** — follow the heading icon rules in "Heading Hierarchy" above (H1 type-icon, H2 role-icon+number, H3 always 🔹).
+1. **Headings** — follow the heading icon rules in "Heading Hierarchy" above (H1 type-icon, H2 role-icon, H3 always 🔹).
 2. **Body text** — use the semantic icon mapping below for inline emphasis and admonition blocks.
 
 **Body text icon mapping** (use consistently across all documents):
@@ -235,6 +235,9 @@ Apply this checklist during Phase 3 (quality review) alongside the common-rules 
 - [ ] Are headings self-contained and descriptive (not "Overview", "Details", "Notes")?
 - [ ] Is there a clear visual hierarchy (H2 → H3 → content, no H4+)?
 - [ ] Are H2 sections separated by `---`?
+- [ ] H1 has doc-type emoji (🎓/🔧/💡/📖/📋)?
+- [ ] H2 has section-role emoji (🎯/⚙️/📍/🏗️/🔍/🔥/✅/🗂️/💻/⚖️) — no sequential numbers?
+- [ ] H3 uses 🔹 consistently (no semantic emoji variation)?
 
 ### Chunking Test
 - [ ] Are paragraphs 4 sentences or fewer?
