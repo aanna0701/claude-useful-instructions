@@ -38,24 +38,28 @@ Read in parallel:
 - `checklist.md` — verification items
 - `status.md` — changed files, progress, ambiguities
 
-### Step 4: Review Changed Files
+### Step 4: Resolve Implementation Worktree
 
-From `status.md` "Changed Files" section, read each modified file.
-If "Changed Files" is empty, use `git diff main...HEAD` or `git log --name-only` to find changes.
+Read `Worktree` and `Worktree Path` from `status.md`. If it differs from the current cwd, use that path for all file reads, git commands, and test runs in subsequent steps. See `rules/collab-workflow.md` → "Review worktree rule" for rationale.
 
-### Step 5: Generate Review
+### Step 5: Review Changed Files
+
+From `status.md` "Changed Files" section, read each modified file **from the resolved worktree** (Step 4).
+If "Changed Files" is empty, use `git log --name-only` on the implementation worktree to find changes.
+
+### Step 6: Generate Review
 
 Spawn `doc-writer-review` agent with `bundle: true`, passing contract + checklist + changed files as findings. The agent handles compliance checks, quality assessment, and decision (MERGE/REVISE/REJECT).
 
 Write to `work/items/FEAT-NNN-slug/review.md`
 
-### Step 6: Update Status
+### Step 7: Update Status
 
 Update `status.md`:
 - Status: `review`
 - Agent: `Claude`
 
-### Step 7: Execute Decision
+### Step 8: Execute Decision
 
 **MERGE**:
 1. Ask user: "FEAT-NNN: MERGE decision. Merge, delete branch, and clean up work item? [Y/n]"
@@ -76,7 +80,7 @@ When writing `review.md`, include an explicit `MUST-fix` section with concrete f
 
 **REJECT**: State reason. Remove work item directory: `rm -r work/items/FEAT-NNN-slug/`.
 
-### Step 8: Batch Summary (when reviewing multiple items)
+### Step 9: Batch Summary (when reviewing multiple items)
 
 When reviewing multiple items, also check for "Doc Changes Needed" in each `status.md` and consolidate:
 

@@ -55,7 +55,7 @@ You are dispatched via `codex-run.sh` which provides your work item context. If 
 
 Update `work/items/FEAT-NNN-slug/status.md` on **every state change**:
 
-1. **Starting work**: Set `Status: in-progress`, `Agent: Codex`, `Worktree: <current worktree>`
+1. **Starting work**: Set `Status: in-progress`, `Agent: Codex`, `Worktree: <branch name>`, `Worktree Path: <absolute path>` (e.g., `~/workspace/VasIntelli-Training`)
 2. **Progress**: Check off completed items in Progress section
 3. **Changed files**: List every file you modify with a brief description
 4. **Blocked**: Set `Status: blocked`, describe in Blockers section

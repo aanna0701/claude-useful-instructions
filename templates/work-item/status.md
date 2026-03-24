@@ -12,6 +12,7 @@ updated: YYYY-MM-DD HH:MM
 | Agent | TBD |
 | Branch | — |
 | Worktree | — |
+| Worktree Path | — |
 
 ## Progress
 

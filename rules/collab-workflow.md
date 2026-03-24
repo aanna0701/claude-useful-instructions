@@ -39,6 +39,7 @@
 - Implementation worktree is resolved from contract "Allowed Modifications" paths, not from the location of `work/`
 - `work/` symlinks are planning-artifact links only; they do not redefine where Codex must implement
 - If planning docs mention a worktree that conflicts with the contract paths, the contract paths win
+- **Review worktree rule**: `/work-review` MUST read files and run tests from the `Worktree Path` in `status.md`, not from the current cwd
 
 ## Principles
 
