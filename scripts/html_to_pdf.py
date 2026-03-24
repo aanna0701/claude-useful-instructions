@@ -1,4 +1,11 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.11"
+# dependencies = [
+#     "playwright",
+#     "pillow",
+# ]
+# ///
 """
 html_to_pdf.py — HTML 슬라이드 덱을 PDF로 변환
 
@@ -6,11 +13,10 @@ html_to_pdf.py — HTML 슬라이드 덱을 PDF로 변환
 검정 letterbox 영역 제외, .slide-deck 요소만 정확히 캡처
 
 사용법:
-    python html_to_pdf.py input.html [output.pdf] [--width 1920] [--height 1080]
+    uv run scripts/html_to_pdf.py input.html [output.pdf] [--width 1920] [--height 1080]
 
-의존성 설치:
-    pip install playwright pillow reportlab
-    playwright install chromium
+초기 설정 (최초 1회):
+    uv run playwright install chromium
 """
 
 import sys
