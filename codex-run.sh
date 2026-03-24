@@ -21,6 +21,21 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 LOG_DIR="work/.dispatch-logs"
+SLACK_HOOKS_DIR="$HOME/.claude/hooks"
+
+# ─── Slack notification ───────────────────────────────────────────────────────
+
+notify_slack() {
+  local message="$1"
+  [ -f "$SLACK_HOOKS_DIR/slack_common.py" ] || return 0
+  SLACK_MSG="$message" python3 -c "
+import os, sys; sys.path.insert(0, os.environ.get('HOME','') + '/.claude/hooks')
+from slack_common import load_config, send_slack
+token, channel = load_config()
+if token and channel:
+    send_slack(token, channel, os.environ['SLACK_MSG'], 'codex-run')
+" 2>/dev/null || true
+}
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -457,6 +472,17 @@ cmd_dispatch() {
   if [ "$failed" -gt 0 ]; then
     echo "Check logs for failed items: ls $LOG_DIR/"
   fi
+
+  # Slack notification
+  local slack_text="🔧 *Codex Dispatch Complete*
+• Success: $success  Failed: $failed
+• Items: ${feat_ids[*]}
+• Host: $(hostname)"
+  if [ ${#review_ids[@]} -gt 0 ]; then
+    slack_text+="
+• Next: \`/work-review ${review_ids[*]}\`"
+  fi
+  notify_slack "$slack_text"
 }
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
