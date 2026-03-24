@@ -67,7 +67,7 @@ PY
 }
 
 cmd_notify_test() {
-  local test_text="🧪 *Codex Slack Test*
+  local test_text="🧪 *Codex Run Test*
 • Host: $(hostname)
 • Repo: $(basename "$PWD")
 • Path: $PWD
@@ -438,7 +438,7 @@ cmd_dispatch() {
   auto_link_worktrees
   echo "Done."
 
-  notify_slack "🚀 *Codex Dispatch Started*
+  notify_slack "🚀 *Codex Run Start*
 • Items: ${feat_ids[*]}
 • Host: $(hostname)
 • Repo: $(basename "$PWD")"
@@ -540,7 +540,7 @@ cmd_dispatch() {
   fi
 
   # Slack notification
-  local slack_text="🔧 *Codex Dispatch Complete*
+  local slack_text="🔧 *Codex Run Complete*
 • Success: $success  Failed: $failed
 • Items: ${feat_ids[*]}
 • Host: $(hostname)"
