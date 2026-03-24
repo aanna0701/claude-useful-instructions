@@ -95,7 +95,13 @@ BUNDLE_SLACK=(
   "claude-hook:slack"
 )
 
-BUNDLE_NAMES=("core" "docs" "data-pipeline" "career" "vla" "collab" "slack")
+BUNDLE_PRESENTATION=(
+  "skills:html-presentation"
+  "commands:format-presentation.md"
+  "script:scripts/html_to_pdf.py"
+)
+
+BUNDLE_NAMES=("core" "docs" "data-pipeline" "career" "vla" "collab" "slack" "presentation")
 BUNDLE_DESCRIPTIONS=(
   "Core utilities (smart-git-commit-push, optimize-tokens)"
   "Documentation & diagrams (diataxis framework, doc agents, diagram-architect)"
@@ -104,6 +110,7 @@ BUNDLE_DESCRIPTIONS=(
   "VLA robotics project (vla agents, code standards)"
   "Claude-Codex collaboration (work items, AGENTS.md, CLAUDE.md)"
   "Slack notifications (session summary, confirmation alerts)"
+  "HTML presentation generator (16:9 dark theme slides + PDF export)"
 )
 
 # ── Parse arguments ─────────────────────────────────────────────────────────
@@ -125,6 +132,7 @@ while [[ $# -gt 0 ]]; do
     --vla)           SELECTED_BUNDLES+=("vla"); shift ;;
     --collab)        SELECTED_BUNDLES+=("collab"); shift ;;
     --slack)         SELECTED_BUNDLES+=("slack"); shift ;;
+    --presentation)  SELECTED_BUNDLES+=("presentation"); shift ;;
     --exclude)       shift; EXCLUDED_BUNDLES+=("$1"); shift ;;
     --interactive)   INTERACTIVE=true; shift ;;
     --list)          LIST_ONLY=true; shift ;;
@@ -234,6 +242,7 @@ get_bundle_items() {
     vla)           printf '%s\n' "${BUNDLE_VLA[@]}" ;;
     collab)        printf '%s\n' "${BUNDLE_COLLAB[@]}" ;;
     slack)         printf '%s\n' "${BUNDLE_SLACK[@]}" ;;
+    presentation)  printf '%s\n' "${BUNDLE_PRESENTATION[@]}" ;;
   esac
 }
 
