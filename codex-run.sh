@@ -132,15 +132,16 @@ path = Path(sys.argv[1])
 text = path.read_text(encoding="utf-8")
 
 for line in text.splitlines():
+    # Table format: | Status | value |
     match = re.match(r'^\|\s*Status\s*\|\s*([^|]+?)\s*\|$', line)
     if match:
         print(match.group(1).strip())
         raise SystemExit(0)
-
-match = re.search(r'^\|\s*Status\s*\|\s*([^|]+?)\s*\|$', text, re.MULTILINE)
-if match:
-    print(match.group(1).strip())
-    raise SystemExit(0)
+    # Heading format: ## Current Status: value
+    match = re.match(r'^##\s*Current\s+Status:\s*(\S+)', line)
+    if match:
+        print(match.group(1).strip())
+        raise SystemExit(0)
 
 print("unknown")
 PY
@@ -372,14 +373,29 @@ dispatch_group() {
     local prompt
     prompt=$(build_codex_prompt "$fid")
 
-    # Initialize status
+    # Initialize status (support both table and heading formats)
     sed -i 's/| Status | .*/| Status | in-progress |/' "$wdir/status.md"
+    sed -i 's/^## Current Status: .*/## Current Status: in-progress/' "$wdir/status.md"
     sed -i 's/| Agent | .*/| Agent | Codex |/' "$wdir/status.md"
+    sed -i 's/^## Agent: .*/## Agent: Codex/' "$wdir/status.md"
     sed -i "s/^updated: .*/updated: $(date '+%Y-%m-%d %H:%M')/" "$wdir/status.md"
 
+    # Resolve target worktree from contract or dispatch manifest
+    local target_dir=""
+    if [ -f "$wdir/contract.md" ]; then
+      target_dir=$(grep -oP '^\- \*\*Path\*\*: `\K[^`]+' "$wdir/contract.md" || true)
+    fi
+    if [ -z "$target_dir" ] && [ -f "work/dispatch.json" ] && command -v jq &>/dev/null; then
+      target_dir=$(jq -r --arg fid "$fid" '.items[] | select(.feat_id == $fid) | .worktree_path // empty' work/dispatch.json 2>/dev/null || true)
+    fi
+
     if command -v codex &>/dev/null; then
-      echo "  Spawning: $slug → $log_file"
-      codex exec --sandbox workspace-write --full-auto "$prompt" > "$log_file" 2>&1 &
+      echo "  Spawning: $slug → $log_file${target_dir:+ (cd $target_dir)}"
+      if [ -n "$target_dir" ] && [ -d "$target_dir" ]; then
+        codex exec --full-auto --cd "$target_dir" "$prompt" > "$log_file" 2>&1 &
+      else
+        codex exec --full-auto "$prompt" > "$log_file" 2>&1 &
+      fi
       pids["$fid"]=$!
     else
       echo "  [manual] $slug → $log_file"
@@ -501,7 +517,7 @@ cmd_dispatch() {
       for fid in "${gids[@]}"; do
         local wdir
         wdir=$(resolve_work_dir "$fid")
-        echo "  codex exec --sandbox workspace-write --full-auto < $LOG_DIR/$(basename "$wdir").log"
+        echo "  codex exec --full-auto < $LOG_DIR/$(basename "$wdir").log"
       done
       if [ "$gn" -lt "$num_groups" ]; then
         echo "  # Wait for group $gn to finish before starting group $((gn+1))"
