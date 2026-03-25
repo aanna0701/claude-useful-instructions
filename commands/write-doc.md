@@ -6,21 +6,9 @@ Target: $ARGUMENTS (doc topic, or "review [filepath]")
 
 ---
 
-## Step 0: Mode Detection
+## Step 0: Delegate
 
-Analyze `$ARGUMENTS`:
-
-| Pattern | Mode | SKILL.md Entry Point |
-|---------|------|---------------------|
-| `review [filepath]` | Review existing doc | Phase 3 |
-| `work-item [topic]` | Work Item bundle | Phase 2 (Work Item) |
-| `task [topic]` | Task creation | Phase 2 (Delivery, Task) |
-| `contract [topic]` | Contract creation | Phase 2 (Delivery, Contract) |
-| `checklist [T-NNN]` | Checklist creation | Phase 2 (Delivery, Checklist) |
-| `review-doc [T-NNN]` | Review creation | Phase 2 (Delivery, Review) |
-| Other | New document | Phase 0 (full workflow) |
-
-→ Delegate to SKILL.md at the identified entry point. Pass all `$ARGUMENTS` as context.
+Delegate to `diataxis-doc-system` SKILL.md, passing all `$ARGUMENTS` as context. SKILL.md handles axis determination, type routing, and agent delegation.
 
 ---
 
