@@ -16,7 +16,7 @@ tools:
 
 ## Required Reading
 
-Read `skills/diataxis-doc-system/references/` — `execution-rules.md`, `common-rules.md`, `writing-style.md`.
+Read `skills/diataxis-doc-system/references/` — `execution-rules.md`, `execution-templates.md` (Contract template), `common-rules.md`, `writing-style.md`.
 
 ## Modes
 
