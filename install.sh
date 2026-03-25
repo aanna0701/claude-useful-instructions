@@ -5,7 +5,7 @@
 #
 # Options:
 #   --all           Install all bundles (default if no bundle flags given)
-#   --core          Core utilities (coding-style, smart-git-commit-push, optimize-tokens)
+#   --core          Core utilities (smart-git-commit-push, optimize-tokens, branch-map)
 #   --docs          Documentation & diagrams (diataxis, write-doc, init-docs, sync-docs, doc/diagram agents)
 #   --data-pipeline Data pipeline architect skill
 #   --career        Career document tools (career-docs skill, career agents)
@@ -37,6 +37,10 @@ REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
 BUNDLE_CORE=(
   "commands:smart-git-commit-push.md"
   "commands:optimize-tokens.md"
+  "rules:branch-map-policy.md"
+  "commands:branch-init.md"
+  "commands:branch-status.md"
+  "templates:branch-map"
 )
 
 BUNDLE_DOCS=(
@@ -79,10 +83,13 @@ BUNDLE_VLA=(
 
 BUNDLE_COLLAB=(
   "rules:collab-workflow.md"
+  "rules:review-merge-policy.md"
   "commands:work-plan.md"
   "commands:work-review.md"
   "commands:work-status.md"
+  "commands:gha-branch-sync.md"
   "skills:collab-workflow"
+  "agents:ci-audit-agent.md"
   "templates:work-item"
   "root-file:AGENTS.md"
   "root-file:CLAUDE.md"

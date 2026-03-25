@@ -52,10 +52,10 @@ cui-install --collab /path/to/my-project
 
 | Bundle | Contents | Recommended Scope |
 |--------|----------|-------------------|
-| `core` | coding-style, smart-git-commit-push, optimize-tokens | Global (`~/.claude/`) |
+| `core` | smart-git-commit-push, optimize-tokens, branch-map | Global (`~/.claude/`) |
 | `docs` | diataxis-doc-system, diagram-architect, doc/diagram agents, write-doc, init-docs, sync-docs | Global |
 | `data-pipeline` | data-pipeline-architect skill | Global |
-| `collab` | Claude-Codex collaboration, work items, AGENTS.md, CLAUDE.md | Per-project |
+| `collab` | Claude-Codex collaboration, work items, CI audit, AGENTS.md, CLAUDE.md | Per-project |
 | `slack` | Slack notifications (session summary, confirmation alerts) | Global |
 | `career` | career-docs skill, career agents | Either |
 | `presentation` | html-presentation skill, create/format/edit/export-pdf commands | Global |
@@ -108,6 +108,7 @@ Subagents delegated by Claude for specific tasks.
 | Diagram | `diagram-writer` | 1 |
 | Token Analysis | `token-duplication-detector`, `-load-measurer`, `-mcp-analyzer`, `-split-detector` | 4 |
 | Career Docs | `career-docs-writer`, `-reviewer`, `-reviser` | 3 |
+| CI Audit | `ci-audit-agent` | 1 |
 | VLA Project | `vla-capture`, `-data`, `-model`, `-train`, `-eval`, `-infra` | 6 |
 
 > Full reference: [docs/agents.md](docs/agents.md)
@@ -116,9 +117,12 @@ Subagents delegated by Claude for specific tasks.
 
 | Command | Description |
 |---------|-------------|
+| `/branch-init` | Detect/configure branch hierarchy for the project |
+| `/branch-status` | Show branch map, freshness, and work item mapping |
 | `/work-plan` | Create work item for Codex delegation |
 | `/work-status` | Check work item progress |
 | `/work-review` | Review Codex implementation against contract |
+| `/gha-branch-sync` | Audit GitHub Actions against branch map |
 | `/write-doc` | Diataxis-based document writing |
 | `/polish-doc` | Apply writing-style and structural fixes to existing docs |
 | `/init-docs` | Scaffold docs site structure (numbering + MkDocs) |
@@ -139,7 +143,9 @@ Shared code standards installed to `.claude/rules/`.
 | File | Content |
 |------|---------|
 | `coding-style.md` | English-only, immutability, file size limits, error handling |
+| `branch-map-policy.md` | Branch hierarchy selection, safety rules, worktree routing |
 | `collab-workflow.md` | Claude-Codex role separation, work item protocol |
+| `review-merge-policy.md` | Merge gating: freshness, CI checks, MUST-fix resolution |
 | `vla-code-standards.md` | pydantic vs dataclass, frozen patterns, TDD, import order |
 
 > Subagents do NOT auto-read rules. Agent definitions must include explicit Read instructions.
@@ -166,11 +172,13 @@ claude-useful-instructions/
 │   ├── doc-reviewer.md              # Diataxis doc quality review
 │   ├── doc-reviewer-execution.md    # Execution artifact review
 │   ├── token-*.md                   # Token optimization analysis (4 agents)
+│   ├── ci-audit-agent.md             # GitHub Actions topology audit
 │   ├── career-docs-*.md             # Career document writer & reviewer
 │   └── vla-*.md                     # VLA robotics project (6 domains)
 ├── commands/                        # User-invocable slash commands
 ├── rules/                           # Shared code standards
 ├── templates/                       # Installable templates
+│   ├── branch-map/                  # branch-map.yaml bootstrap config
 │   ├── work-item/                   # brief, contract, checklist, status, review
 │   ├── codex/AGENTS.md
 │   └── claude/CLAUDE.md

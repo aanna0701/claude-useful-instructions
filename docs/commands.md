@@ -4,6 +4,75 @@ Commands are user-invocable slash commands (`.md` files) under `.claude/commands
 
 ---
 
+## /branch-init
+
+Detect or configure the branch hierarchy for the current project. Persists the result in `.claude/branch-map.yaml`.
+
+**Usage**:
+```
+/branch-init              # Auto-detect from existing branches
+/branch-init develop      # Set develop as working parent
+/branch-init research     # Set research as working parent
+```
+
+### Workflow
+
+| Step | Action |
+|------|--------|
+| 1 | Check for existing `.claude/branch-map.yaml` |
+| 2 | Detect integration branches (main, develop, research, etc.) |
+| 3 | Build trunk chain and set working parent |
+| 4 | Confirm with user |
+| 5 | Write `.claude/branch-map.yaml` |
+| 6 | Auto-audit GHA workflows if `.github/workflows/` exists |
+
+Works standalone (single agent) or with the collab workflow. Part of the **core** bundle.
+
+---
+
+## /branch-status
+
+Show current branch hierarchy, freshness state, and work item branch mappings.
+
+**Usage**:
+```
+/branch-status            # Full status
+/branch-status --brief    # One-line summary
+```
+
+### Output
+
+- Trunk chain and working parent
+- Current branch freshness vs parent (ahead/behind)
+- Work item branch mappings (if collab workflow active)
+
+---
+
+## /gha-branch-sync
+
+Audit GitHub Actions workflows against the project's branch map configuration.
+
+**Usage**:
+```
+/gha-branch-sync              # Audit only (report issues)
+/gha-branch-sync --fix        # Audit + apply fixes after confirmation
+/gha-branch-sync --generate   # Generate missing workflows from branch-map roles
+```
+
+### Checks
+
+| Check | What It Detects |
+|-------|----------------|
+| Hardcoded targets | Merge/deploy targeting a fixed branch instead of branch-map |
+| Missing freshness | No parent branch comparison before merge gates |
+| Missing path filters | All-path triggers causing unnecessary CI runs |
+| Drift detection | Docs/contract changes not notifying affected PRs |
+| Stale references | Branch names that no longer exist in trunk chain |
+
+Delegates analysis to the `ci-audit-agent` subagent.
+
+---
+
 ## /write-doc
 
 Diátaxis Framework-based technical document writing command.

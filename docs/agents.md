@@ -84,6 +84,18 @@ Used by the `/optimize-tokens` command. Parallel analysis agents for instruction
 
 ---
 
+## CI Audit Agent
+
+Used by the `/gha-branch-sync` command. Audits GitHub Actions workflows against the project's branch-map configuration.
+
+| Agent | Description |
+|-------|-------------|
+| `ci-audit-agent` | Scans `.github/workflows/` for hardcoded branch targets, missing freshness checks, missing path filters, and drift detection gaps. Reports issues and recommends minimal diffs. |
+
+Reads `.claude/branch-map.yaml`, `.claude/rules/branch-map-policy.md`, and `.claude/rules/review-merge-policy.md` before analysis.
+
+---
+
 ## VLA Project Agents
 
 Domain-specific agents for the VLA (Vision-Language-Action) robotics project.
