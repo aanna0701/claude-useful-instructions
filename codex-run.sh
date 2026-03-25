@@ -314,7 +314,7 @@ ${review_instructions}
 Follow AGENTS.md for all implementation rules. Additionally:
 - COMMIT with: feat($feat_id): description
 - UPDATE $wdir/status.md after each milestone
-- When DONE: set Status to "done" in $wdir/status.md
+- When DONE: set "## Current Status: done" in $wdir/status.md
 
 Begin implementation.
 EOF
