@@ -80,25 +80,49 @@ Update `status.md`:
 **MERGE**:
 1. Resolve merge target: use `Merge Target` from contract's Branch Map section, or fall back to the branch's upstream.
 2. If Step 3.5 flagged freshness issues, block merge and suggest rebase first.
-3. Ask user: "FEAT-NNN: MERGE into {merge_target}. Proceed, delete branch, and clean up? [Y/n]"
-4. If confirmed (or default Y):
+3. Create Pull Request:
    ```bash
-   git checkout <merge_target>
-   git merge feat/FEAT-NNN-slug
+   gh pr create \
+     --base <merge_target> \
+     --head feat/FEAT-NNN-slug \
+     --title "FEAT-NNN: <readable title from brief>" \
+     --body "<body>"
    ```
-5. Remove worktree: read `Worktree Path` from `status.md`:
+   PR body format:
+   ```
+   ## Objective
+   <from brief.md>
+
+   ## Review Summary
+   <verdict and key findings from review.md>
+
+   ## Changed Files
+   <from status.md>
+
+   ## Checklist
+   <from checklist.md — checked items>
+
+   ---
+   Closes #<issue_number>
+   Work item: `work/items/FEAT-NNN-slug/`
+   ```
+   The `Closes #N` line auto-closes the linked GitHub Issue when the PR is merged.
+4. Link PR to Issue (if issue exists):
    ```bash
-   git worktree remove <worktree_path>
-   git branch -d feat/FEAT-NNN-slug
+   gh issue comment <number> --body "PR created: <pr_url>"
    ```
-6. Close GitHub Issue: read `Issue` field from `status.md`. If it contains an issue reference (e.g., `#42`):
-   ```bash
-   gh issue close <number> --reason completed --comment "Merged via /work-review. Review: MERGE ✓"
-   ```
-   If `gh` is not available or Issue is `—`, skip silently.
-7. Handle doc changes from `status.md` "Doc Changes Needed" section
-8. Remove work item directory: `rm -r work/items/FEAT-NNN-slug/`
-9. Update `work/dispatch.json`: remove the merged FEAT entry
+5. **Auto PR review**: Spawn `pr-reviewer` agent with the PR number, FEAT ID, work item directory, and repo root. The agent reviews the diff against the contract and submits an `APPROVE` or `REQUEST_CHANGES` review via `gh pr review`.
+6. Update `status.md`: set Status to `merged`, add `PR` field with the PR URL.
+7. Print: "PR created: <pr_url>. Review submitted. Merge on GitHub to complete."
+8. **Post-merge cleanup** (run after PR is merged on GitHub, or via `/work-status` detecting merged PRs):
+   - Remove worktree:
+     ```bash
+     git worktree remove <worktree_path>
+     git branch -d feat/FEAT-NNN-slug
+     ```
+   - Handle doc changes from `status.md` "Doc Changes Needed" section
+   - Remove work item directory: `rm -r work/items/FEAT-NNN-slug/`
+   - Update `work/dispatch.json`: remove the merged FEAT entry
 
 **REVISE**: Write `review.md` with an explicit `MUST-fix` section (concrete file-level actions). Then spawn `work-reviser` agent for the FEAT — it extracts MUST-fix items, updates status to `revision`, and re-dispatches to the appropriate target (Codex or agent).
 
@@ -123,13 +147,13 @@ When reviewing multiple items, also check for "Doc Changes Needed" in each `stat
 ```
 Review Complete
 ──────────────────────────────────────────────
-  FEAT-001  duckdb-schema-cleanup      MERGED ✓  #42 closed
-  FEAT-002  jwt-auth-middleware        MERGED ✓  #43 closed
-  FEAT-003  refactor-logging           REVISE    #44 open
+  FEAT-001  duckdb-schema-cleanup      PR #51 → research   #42 linked
+  FEAT-002  jwt-auth-middleware        PR #52 → research   #43 linked
+  FEAT-003  refactor-logging           REVISE               #44 open
 
-Doc changes applied:
-  FEAT-001: Updated docs/schema.md with new column list
-  FEAT-002: Added API auth section to docs/api.md
+PRs ready to merge on GitHub:
+  https://github.com/org/repo/pull/51
+  https://github.com/org/repo/pull/52
 
 Revisions needed:
   bash codex-run.sh FEAT-003
