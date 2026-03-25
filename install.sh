@@ -41,6 +41,8 @@ BUNDLE_CORE=(
   "commands:branch-init.md"
   "commands:branch-status.md"
   "templates:branch-map"
+  "workflow:branch-auto-sync.yml"
+  "claude-hook:git-auto-pull"
 )
 
 BUNDLE_DOCS=(
@@ -442,55 +444,64 @@ SLACKEOF
   mkdir -p "$(dirname "$settings_file")"
   [ -f "$settings_file" ] || echo "{}" > "$settings_file"
 
-  python3 - <<'PYEOF'
-import json, os
+  python3 - "$hook_name" <<'PYEOF'
+import json, os, sys
 
+hook_name = sys.argv[1]
 settings_path = os.path.expanduser("~/.claude/settings.json")
 hooks_dir = os.path.expanduser("~/.claude/hooks")
 
 with open(settings_path) as f:
     settings = json.load(f)
 
-new_hooks = {
-    "PostToolUse": [
-        {
-            "matcher": "Edit|Write|NotebookEdit|Bash",
-            "hooks": [
+# Hook registry: each hook defines its events and managed scripts
+HOOK_REGISTRY = {
+    "slack": {
+        "managed_scripts": {"slack_buffer.py", "slack_notify.py", "slack_stop.py", "slack_common.py"},
+        "events": {
+            "PostToolUse": [
                 {
-                    "type": "command",
-                    "command": f"python3 {hooks_dir}/slack_buffer.py"
+                    "matcher": "Edit|Write|NotebookEdit|Bash",
+                    "hooks": [{"type": "command", "command": f"python3 {hooks_dir}/slack_buffer.py"}]
                 }
-            ]
-        }
-    ],
-    "Notification": [
-        {
-            "hooks": [
+            ],
+            "Notification": [
                 {
-                    "type": "command",
-                    "command": f"python3 {hooks_dir}/slack_notify.py"
+                    "hooks": [{"type": "command", "command": f"python3 {hooks_dir}/slack_notify.py"}]
                 }
-            ]
-        }
-    ],
-    "Stop": [
-        {
-            "hooks": [
+            ],
+            "Stop": [
                 {
-                    "type": "command",
-                    "command": f"python3 {hooks_dir}/slack_stop.py"
+                    "hooks": [{"type": "command", "command": f"python3 {hooks_dir}/slack_stop.py"}]
                 }
-            ]
-        }
-    ]
+            ],
+        },
+    },
+    "git-auto-pull": {
+        "managed_scripts": {"auto_pull.py"},
+        "events": {
+            "PreToolUse": [
+                {
+                    "matcher": "Edit|Write|NotebookEdit",
+                    "hooks": [{"type": "command", "command": f"python3 {hooks_dir}/auto_pull.py"}]
+                }
+            ],
+        },
+    },
 }
+
+hook_config = HOOK_REGISTRY.get(hook_name)
+if not hook_config:
+    print(f"  WARNING: unknown hook '{hook_name}', skipping settings.json patch")
+    sys.exit(0)
+
+managed_scripts = hook_config["managed_scripts"]
+new_hooks = hook_config["events"]
 
 existing_hooks = settings.get("hooks", {})
 
-MANAGED_SCRIPTS = {"slack_buffer.py", "slack_notify.py", "slack_stop.py", "slack_common.py"}
-
 def is_managed_command(cmd: str) -> bool:
-    return any(s in cmd for s in MANAGED_SCRIPTS)
+    return any(s in cmd for s in managed_scripts)
 
 def replace_hook_list(existing: list, new_entries: list) -> list:
     filtered = [
@@ -513,7 +524,7 @@ with open(settings_path, "w") as f:
     json.dump(settings, f, indent=2, ensure_ascii=False)
     f.write("\n")
 
-print("  settings.json hooks registered")
+print(f"  settings.json hooks registered for {hook_name}")
 PYEOF
 }
 
@@ -710,6 +721,7 @@ if $UNINSTALL; then
       agents)    remove_file "$CLAUDE_DIR/agents/$path" ;;
       skills)    remove_skill_dir "$path" ;;
       templates) remove_template_dir "$path" ;;
+      workflow)  remove_file "$PROJECT_ROOT/.github/workflows/$path" ;;
       root-file) remove_root_file "$path" ;;
       script)    remove_file "$PROJECT_ROOT/$path" ;;
       hook)        remove_hook "$path" ;;
@@ -768,6 +780,16 @@ for entry in "${INSTALL_LIST[@]}"; do
       ;;
     hook)
       install_hook "$path"
+      ;;
+    workflow)
+      local src="$REPO_DIR/templates/workflows/$path"
+      local dst="$PROJECT_ROOT/.github/workflows/$path"
+      if [ -f "$src" ]; then
+        mkdir -p "$(dirname "$dst")"
+        install_file "$src" "$dst"
+      else
+        echo "WARNING: Workflow template not found: $src" >&2
+      fi
       ;;
     claude-hook)
       install_claude_hook "$path"

@@ -3,6 +3,7 @@
 #
 # Edit this file to match your project's branching model.
 # Claude reads this before creating branches, merging, or routing work items.
+# GitHub Actions reads this for auto-sync (hub-and-spoke merge flow).
 
 version: 1
 
@@ -15,6 +16,7 @@ trunk_chain:
 
 # The branch that feature branches are based on.
 # Must be the last entry in trunk_chain.
+# Acts as the "hub" — all features merge UP here, then cascade DOWN.
 working_parent: main
 
 # Branch naming
@@ -22,21 +24,37 @@ branch_rules:
   feature_prefix: feat    # feat/FEAT-001-slug
   default_merge_target: main  # must match working_parent
 
-# Role-to-path mapping for worktree routing (optional, collab workflow only)
-# Uncomment and customize roles relevant to your project.
-# roles:
-#   docs:
-#     preferred_worktree: Project-Docs
-#     paths: [docs/**, adr/**, specs/**, README.md]
-#   backend:
-#     preferred_worktree: Project-Backend
+# Feature/integration branches and their relationships (OPTIONAL)
+# Without this section, ALL remote feature branches auto-sync through working_parent.
+# Add entries only to override: custom parent, merge_target, worktree, or role.
+# branches:
+#   feature-docs:
+#     parent: main
+#     merge_target: main
+#     worktree: /path/to/Project-Docs
+#     role: docs
+#     paths: [docs/**, mkdocs.yml, README.md]
+#
+#   feature-backend:
+#     parent: main
+#     merge_target: main
+#     worktree: /path/to/Project-Backend
+#     role: backend
 #     paths: [src/**, lib/**, tests/**]
-#   frontend:
-#     preferred_worktree: Project-UI
-#     paths: [web/**, ui/**, app/**]
-#   infra:
-#     preferred_worktree: Project-Infra
-#     paths: [.github/**, infra/**, deploy/**, scripts/**]
+#
+#   feature-frontend:
+#     parent: feature-backend
+#     merge_target: feature-backend
+#     worktree: /path/to/Project-Frontend
+#     role: frontend
+#     paths: [web/**, ui/**]
+
+# Sync rules — defines cascade triggers (optional, for documentation)
+# The GHA workflow derives sync from branches[].parent automatically.
+# sync:
+#   - from: feature-docs
+#     to: [feature-backend, feature-frontend]
+#     trigger: docs/, mkdocs.yml
 
 # Merge policy
 merge_policy:

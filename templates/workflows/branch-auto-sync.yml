@@ -1,0 +1,200 @@
+# Branch Auto-Sync — hub-and-spoke merge workflow
+#
+# Flow:
+#   1. Feature branch pushed → auto-merge UP into hub (working_parent)
+#   2. Hub updated → cascade DOWN to all child branches
+#
+# Reads .claude/branch-map.yaml to determine hierarchy.
+# Install: copy to .github/workflows/branch-auto-sync.yml
+#
+# Requirements:
+#   - .claude/branch-map.yaml must exist with at least `working_parent:`
+#   - `branches:` section is optional — without it, all remote feature
+#     branches auto-sync through working_parent (hub)
+#   - Explicit `branches:` entries override auto-detection (custom parent/merge_target)
+
+name: Branch Auto-Sync
+
+on:
+  push:
+    branches:
+      # ── Customize: list your feature/integration branches ──
+      - feature-*
+      - feat/*
+
+permissions:
+  contents: write
+
+jobs:
+  hub-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Parse branch-map and sync
+        run: |
+          git fetch --all --prune
+          TRIGGER="${GITHUB_REF#refs/heads/}"
+          echo "Trigger branch: $TRIGGER"
+          echo "========================================"
+
+          BRANCH_MAP=".claude/branch-map.yaml"
+          FAILED=""
+
+          merge_into() {
+            local SOURCE=$1 TARGET=$2 MSG=$3
+            echo ""
+            echo "=== $SOURCE → $TARGET ==="
+
+            # Verify target exists on remote
+            if ! git rev-parse "origin/$TARGET" &>/dev/null; then
+              echo "SKIP: $TARGET does not exist on remote"
+              return 0
+            fi
+
+            git checkout "$TARGET"
+            git reset --hard "origin/$TARGET"
+
+            if git merge "origin/$SOURCE" --no-edit -m "$MSG"; then
+              git push origin "$TARGET"
+              echo "OK: $TARGET updated"
+              return 0
+            else
+              echo "CONFLICT: $TARGET — skipping (needs manual merge)"
+              git merge --abort
+              FAILED="$FAILED $TARGET"
+              return 1
+            fi
+          }
+
+          # ── Phase 1: Merge UP (feature → merge_target/hub) ──
+          if [ -f "$BRANCH_MAP" ]; then
+            # Extract merge_target: explicit branch config → working_parent fallback
+            MERGE_TARGET=$(python3 -c "
+          import yaml
+          with open('$BRANCH_MAP') as f:
+              data = yaml.safe_load(f)
+          branches = data.get('branches', {}) or {}
+          trigger = '$TRIGGER'
+          # 1. Explicit entry in branches section
+          if trigger in branches and branches[trigger].get('merge_target'):
+              print(branches[trigger]['merge_target'])
+          else:
+              # 2. Fallback: working_parent is the hub for all feature branches
+              wp = data.get('working_parent', '')
+              if wp and trigger != wp:
+                  print(wp)
+          " 2>/dev/null || echo "")
+
+            HUB="${MERGE_TARGET:-}"
+          else
+            echo "WARNING: $BRANCH_MAP not found, skipping hub merge"
+            HUB=""
+          fi
+
+          if [ -n "$HUB" ] && [ "$TRIGGER" != "$HUB" ]; then
+            echo ""
+            echo "──── Phase 1: Merge UP ($TRIGGER → $HUB) ────"
+            merge_into "$TRIGGER" "$HUB" \
+              "chore: auto-sync $TRIGGER into $HUB" || true
+          fi
+
+          # ── Phase 2: Cascade DOWN (hub → all children) ──
+          SYNC_SOURCE="${HUB:-$TRIGGER}"
+
+          # Discover children: branch-map.yaml entries + remote feature branches
+          CHILDREN=$(python3 -c "
+          import yaml, subprocess
+          trigger = '$TRIGGER'
+          source = '$SYNC_SOURCE'
+
+          # 1. Explicit children from branch-map.yaml
+          explicit = set()
+          explicit_parents = {}  # track explicit parent assignments
+          try:
+              with open('$BRANCH_MAP') as f:
+                  data = yaml.safe_load(f)
+              branches = data.get('branches', {}) or {}
+              feature_prefix = data.get('branch_rules', {}).get('feature_prefix', 'feat')
+              for name, cfg in branches.items():
+                  parent = cfg.get('parent', '')
+                  explicit_parents[name] = parent
+                  if parent == source and name != trigger:
+                      explicit.add(name)
+          except FileNotFoundError:
+              data = {}
+              branches = {}
+              feature_prefix = 'feat'
+
+          # 2. Auto-detect from remote: feature branches not in branch-map
+          #    whose parent is the hub (working_parent)
+          auto = set()
+          wp = data.get('working_parent', '') if data else ''
+          if source == wp:
+              result = subprocess.run(
+                  ['git', 'branch', '-r', '--format=%(refname:short)'],
+                  capture_output=True, text=True,
+              )
+              prefixes = ('origin/feature-', 'origin/feat/', f'origin/{feature_prefix}/')
+              for line in result.stdout.strip().split('\n'):
+                  line = line.strip()
+                  if not line or not any(line.startswith(p) for p in prefixes):
+                      continue
+                  branch = line.removeprefix('origin/')
+                  if branch == trigger or branch == source:
+                      continue
+                  # Skip if branch-map assigns it a different parent
+                  if branch in explicit_parents and explicit_parents[branch] != source:
+                      continue
+                  auto.add(branch)
+
+          all_children = sorted(explicit | auto)
+          print(' '.join(all_children))
+          " 2>/dev/null || echo "")
+
+          if [ -n "$CHILDREN" ]; then
+            echo ""
+            echo "──── Phase 2: Cascade DOWN ($SYNC_SOURCE → children) ────"
+            for CHILD in $CHILDREN; do
+              merge_into "$SYNC_SOURCE" "$CHILD" \
+                "chore: auto-sync from $SYNC_SOURCE" || true
+            done
+
+            # Depth 2: cascade to grandchildren (only from branch-map, not auto)
+            if [ -f "$BRANCH_MAP" ]; then
+              for CHILD in $CHILDREN; do
+                GRANDCHILDREN=$(python3 -c "
+          import yaml
+          with open('$BRANCH_MAP') as f:
+              data = yaml.safe_load(f)
+          branches = data.get('branches', {}) or {}
+          children = []
+          for name, cfg in branches.items():
+              if cfg.get('parent', '') == '$CHILD' and name != '$TRIGGER':
+                  children.append(name)
+          print(' '.join(children))
+          " 2>/dev/null || echo "")
+
+                for GC in $GRANDCHILDREN; do
+                  merge_into "$CHILD" "$GC" \
+                    "chore: cascade from $SYNC_SOURCE via $CHILD" || true
+                done
+              done
+            fi
+          fi
+
+          echo ""
+          echo "========================================"
+          if [ -n "$FAILED" ]; then
+            echo "::warning::Failed branches:$FAILED"
+          else
+            echo "All syncs completed successfully."
+          fi

@@ -22,6 +22,32 @@
 - If paths conflict between planning docs and contract, contract wins.
 - Cross-cutting tasks that span multiple roles: split into separate work items or mark sequential.
 
+## Hub-and-Spoke Auto-Sync
+
+Feature branches sync through the hub (working_parent), never directly between siblings:
+
+```
+feature-A ──push──→ hub (working_parent) ──cascade──→ feature-B
+feature-B ──push──→ hub (working_parent) ──cascade──→ feature-A
+```
+
+### Auto-Sync (GitHub Actions)
+
+- Workflow: `.github/workflows/branch-auto-sync.yml`
+- Reads `.claude/branch-map.yaml` to determine hub and children
+- Phase 1 (UP): merges trigger branch into `merge_target` (or `working_parent` fallback)
+- Phase 2 (DOWN): cascades hub changes to all children
+  - Explicit children from `branches:` section
+  - Auto-detected feature branches from remote (`feature-*`, `feat/*`)
+- Conflicts are skipped with a warning (manual resolution required)
+
+### Auto-Pull (Claude Code Hook)
+
+- Hook: `hooks/git-auto-pull/auto_pull.py`
+- PreToolUse hook on `Edit|Write|NotebookEdit`
+- Runs `git pull --ff-only` once per session before first file-modifying tool
+- Skips if no remote tracking or not a git repo
+
 ## CI Auto-Sync
 
 When `.claude/branch-map.yaml` is modified (trunk_chain, working_parent, or merge_policy changes):
