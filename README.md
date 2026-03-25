@@ -64,6 +64,49 @@ cui-install --collab /path/to/my-project
 > **Global** (`~/.claude/`): language-agnostic tools usable everywhere.
 > **Per-project** (`project/.claude/`): CLAUDE.md, AGENTS.md, work items, MCP are project-specific.
 
+### Slack Setup
+
+The `slack` bundle requires a Bot Token and Channel ID.
+
+**1. Create a Slack App**
+
+1. Go to [api.slack.com/apps](https://api.slack.com/apps) → **Create New App** → **From scratch**
+2. Name it (e.g., `Claude Code Notifier`), select your workspace
+
+**2. Configure Bot Permissions**
+
+1. **OAuth & Permissions** → **Bot Token Scopes** → Add:
+   - `chat:write` — send messages
+   - `chat:write.public` — post to channels without joining
+2. **Install to Workspace** → Authorize
+
+**3. Copy the Bot Token**
+
+After install, copy the **Bot User OAuth Token** (`xoxb-...`) from **OAuth & Permissions**.
+
+**4. Get the Channel ID**
+
+1. Open Slack → right-click the target channel → **View channel details**
+2. Scroll to the bottom — copy the **Channel ID** (`C...`)
+
+**5. Configure**
+
+```bash
+# Option A: Interactive install (prompts for token & channel)
+./install.sh --interactive --slack
+
+# Option B: Manual — edit the config file after install
+./install.sh --slack
+vim ~/.claude/hooks/slack_config.json
+```
+
+```json
+{
+  "bot_token": "xoxb-your-token-here",
+  "channel_id": "C0123456789"
+}
+```
+
 ### Install Options
 
 ```bash
