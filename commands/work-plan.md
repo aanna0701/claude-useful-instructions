@@ -63,14 +63,6 @@ Decomposition strategy:
 
 Each sub-task becomes its own FEAT with its own contract boundaries.
 
-**Running example** — "DuckDB schema cleanup" (removes dead columns from 3 tables + ENUMs):
-```
-FEAT-001  frames-column-cleanup   → src/models/frames.py      (independent)
-FEAT-002  windows-column-cleanup  → src/models/windows.py     (independent)
-FEAT-003  enum-removal            → src/schema/enums.py       (independent)
-FEAT-004  schema-migration        → migrations/               (depends_on: 001-003)
-```
-
 **When NOT to split:**
 - The scope is small enough that splitting adds overhead (< 3 files total)
 - All changes are tightly coupled (same function, same class)
@@ -90,11 +82,7 @@ Create slug from sub-task: lowercase, kebab-case, max 30 chars. Use consistent p
 
 ### Step 4: Generate Work Items (parallel)
 
-Spawn **parallel agents** (one per FEAT). Each agent:
-1. **Generate Brief** — Spawn `doc-writer-task` agent with `bundle: true`, or fill from `.claude/templates/work-item/brief.md`
-2. **Generate Contract** — Spawn `doc-writer-contract`, or fill from `.claude/templates/work-item/contract.md`. **Ensure Allowed Modifications are disjoint** from sibling FEATs. Fill the "## Branch Map" section with values from Step 1.5 (role, parent_branch, merge_target, target_worktree).
-3. **Generate Checklist** — Spawn `doc-writer-checklist` agent, or fill from template
-4. **Initialize Status** — From `.claude/templates/work-item/status.md`, set status=open, agent=TBD
+Spawn parallel agents (one per FEAT). Each generates `brief.md`, `contract.md`, `checklist.md`, `status.md` from `.claude/templates/work-item/`. Ensure Allowed Modifications are **disjoint** across sibling FEATs. Fill the contract's "## Branch Map" section with values from Step 1.5.
 
 Write all files to `work/items/FEAT-NNN-slug/`.
 
@@ -119,14 +107,49 @@ Print a **boundary matrix** (✓ = independent, ⚠ = overlap, dep = dependency)
 2. Suggest: narrow one contract's boundaries, or merge the overlapping FEATs back into one
 3. Ask user to confirm or adjust
 
-### Step 6: Generate Dispatch Manifest
+### Step 6: Create Worktrees & Branches
 
-Create or update `work/dispatch.json` with fields: `batch_id`, `created`, `parent_topic`, `items` (array of `{feat_id, slug, status, depends_on, conflicts_with}`), and `parallel_groups` (array of arrays — same group = concurrent, different groups = sequential, topology-ordered).
+For each FEAT, create an isolated worktree from `working_parent`:
 
-### Step 7: Summary & Single Dispatch Command
+```bash
+# Derive project name from repo root directory
+PROJECT=$(basename "$(git rev-parse --show-toplevel)")
+PARENT=$(working_parent from branch-map)
+SLUG="FEAT-NNN-slug"
+BRANCH="feat/$SLUG"
+WT_PATH="../${PROJECT}-${SLUG}"
 
-Print summary table (FEAT IDs, slugs, statuses, boundary result, parallel groups) and a single copy-paste command:
+git branch "$BRANCH" "$PARENT"
+git worktree add "$WT_PATH" "$BRANCH"
+```
+
+Update `status.md` for each FEAT: Branch, Worktree, Worktree Path (absolute).
+Naming: `../${PROJECT}-${SLUG}` (e.g., `../VasIntelli-research-FEAT-001-schema-cleanup`).
+
+### Step 7: Create GitHub Issues
+
+Spawn `issue-creator` agent for each FEAT (parallel). Each agent:
+1. Creates a GitHub Issue from brief + contract + checklist
+2. Records issue number in `status.md` → `Issue` field
+3. Adds worktree path to issue body for Codex reference
+
+If `gh` is not available or remote is not GitHub, agents skip silently.
+
+### Step 8: Generate Dispatch Manifest
+
+Create or update `work/dispatch.json` with fields: `batch_id`, `created`, `parent_topic`, `items` (array of `{feat_id, slug, status, issue, worktree_path, depends_on, conflicts_with}`), and `parallel_groups` (array of arrays — same group = concurrent, different groups = sequential, topology-ordered).
+
+### Step 9: Summary
+
+Print summary table and dispatch commands:
 
 ```
-bash codex-run.sh FEAT-001 FEAT-002 FEAT-003 FEAT-004
+Work Plan Ready
+──────────────────────────────────────────────
+  FEAT-001  schema-cleanup   #42  ../VasIntelli-research-FEAT-001-schema-cleanup
+  FEAT-002  enum-removal     #43  ../VasIntelli-research-FEAT-002-enum-removal
+──────────────────────────────────────────────
+Dispatch (pick one):
+  Codex:  /work-impl #42        (from any terminal in this repo)
+  Batch:  bash codex-run.sh FEAT-001 FEAT-002
 ```

@@ -85,19 +85,24 @@ Update `status.md`:
    ```bash
    git checkout <merge_target>
    git merge feat/FEAT-NNN-slug
+   ```
+5. Remove worktree: read `Worktree Path` from `status.md`:
+   ```bash
+   git worktree remove <worktree_path>
    git branch -d feat/FEAT-NNN-slug
    ```
-3. Handle doc changes from `status.md` "Doc Changes Needed" section
-4. Remove work item directory: `rm -r work/items/FEAT-NNN-slug/`
-5. Update `work/dispatch.json`: remove the merged FEAT entry
+6. Close GitHub Issue: read `Issue` field from `status.md`. If it contains an issue reference (e.g., `#42`):
+   ```bash
+   gh issue close <number> --reason completed --comment "Merged via /work-review. Review: MERGE ✓"
+   ```
+   If `gh` is not available or Issue is `—`, skip silently.
+7. Handle doc changes from `status.md` "Doc Changes Needed" section
+8. Remove work item directory: `rm -r work/items/FEAT-NNN-slug/`
+9. Update `work/dispatch.json`: remove the merged FEAT entry
 
-**REVISE**: List specific items Codex must fix. Output re-dispatch command:
-```
-bash codex-run.sh FEAT-NNN
-```
-When writing `review.md`, include an explicit `MUST-fix` section with concrete file-level actions. On re-dispatch, `codex-run.sh` must inject `review.md` into the Codex prompt and Codex must treat every `MUST-fix` item as required before any optional cleanup.
+**REVISE**: Write `review.md` with an explicit `MUST-fix` section (concrete file-level actions). Then spawn `work-reviser` agent for the FEAT — it extracts MUST-fix items, updates status to `revision`, and re-dispatches to the appropriate target (Codex or agent).
 
-**REJECT**: State reason. Remove work item directory: `rm -r work/items/FEAT-NNN-slug/`.
+**REJECT**: State reason. Close GitHub Issue if exists (`gh issue close <number> --reason "not planned" --comment "Rejected: <reason>"`). Remove work item directory: `rm -r work/items/FEAT-NNN-slug/`.
 
 ### Step 9: Batch Summary (when reviewing multiple items)
 
@@ -106,9 +111,9 @@ When reviewing multiple items, also check for "Doc Changes Needed" in each `stat
 ```
 Review Complete
 ──────────────────────────────────────────────
-  FEAT-001  duckdb-schema-cleanup      MERGED ✓ (cleaned up)
-  FEAT-002  jwt-auth-middleware        MERGED ✓ (cleaned up)
-  FEAT-003  refactor-logging           REVISE
+  FEAT-001  duckdb-schema-cleanup      MERGED ✓  #42 closed
+  FEAT-002  jwt-auth-middleware        MERGED ✓  #43 closed
+  FEAT-003  refactor-logging           REVISE    #44 open
 
 Doc changes applied:
   FEAT-001: Updated docs/schema.md with new column list

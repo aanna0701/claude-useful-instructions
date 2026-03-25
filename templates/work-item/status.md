@@ -9,6 +9,7 @@ updated: YYYY-MM-DD HH:MM
 | Field | Value |
 |-------|-------|
 | Status | open |
+| Issue | — |
 | Agent | TBD |
 | Branch | — |
 | Worktree | — |

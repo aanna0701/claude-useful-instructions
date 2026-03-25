@@ -1,21 +1,6 @@
 #!/usr/bin/env bash
-# codex-run.sh — Boundary check + parallel Codex execution + completion monitoring
-#
-# Usage:
-#   bash codex-run.sh FEAT-001 FEAT-002 FEAT-003   # Run all in parallel
-#   bash codex-run.sh --check FEAT-001 FEAT-002     # Boundary check only (dry run)
-#   bash codex-run.sh --status                      # Show all work item statuses
-#
-# What it does:
-#   1. Validates boundary overlaps between contracts
-#   2. Auto-links work/ across worktrees (if applicable)
-#   3. Spawns parallel `codex exec` processes for each FEAT
-#   4. Monitors status.md until all items are done
-#   5. Prints the /work-review command for Claude
-#
-# Human touches the workflow exactly twice:
-#   After /work-plan:  bash codex-run.sh FEAT-001 FEAT-002
-#   After completion:  /work-review FEAT-001 FEAT-002
+# codex-run.sh — Boundary check + parallel Codex dispatch + monitoring
+# Run with --help for usage.
 
 set -euo pipefail
 
@@ -380,13 +365,18 @@ dispatch_group() {
     sed -i 's/^## Agent: .*/## Agent: Codex/' "$wdir/status.md"
     sed -i "s/^updated: .*/updated: $(date '+%Y-%m-%d %H:%M')/" "$wdir/status.md"
 
-    # Resolve target worktree from contract or dispatch manifest
+    # Resolve target worktree: status.md → dispatch.json → contract.md
     local target_dir=""
-    if [ -f "$wdir/contract.md" ]; then
-      target_dir=$(grep -oP '^\- \*\*Path\*\*: `\K[^`]+' "$wdir/contract.md" || true)
+    if [ -f "$wdir/status.md" ]; then
+      target_dir=$(grep -oP '^\| Worktree Path \| \K[^\s|]+' "$wdir/status.md" || true)
+      # Ignore placeholder
+      [ "$target_dir" = "—" ] && target_dir=""
     fi
     if [ -z "$target_dir" ] && [ -f "work/dispatch.json" ] && command -v jq &>/dev/null; then
       target_dir=$(jq -r --arg fid "$fid" '.items[] | select(.feat_id == $fid) | .worktree_path // empty' work/dispatch.json 2>/dev/null || true)
+    fi
+    if [ -z "$target_dir" ] && [ -f "$wdir/contract.md" ]; then
+      target_dir=$(grep -oP '^\- \*\*Path\*\*: `\K[^`]+' "$wdir/contract.md" || true)
     fi
 
     if command -v codex &>/dev/null; then
