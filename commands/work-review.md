@@ -102,6 +102,18 @@ Update `status.md`:
 
 **REVISE**: Write `review.md` with an explicit `MUST-fix` section (concrete file-level actions). Then spawn `work-reviser` agent for the FEAT — it extracts MUST-fix items, updates status to `revision`, and re-dispatches to the appropriate target (Codex or agent).
 
+After writing `review.md`, **always print the re-dispatch commands**:
+```
+REVISE: FEAT-NNN (N MUST-fix items)
+──────────────────────────────────────────────
+# Re-dispatch (pick one):
+  /work-revise FEAT-NNN
+  bash codex-run.sh FEAT-NNN
+  codex exec --full-auto --cd <worktree_path> \
+    "Revise FEAT-NNN. Read work/items/FEAT-NNN-slug/review.md for MUST-fix items, then contract.md. Follow AGENTS.md."
+──────────────────────────────────────────────
+```
+
 **REJECT**: State reason. Close GitHub Issue if exists (`gh issue close <number> --reason "not planned" --comment "Rejected: <reason>"`). Remove work item directory: `rm -r work/items/FEAT-NNN-slug/`.
 
 ### Step 9: Batch Summary (when reviewing multiple items)

@@ -34,11 +34,29 @@ The agent:
 
 ### Step 3: Summary
 
-Print consolidated table:
+Print consolidated table with copy-pasteable commands:
+
 ```
 Revision Dispatched
 ──────────────────────────────────────────────
   FEAT-003  refactor-logging    3 MUST-fix  → codex     #44 open
   FEAT-005  cache-invalidation  1 MUST-fix  → agent     #46 open
 ──────────────────────────────────────────────
+
+Codex Commands (copy-paste to run):
+──────────────────────────────────────────────
+# Batch:
+  bash codex-run.sh FEAT-003 FEAT-005
+
+# Or per item:
+  codex exec --full-auto --cd <FEAT-003-worktree> \
+    "Revise FEAT-003. Read work/items/FEAT-003-refactor-logging/review.md for MUST-fix items, then contract.md. Follow AGENTS.md."
+
+  codex exec --full-auto --cd <FEAT-005-worktree> \
+    "Revise FEAT-005. Read work/items/FEAT-005-cache-invalidation/review.md for MUST-fix items, then contract.md. Follow AGENTS.md."
+──────────────────────────────────────────────
+After completion:
+  /work-review FEAT-003 FEAT-005
 ```
+
+Replace `<FEAT-NNN-worktree>` with the actual `Worktree Path` from each item's `status.md`.

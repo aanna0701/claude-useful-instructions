@@ -141,15 +141,34 @@ Create or update `work/dispatch.json` with fields: `batch_id`, `created`, `paren
 
 ### Step 9: Summary
 
-Print summary table and dispatch commands:
+Print summary table, then **always print all dispatch options** so the user can copy-paste:
 
 ```
 Work Plan Ready
 ──────────────────────────────────────────────
-  FEAT-001  schema-cleanup   #42  ../VasIntelli-research-FEAT-001-schema-cleanup
-  FEAT-002  enum-removal     #43  ../VasIntelli-research-FEAT-002-enum-removal
+  FEAT-001  schema-cleanup   #42  ../project-FEAT-001-schema-cleanup
+  FEAT-002  enum-removal     #43  ../project-FEAT-002-enum-removal
 ──────────────────────────────────────────────
-Dispatch (pick one):
-  Codex:  /work-impl #42        (from any terminal in this repo)
-  Batch:  bash codex-run.sh FEAT-001 FEAT-002
+
+Next Steps — pick one:
+──────────────────────────────────────────────
+# Option A: Batch dispatch (recommended for 2+ items)
+bash codex-run.sh FEAT-001 FEAT-002
+
+# Option B: Single item via Claude
+/work-impl FEAT-001
+/work-impl FEAT-002
+
+# Option C: Direct codex exec (per item, run in separate terminals)
+codex exec --full-auto --cd ../project-FEAT-001-schema-cleanup \
+  "Implement FEAT-001. Read work/items/FEAT-001-schema-cleanup/contract.md and follow AGENTS.md."
+
+codex exec --full-auto --cd ../project-FEAT-002-enum-removal \
+  "Implement FEAT-002. Read work/items/FEAT-002-enum-removal/contract.md and follow AGENTS.md."
+──────────────────────────────────────────────
 ```
+
+The `codex exec` commands MUST include:
+- `--full-auto` flag
+- `--cd <worktree_path>` pointing to the FEAT's worktree
+- A prompt referencing the contract path and AGENTS.md

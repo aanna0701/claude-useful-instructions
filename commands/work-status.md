@@ -59,3 +59,30 @@ If `review.md` exists, append:
 ```
 Review:     REVISE (2 items remaining)
 ```
+
+### Always: Print Next Actions
+
+After the table (Mode A) or detail view (Mode B), print actionable commands based on each item's status:
+
+```
+Next Actions
+──────────────────────────────────────────────
+# open → dispatch to Codex
+  bash codex-run.sh FEAT-001 FEAT-002
+  # or per item:
+  codex exec --full-auto --cd <worktree_path> "Implement FEAT-001. Read work/items/FEAT-001-slug/contract.md and follow AGENTS.md."
+
+# done → review
+  /work-review FEAT-003
+
+# revision → re-dispatch
+  /work-revise FEAT-004
+  # or direct:
+  codex exec --full-auto --cd <worktree_path> "Revise FEAT-004. Read work/items/FEAT-004-slug/review.md for MUST-fix items, then contract.md. Follow AGENTS.md."
+
+# in-progress → check logs
+  tail -f work/.dispatch-logs/FEAT-005-slug.log
+──────────────────────────────────────────────
+```
+
+Only print sections that have matching items. Always include the actual `codex exec` command with `--cd <worktree_path>` resolved from each item's `status.md`.
