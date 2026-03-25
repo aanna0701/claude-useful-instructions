@@ -115,6 +115,10 @@ Update `status.md`:
 6. Update `status.md`: set Status to `merged`, add `PR` field with the PR URL.
 7. Print: "PR created and merged: <pr_url>."
 8. **Post-merge cleanup** (run after PR is merged on GitHub, or via `/work-status` detecting merged PRs):
+   - Close linked GitHub Issue (explicit, in case `Closes #N` in PR body didn't trigger):
+     ```bash
+     gh issue close <issue_number> --comment "Merged via PR <pr_url>"
+     ```
    - Remove worktree:
      ```bash
      git worktree remove <worktree_path>

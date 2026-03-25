@@ -99,7 +99,14 @@ You review a single GitHub Pull Request by comparing the diff against the work i
    ```
    If merge fails (e.g., branch protection, merge conflicts), print warning and continue — the user can merge manually.
 
-9. **Print summary**:
+9. **Close linked Issue**:
+   After successful merge, close the linked GitHub Issue explicitly (as a safety net — `Closes #N` in the PR body may not always trigger):
+   ```bash
+   gh issue close <issue_number> --comment "Merged via PR #<pr_number>"
+   ```
+   Get the issue number from the PR body (`Closes #N` line) or from the work item brief. If no linked issue exists, skip.
+
+10. **Print summary**:
    ```
    PR #<number> reviewed: <APPROVE|REQUEST_CHANGES>
    Findings: N total, M blocking
