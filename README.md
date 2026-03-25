@@ -104,8 +104,9 @@ Subagents delegated by Claude for specific tasks.
 |-------|--------|-------|
 | Documentation | `doc-writer-tutorial`, `-howto`, `-explain`, `-reference` | 4 |
 | Delivery | `doc-writer-task`, `-contract`, `-checklist`, `-review` | 4 |
-| Doc Quality | `doc-polisher`, `doc-reviewer` | 2 |
+| Doc Quality | `doc-polisher`, `doc-reviewer`, `doc-reviewer-execution` | 3 |
 | Diagram | `diagram-writer` | 1 |
+| Token Analysis | `token-duplication-detector`, `-load-measurer`, `-mcp-analyzer`, `-split-detector` | 4 |
 | Career Docs | `career-docs-writer`, `-reviewer`, `-reviser` | 3 |
 | VLA Project | `vla-capture`, `-data`, `-model`, `-train`, `-eval`, `-infra` | 6 |
 
@@ -161,9 +162,11 @@ claude-useful-instructions/
 ├── agents/                          # Subagents delegated by Claude
 │   ├── doc-writer-*.md              # Diataxis doc writers (4 types + delivery agents)
 │   ├── diagram-writer.md            # Mermaid diagram generation
-│   ├── doc-polisher.md               # Doc writing-style polish
-│   ├── doc-reviewer.md               # Doc quality review
-│   ├── career-docs-*.md              # Career document writer & reviewer
+│   ├── doc-polisher.md              # Doc writing-style polish
+│   ├── doc-reviewer.md              # Diataxis doc quality review
+│   ├── doc-reviewer-execution.md    # Execution artifact review
+│   ├── token-*.md                   # Token optimization analysis (4 agents)
+│   ├── career-docs-*.md             # Career document writer & reviewer
 │   └── vla-*.md                     # VLA robotics project (6 domains)
 ├── commands/                        # User-invocable slash commands
 ├── rules/                           # Shared code standards

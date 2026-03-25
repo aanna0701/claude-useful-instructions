@@ -6,20 +6,20 @@ Skills are auto-triggered by Claude Code based on conversation context. Each ski
 
 ## diataxis-doc-system
 
-Diátaxis Framework-based technical documentation system. Classifies documents into 4 types and delegates to specialized writer agents.
+Dual-axis documentation system. Classifies documents into **Diataxis** (reader-oriented) or **Delivery** (execution-oriented) axis, then delegates to specialized agents.
 
-**Triggers**: "Write docs", "Design doc", "API docs", "ADR", "README", "documentation", "technical writing"
+**Triggers**: "Write docs", "Design doc", "API docs", "ADR", "work item", "task", "contract", "checklist", "review", "documentation"
 
 ### Workflow
 
 ```
-[Request] → Phase 0: Gather input
-          → Phase 1: Classify type (Router)
+[Request] → Phase 0.5: Axis (Diataxis or Delivery?)
+          → Phase 1/1-D: Classify type
           → Phase 2: Delegate to agent
           → Phase 3: Quality review
 ```
 
-### Document Types
+### Diataxis Axis (reader-oriented)
 
 | Type | Purpose | Reader State | Agent |
 |------|---------|-------------|-------|
@@ -28,20 +28,30 @@ Diátaxis Framework-based technical documentation system. Classifies documents i
 | Explanation | Understanding | Wants to know "why" | `doc-writer-explain` |
 | Reference | Information lookup | Needs exact specs | `doc-writer-reference` |
 
-### Explanation Subtypes
+### Delivery Axis (execution-oriented)
 
-| Subtype | Use Case | Scale |
-|---------|----------|-------|
-| Design Doc (RFC) | Full design proposal for new system/feature | Large changes, needs review |
-| ADR | Record of individual architecture decision | Small decisions, history preservation |
+| Type | Purpose | Agent |
+|------|---------|-------|
+| Work Item | Multi-agent coordination (bundle) | `doc-writer-task` → `-contract` → `-checklist` |
+| Task | Standalone work assignment | `doc-writer-task` |
+| Contract | Interface agreement | `doc-writer-contract` |
+| Checklist | Completion verification | `doc-writer-checklist` |
+| Review | Result assessment | `doc-writer-review` |
+
+### Quality Review Routing
+
+| File Location | Reviewer |
+|---------------|----------|
+| `docs/` | `doc-reviewer` (readability, type purity, style) |
+| `work/` | `doc-reviewer-execution` (structural integrity, contract compliance) |
 
 ### Partial Execution
 
 | Request | Scope |
 |---------|-------|
 | "Write a document" | Full pipeline (Phase 0-3) |
-| "Classify this document" | Phase 1 only |
-| "Review this document" | Phase 3 only (quality check on existing doc) |
+| "Create work item" | Phase 2 direct (Delivery, Work Item bundle) |
+| "Review this document" | Phase 3 only (routed by location) |
 | "Add Reference only" | Jump to Phase 2 (type already known) |
 | "Set up docs structure" | Redirect to `/init-docs` command |
 

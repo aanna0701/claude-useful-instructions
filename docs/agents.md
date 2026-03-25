@@ -8,21 +8,41 @@ Agents are subagent definitions (`.md` files) under `.claude/agents/`. Claude Co
 
 Used by the `diataxis-doc-system` skill and `/write-doc` command.
 
+### Diataxis Writers
+
 | Agent | Type | Description |
 |-------|------|-------------|
 | `doc-writer-tutorial` | Tutorial | Step-by-step learning guides. Checkpoint pattern, golden path principle. |
 | `doc-writer-howto` | How-to Guide | Problem-solving recipes. Flexible steps, prerequisite gates. |
 | `doc-writer-explain` | Explanation | Design Docs (RFC) and ADRs. 4+1 View Model, alternatives comparison required. |
 | `doc-writer-reference` | Reference | API/Config/CLI specs. Tables first, consistent structure, code-synced. |
-| `doc-reviewer` | Reviewer | Reviews docs for readability, type purity, writing style, and governance. Scores A-D. |
+
+### Delivery Writers
+
+| Agent | Type | Description |
+|-------|------|-------------|
+| `doc-writer-task` | Task/Brief | Work orders (standalone) or work item briefs (bundle). Objective, source, scope. |
+| `doc-writer-contract` | Contract | Implementation boundaries, interfaces, invariants. Allowed/forbidden zones. |
+| `doc-writer-checklist` | Checklist | Verification checklists. All items Yes/No verifiable. Links to parent. |
+| `doc-writer-review` | Review | Post-completion assessment. Contract compliance, lessons, merge decision. |
+
+### Reviewers
+
+| Agent | Scope | Description |
+|-------|-------|-------------|
+| `doc-reviewer` | `docs/` | Reviews Diataxis docs for readability, type purity, writing style, and governance. Scores A-D. |
+| `doc-reviewer-execution` | `work/` | Reviews execution artifacts for structural integrity, contract compliance, and completeness. Scores A-D. |
 
 ### How They're Invoked
 
 ```
 /write-doc or diataxis-doc-system skill
-  → Phase 1: Classify document type
+  → Phase 0.5: Axis determination (Diataxis or Delivery?)
+  → Phase 1/1-D: Classify type/subtype
   → Phase 2: Delegate to matching doc-writer-* agent
-  → Phase 3: Quality review (or delegate to doc-reviewer for existing docs)
+  → Phase 3: Quality review
+      docs/ → doc-reviewer
+      work/ → doc-reviewer-execution
 ```
 
 ---
@@ -35,19 +55,32 @@ Used by the `diataxis-doc-system` skill and `/write-doc` command.
 
 ---
 
-## Cover Letter Agents
+## Career Docs Agents
 
-Used by the `/cover-letter` command. Korean cover letter writing system optimized for experienced hires.
+Used by the `career-docs` skill. Korean career document generation & refinement through a 3-stage pipeline.
 
 | Agent | Role |
 |-------|------|
-| `cover-letter-writer` | Generates cover letter drafts using NotebookLM context |
-| `cover-letter-reviewer` | Reviews drafts on 7 criteria (0-100 scale), provides improvement feedback |
+| `career-docs-writer` | 6-step checklist refinement of NLM draft |
+| `career-docs-reviewer` | 6-dimension scoring (0-100) + specific fix instructions |
+| `career-docs-reviser` | Apply Reviewer fixes in single pass (score <90 only) |
 
-### Writer-Reviewer Loop
+### 3-Stage Pipeline
 
-- Minimum 3 iterations
-- Exit: all criteria >= 90 points, OR 3 consecutive iterations with no improvement (use best score draft)
+Writer → Reviewer → Reviser (if any dimension < 90)
+
+---
+
+## Token Analysis Agents
+
+Used by the `/optimize-tokens` command. Parallel analysis agents for instruction token optimization.
+
+| Agent | Role |
+|-------|------|
+| `token-duplication-detector` | Cross-file duplication analysis (command↔agent, reference↔agent, intra-file) |
+| `token-mcp-analyzer` | MCP call efficiency mapping and redundancy detection |
+| `token-load-measurer` | Per-session token load tracing and bloat detection |
+| `token-split-detector` | Identifies files that should be split into focused units |
 
 ---
 
