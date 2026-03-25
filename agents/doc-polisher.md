@@ -31,8 +31,7 @@ Before polishing any document, Read:
 
 ### Pass 1: Metadata (full depth only)
 
-- Add or fix YAML frontmatter (title, type, status, author, owner, created, updated, tags)
-- Set `updated` to today's date
+Add or fix YAML frontmatter per `common-rules.md` §4. Set `updated` to today's date.
 
 ### Pass 2: Structure
 
@@ -63,20 +62,7 @@ Before polishing any document, Read:
 
 ### Pass 5: Type Purity (full depth only)
 
-Check against the type-specific constraint table:
-
-| Type | Remove if found |
-|------|----------------|
-| Tutorial | Reference tables, design rationale |
-| How-to | Introductory explanations > 3 sentences |
-| Explanation | Step-by-step procedures, parameter tables |
-| Reference | Opinions, recommendations, narrative |
-| Task | Implementation details, design rationale |
-| Contract | Procedures, opinions |
-| Checklist | Background explanation, design alternatives |
-| Review | New requirements, scope changes |
-
-Move removed content to a separate file (e.g., `{original}-extracted.md`) with a note suggesting the correct document type.
+Check against the type constraint table in `doc-reviewer.md` §1 (Type Purity). Remove violating content and move to `{original}-extracted.md` with a note suggesting the correct document type.
 
 ## Output
 

@@ -42,17 +42,13 @@ If mixed content found, recommend splitting into separate documents.
 
 ### 2. Readability and Style
 
-Based on Google Developer Documentation and Microsoft Writing Style guides:
-
-- **Voice:** Second person ("you"), active voice, present tense
-- **Scanning:** Headings and bold text convey the full story
-- **Structure:** Lists max 9 items, nesting max 3 levels, parallel grammar
-- **Sentences:** Active voice, one idea per sentence, max 30 words
-- **Emphasis:** Bold for key terms, code font for commands/variables
-- **Tables:** For comparisons, not single-dimension lists
-- **Code blocks:** Language specified, copy-pasteable, obvious placeholders
-- **Language:** Bias-free, global-ready (no idioms/slang)
-- **Heading emoji:** H1 = doc-type icon (🎓/🔧/💡/📖/📋), H2 = section-role icon (no numbers), H3 = always 🔹
+Verify against `writing-style.md` rules. Key checks:
+- Scanning test: headings convey full structure
+- Chunking test: paragraphs ≤4 sentences, lists ≤9 items
+- Objectivity test: no vague qualifiers
+- Simplicity test: sentences ≤30 words, active voice
+- Emphasis test: bold budget, code font usage
+- Heading emoji: per `writing-style.md` §1.2
 
 ### 3. Terminology
 
@@ -74,18 +70,7 @@ Based on Google Developer Documentation and Microsoft Writing Style guides:
 
 ### 6. Execution Artifact Integrity (work/ docs only)
 
-Skip for Diataxis docs (`docs/`). Apply only to `work/`:
-
-- **Source link**: Brief/Task links to valid RFC/ADR or Contract?
-- **ID format**: `FEAT-NNN` (bundle) or `T-NNN` (standalone)?
-- **Acceptance criteria**: Verifiable (Yes/No)?
-- **Contract invariants**: At least 1 present?
-- **Contract boundaries**: Allowed/forbidden zones specified? (bundle)
-- **Checklist items**: All Yes/No verifiable?
-- **Parent links**: Valid references to existing Brief/Task?
-- **Review substance**: Contract compliance, lessons learned, merge decision?
-- **Status currency**: status.md reflects actual state? (bundle)
-- **Bundle completeness**: All 5 files present? (bundle)
+Skip for Diataxis docs (`docs/`). Apply only to `work/`. Verify against `execution-rules.md` templates: Brief (§1), Contract (§2), Checklist (§3), Status (§4), Review (§5). Check source links, ID format, acceptance criteria, invariants, boundaries, checklist verifiability, parent links, review substance, status currency, bundle completeness.
 
 ## Output Format
 
