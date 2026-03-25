@@ -24,37 +24,16 @@ branch_rules:
   feature_prefix: feat    # feat/FEAT-001-slug
   default_merge_target: main  # must match working_parent
 
-# Feature/integration branches and their relationships (OPTIONAL)
-# Without this section, ALL remote feature branches auto-sync through working_parent.
-# Add entries only to override: custom parent, merge_target, worktree, or role.
+# Feature branches (OPTIONAL — without this, all remote feature branches
+# auto-sync through working_parent). Add entries to override defaults.
 # branches:
 #   feature-docs:
-#     parent: main
-#     merge_target: main
-#     worktree: /path/to/Project-Docs
-#     role: docs
-#     paths: [docs/**, mkdocs.yml, README.md]
-#
-#   feature-backend:
-#     parent: main
-#     merge_target: main
-#     worktree: /path/to/Project-Backend
-#     role: backend
-#     paths: [src/**, lib/**, tests/**]
-#
+#     parent: main            # cascade DOWN target
+#     merge_target: main      # merge UP target
+#     paths: [docs/**, README.md]
 #   feature-frontend:
-#     parent: feature-backend
+#     parent: feature-backend # child of another feature branch
 #     merge_target: feature-backend
-#     worktree: /path/to/Project-Frontend
-#     role: frontend
-#     paths: [web/**, ui/**]
-
-# Sync rules — defines cascade triggers (optional, for documentation)
-# The GHA workflow derives sync from branches[].parent automatically.
-# sync:
-#   - from: feature-docs
-#     to: [feature-backend, feature-frontend]
-#     trigger: docs/, mkdocs.yml
 
 # Merge policy
 merge_policy:

@@ -439,93 +439,8 @@ SLACKEOF
     fi
   fi
 
-  # Patch ~/.claude/settings.json with hook entries
-  local settings_file="$HOME/.claude/settings.json"
-  mkdir -p "$(dirname "$settings_file")"
-  [ -f "$settings_file" ] || echo "{}" > "$settings_file"
-
-  python3 - "$hook_name" <<'PYEOF'
-import json, os, sys
-
-hook_name = sys.argv[1]
-settings_path = os.path.expanduser("~/.claude/settings.json")
-hooks_dir = os.path.expanduser("~/.claude/hooks")
-
-with open(settings_path) as f:
-    settings = json.load(f)
-
-# Hook registry: each hook defines its events and managed scripts
-HOOK_REGISTRY = {
-    "slack": {
-        "managed_scripts": {"slack_buffer.py", "slack_notify.py", "slack_stop.py", "slack_common.py"},
-        "events": {
-            "PostToolUse": [
-                {
-                    "matcher": "Edit|Write|NotebookEdit|Bash",
-                    "hooks": [{"type": "command", "command": f"python3 {hooks_dir}/slack_buffer.py"}]
-                }
-            ],
-            "Notification": [
-                {
-                    "hooks": [{"type": "command", "command": f"python3 {hooks_dir}/slack_notify.py"}]
-                }
-            ],
-            "Stop": [
-                {
-                    "hooks": [{"type": "command", "command": f"python3 {hooks_dir}/slack_stop.py"}]
-                }
-            ],
-        },
-    },
-    "git-auto-pull": {
-        "managed_scripts": {"auto_pull.py"},
-        "events": {
-            "PreToolUse": [
-                {
-                    "matcher": "Edit|Write|NotebookEdit",
-                    "hooks": [{"type": "command", "command": f"python3 {hooks_dir}/auto_pull.py"}]
-                }
-            ],
-        },
-    },
-}
-
-hook_config = HOOK_REGISTRY.get(hook_name)
-if not hook_config:
-    print(f"  WARNING: unknown hook '{hook_name}', skipping settings.json patch")
-    sys.exit(0)
-
-managed_scripts = hook_config["managed_scripts"]
-new_hooks = hook_config["events"]
-
-existing_hooks = settings.get("hooks", {})
-
-def is_managed_command(cmd: str) -> bool:
-    return any(s in cmd for s in managed_scripts)
-
-def replace_hook_list(existing: list, new_entries: list) -> list:
-    filtered = [
-        entry for entry in existing
-        if not any(
-            is_managed_command(h.get("command", ""))
-            for h in entry.get("hooks", [])
-        )
-    ]
-    return filtered + new_entries
-
-for event, entries in new_hooks.items():
-    existing_hooks[event] = replace_hook_list(
-        existing_hooks.get(event, []), entries
-    )
-
-settings["hooks"] = existing_hooks
-
-with open(settings_path, "w") as f:
-    json.dump(settings, f, indent=2, ensure_ascii=False)
-    f.write("\n")
-
-print(f"  settings.json hooks registered for {hook_name}")
-PYEOF
+  # Patch ~/.claude/settings.json via external script
+  python3 "$REPO_DIR/scripts/patch-hook-settings.py" "$hook_name"
 }
 
 # ── Uninstall functions ────────────────────────────────────────────────────
@@ -782,13 +697,22 @@ for entry in "${INSTALL_LIST[@]}"; do
       install_hook "$path"
       ;;
     workflow)
-      local src="$REPO_DIR/templates/workflows/$path"
-      local dst="$PROJECT_ROOT/.github/workflows/$path"
-      if [ -f "$src" ]; then
-        mkdir -p "$(dirname "$dst")"
-        install_file "$src" "$dst"
+      local wf_src="$REPO_DIR/templates/workflows/$path"
+      local wf_dst="$PROJECT_ROOT/.github/workflows/$path"
+      if [ -f "$wf_src" ]; then
+        mkdir -p "$(dirname "$wf_dst")"
+        install_file "$wf_src" "$wf_dst"
+        # Copy companion scripts if they exist
+        local scripts_dir="$REPO_DIR/templates/workflows/scripts"
+        if [ -d "$scripts_dir" ]; then
+          mkdir -p "$PROJECT_ROOT/.github/workflows/scripts"
+          for s in "$scripts_dir"/*.py; do
+            [ -f "$s" ] || continue
+            install_file "$s" "$PROJECT_ROOT/.github/workflows/scripts/$(basename "$s")"
+          done
+        fi
       else
-        echo "WARNING: Workflow template not found: $src" >&2
+        echo "WARNING: Workflow template not found: $wf_src" >&2
       fi
       ;;
     claude-hook)
