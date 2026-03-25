@@ -21,7 +21,8 @@ description: >
 | Show branch state / freshness | `/branch-status` |
 | Audit / fix / generate CI workflows | `/gha-branch-sync` |
 | Boundary check / dispatch | `codex-run.sh` (suggest command) |
-| Link worktrees | `link-work.sh` (suggest command) |
+| Implement in worktree | `/work-impl #<issue>` or `/work-impl FEAT-NNN` |
+| Re-dispatch failed review | `/work-revise FEAT-NNN` |
 
 ## References
 
@@ -30,5 +31,5 @@ description: >
 - Rule: `.claude/rules/review-merge-policy.md`
 - Config: `.claude/branch-map.yaml` (project branch hierarchy)
 - Docs: `docs/collab-workflow.md` (full setup guide + walkthrough)
-- Scripts: `codex-run.sh`, `link-work.sh`
+- Scripts: `codex-run.sh`
 - Templates: `.claude/templates/work-item/`, `.claude/templates/branch-map/`

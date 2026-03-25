@@ -228,8 +228,7 @@ claude-useful-instructions/
 ├── hooks/                           # Claude Code hooks
 │   └── slack/                       # Slack notification hooks (buffer, stop, notify)
 ├── install.sh                       # Bundle-based installer (+ --uninstall)
-├── codex-run.sh                     # Codex runner (single + parallel + boundary check)
-└── link-work.sh                     # Worktree symlink manager
+└── codex-run.sh                     # Codex runner (single + parallel + boundary check)
 ```
 
 ---

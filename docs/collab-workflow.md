@@ -65,11 +65,7 @@ graph LR
 ./install.sh --collab /path/to/project
 ```
 
-This installs everything: `.claude/` artifacts, `AGENTS.md`, `CLAUDE.md`, scripts (`codex-run.sh`, `link-work.sh`). Creates `work/items/` directory.
-
-### Step 2: Set up worktree links (if using git worktrees)
-
-See [Worktree Support](#worktree-support) for `link-work.sh` commands.
+This installs everything: `.claude/` artifacts, `AGENTS.md`, `CLAUDE.md`, `codex-run.sh`. Creates `work/items/` directory.
 
 ### Installed Layout
 
@@ -78,12 +74,12 @@ project/
 ├── AGENTS.md                          # Codex reads this
 ├── CLAUDE.md                          # Claude reads this
 ├── codex-run.sh                       # Codex runner (single + parallel + boundary check)
-├── link-work.sh                       # Worktree symlink manager
-├── work/items/                        # Shared workspace (created by install.sh)
+├── work/items/                        # Work items (created by install.sh)
 ├── work/dispatch.json                 # Parallel dispatch manifest (created by /work-plan)
 └── .claude/
     ├── rules/collab-workflow.md       # Auto-loaded 2-agent rules
-    ├── commands/work-{plan,review,status}.md
+    ├── commands/work-{plan,review,impl,revise,status}.md
+    ├── agents/{issue-creator,work-reviser}.md
     ├── skills/collab-workflow/
     └── templates/work-item/*.md       # Brief, contract, checklist, status, review
 ```
@@ -94,49 +90,22 @@ The `post-checkout` hook is also installed to `.git/hooks/`, auto-linking `work/
 
 ## Worktree Support
 
-When a repo uses **git worktrees** for feature isolation, each worktree maps to a collaboration role:
+`/work-plan` auto-creates a **FEAT-based worktree** per work item:
 
 ```
 workspace/
-├── Project-Docs       (feature-docs)          ← Claude plans here
-│   └── work/items/FEAT-NNN-slug/              ← source of truth (real directory)
-├── Project-Training   (feature-training)       ← Codex implements here
-│   └── work/ → ../Project-Docs/work (symlink) ← reads plans via symlink
-├── Project-Inference  (feature-inference)
-└── Project-UI         (feature-ui)
+├── VasIntelli-research/                    ← main repo (working_parent)
+│   └── work/items/FEAT-001-slug/           ← work items live here
+├── VasIntelli-research-FEAT-001-slug/      ← auto-created worktree
+└── VasIntelli-research-FEAT-002-slug/      ← auto-created worktree
 ```
 
 ### How it works
 
-- The **docs worktree** owns `work/items/` as a real, git-tracked directory
-- All other worktrees get `work/` as a **symlink** pointing to the docs worktree
-- Symlinks are auto-added to `.gitignore` — never committed to feature branches
-- When Claude updates a plan in Docs, Codex sees the change immediately in Training
-- Codex commits directly on its worktree branch — no sub-branches needed
-
-### Worktree Resolution Rules
-
-When deciding where Codex should implement a FEAT, use this order:
-
-1. Read `contract.md` and extract the "Allowed Modifications" paths
-2. Identify which repo/worktree actually contains those paths
-3. Treat `work/` symlinks as the source of planning artifacts only
-4. If `review.md`, `status.md`, or other planning docs mention a conflicting worktree, ignore that claim and follow the contract paths instead
-
-This prevents a common failure mode: `work/` often points to the docs worktree even when the implementation must happen in a different code worktree such as Training or UI.
-
-### link-work.sh commands
-
-| Command | Description |
-|---------|-------------|
-| `link-work.sh` | Link `work/` to all worktrees |
-| `link-work.sh <filter>` | Link to matching worktree (partial match) |
-| `link-work.sh --status` | Show link status across all worktrees |
-| `link-work.sh --clean` | Remove all `work/` symlinks |
-| `link-work.sh --init <name> <branch>` | Create new worktree + link + gitignore |
-| `link-work.sh --self-install` | Install as `git work-link` alias |
-
-> The `post-checkout` hook auto-links on subsequent branch switches.
+- `/work-plan` creates branch + worktree per FEAT, records path in `status.md`
+- `codex-run.sh` and `/work-impl` resolve worktree from `status.md` Worktree Path
+- On MERGE, `/work-review` runs `git worktree remove` + `git branch -d`
+- Each worktree is temporary — exists only for the FEAT's lifetime
 
 ---
 
@@ -229,4 +198,4 @@ Decision flow:
 
 ---
 
-See `rules/collab-workflow.md` for the compact command table and `link-work.sh --help` for symlink commands.
+See `rules/collab-workflow.md` for the compact command table.

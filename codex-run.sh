@@ -251,20 +251,6 @@ cmd_status() {
   echo "──────────────────────────────────────────────"
 }
 
-# ─── Auto-link worktrees ─────────────────────────────────────────────────────
-
-auto_link_worktrees() {
-  if [ -x "$SCRIPT_DIR/link-work.sh" ]; then
-    # Only run if we're in a multi-worktree setup
-    local wt_count
-    wt_count=$(git worktree list 2>/dev/null | wc -l)
-    if [ "$wt_count" -gt 1 ]; then
-      echo "Linking worktrees..."
-      bash "$SCRIPT_DIR/link-work.sh" 2>/dev/null || true
-    fi
-  fi
-}
-
 # ─── Build Codex prompt ──────────────────────────────────────────────────────
 
 build_codex_prompt() {
@@ -441,19 +427,13 @@ cmd_dispatch() {
   local feat_ids=("$@")
 
   # Step 1: Boundary check
-  echo "Step 1/4: Boundary check"
+  echo "Step 1/3: Boundary check"
   if ! boundary_check "${feat_ids[@]}"; then
     echo ""
     echo "Resolve boundary conflicts before dispatching."
     echo "To run sequentially despite conflicts: dispatch each FEAT separately."
     exit 1
   fi
-
-  # Step 2: Auto-link worktrees
-  echo ""
-  echo "Step 2/4: Worktree links"
-  auto_link_worktrees
-  echo "Done."
 
   notify_slack "🚀 *Codex Run Start*
 • Items: ${feat_ids[*]}
@@ -462,7 +442,7 @@ cmd_dispatch() {
 
   # Step 3: Resolve groups and dispatch
   echo ""
-  echo "Step 3/4: Dispatching ${#feat_ids[@]} Codex instance(s)"
+  echo "Step 2/3: Dispatching ${#feat_ids[@]} Codex instance(s)"
   echo "──────────────────────────────────────────────"
 
   local groups=()
@@ -522,7 +502,7 @@ cmd_dispatch() {
 
   # Step 4: Collect results
   echo ""
-  echo "Step 4/4: Results"
+  echo "Step 3/3: Results"
   local success=0 failed=0
   local review_ids=()
   for fid in "${feat_ids[@]}"; do

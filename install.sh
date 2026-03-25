@@ -100,8 +100,6 @@ BUNDLE_COLLAB=(
   "root-file:AGENTS.md"
   "root-file:CLAUDE.md"
   "script:codex-run.sh"
-  "script:link-work.sh"
-  "hook:post-checkout-work-link"
 )
 
 BUNDLE_SLACK=(
