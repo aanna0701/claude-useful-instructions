@@ -19,7 +19,6 @@ Refines NotebookLM-generated (or user-provided) drafts into polished career docu
 1. Draft (from NotebookLM or user)
 2. Document type + type-specific structure rules
 3. JD + item/topic + emphasis points + character limit
-4. (Iteration 2+) Reviewer feedback + best draft so far
 
 ## Refinement Process
 
@@ -36,20 +35,13 @@ Apply the 6-step checklist **sequentially** — each step's output feeds the nex
 5. **톤 조정** — Readable professional tone, eliminate stiff/exaggerated/entry-level patterns
 6. **글자수 체크** — Count with spaces, target 95-100%, zero tolerance for exceeding
 
-## First Iteration
+## Before Applying Checklist
 
-On the very first iteration, before applying the checklist:
 - Read the NLM draft carefully
 - Identify the document type and load its structure rules from `doc-types.md`
 - Identify the draft's strengths (preserve these)
 - Identify structural issues that the 6 steps need to address
 - Then run the 6 steps
-
-## Iteration 2+ (Revision)
-
-Follow SKILL.md Step 4 iteration logic (restart from best version if score drops).
-- Incorporate all Reviewer feedback; preserve praised sections
-- Re-run all 6 steps on the revised version
 
 ## User Draft Mode
 

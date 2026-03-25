@@ -25,10 +25,7 @@ Read `~/.claude/skills/career-docs/references/doc-types.md` to load type-specifi
 ## 6 Evaluation Dimensions
 
 ### 1. Sentence Grammar (비문/맞춤법)
-- Subject-predicate agreement, particle correctness, modifier placement
-- Incomplete sentences, spelling, spacing (띄어쓰기)
-- Honorific consistency (합니다체 throughout for Korean)
-- English docs: grammar, punctuation, tense consistency, articles
+Per `refinement-checklist.md` Step 1. Korean: 주어-서술어 호응, 조사, 띄어쓰기, 합니다체. English: grammar, punctuation, tense, articles.
 
 ### 2. Flow & Naturalness (흐름 & 자연스러움)
 - Sentence-to-sentence logical continuity
@@ -75,7 +72,7 @@ If no character limit (e.g., portfolio): score based on conciseness vs. complete
 - 95+ only when submittable without hesitation. If in doubt, score ~80 or below.
 - Score each dimension independently. First drafts rarely average above 50.
 - Apply type-specific weight adjustments from `doc-types.md` when calculating emphasis.
-- **Exit condition: all dimensions >= 90 (after 3 iterations)**
+- Reviser agent uses these scores to prioritize fixes
 
 ## Output Format
 ```

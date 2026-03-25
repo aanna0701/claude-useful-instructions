@@ -4,7 +4,7 @@ description: >
   Korean career document generation & refinement skill.
   Supports cover letters (자소서), career descriptions (경력기술서),
   portfolios (포트폴리오), cover letters (커버레터), and HR essays (인사관점 에세이).
-  NotebookLM drafts; AI refines through a 6-step checklist and iterative review loop (Writer + Reviewer agents).
+  NotebookLM drafts; AI refines via 3-stage pipeline (Writer → Reviewer → Reviser).
   Triggers: "자소서 써줘", "경력기술서 작성", "포트폴리오 정리", "커버레터 작성",
   "cover letter", "career description", "portfolio", "자소서 다듬어줘",
   "자소서 검토", "자기소개서", "이력서 정리"
@@ -12,16 +12,16 @@ description: >
 
 # Career Document Pipeline
 
-NotebookLM writes the initial draft; AI agents refine and evaluate it.
+NotebookLM writes the initial draft; three AI agents refine it in a single pass.
 Supports multiple document types with shared refinement process and type-specific rules.
 
 ```
 User Input (doc type + JD/context + constraints)
   → [Optional] Context Update (new CV/info → NLM merge)
   → NLM Draft Request (type-specific prompt)
-  → 6-Step AI Refinement (career-docs-writer agent)
-  → Reviewer Evaluation (career-docs-reviewer agent)
-  → Iteration Loop (min 3, max 5, each: Writer → Reviewer)
+  → Writer: 6-Step Refinement (career-docs-writer)
+  → Reviewer: 6-Dimension Evaluation (career-docs-reviewer)
+  → Reviser: Targeted Fixes (career-docs-reviser)
   → Final Output
 ```
 
@@ -29,15 +29,7 @@ User Input (doc type + JD/context + constraints)
 
 ## Supported Document Types
 
-| Type | Korean | Key Structure |
-|------|--------|---------------|
-| `cover-letter` | 자소서 (자기소개서) | 기승전결, competency framing |
-| `career-desc` | 경력기술서 | Chronological, per-company chapters |
-| `portfolio` | 포트폴리오 | Per-project, challenge→solution→impact |
-| `cover-letter-en` | 커버레터 (영문/국문) | Hook → Value Prop → Fit → Close |
-| `hr-essay` | 인사관점 에세이 | Soft-skill claims backed by cases |
-
-> Full type definitions, NLM prompts, and structure rules: `references/doc-types.md`
+5 types: `cover-letter`, `career-desc`, `portfolio`, `cover-letter-en`, `hr-essay`. Full definitions, NLM prompts, and structure rules: `references/doc-types.md`
 
 ---
 
@@ -106,27 +98,18 @@ The writer applies the 6-step refinement checklist sequentially (grammar → flo
 
 ## Step 3: Reviewer Evaluation → delegate to `career-docs-reviewer` agent
 
+Reviewer scores the Writer's output across 6 dimensions (0-100 each) and produces specific 수정 지시사항.
+
 ---
 
-## Step 4: Iteration Loop
+## Step 4: Revision → delegate to `career-docs-reviser` agent
 
-**Always run at least 3 iterations. Max 5.**
+Reviser takes the Writer's draft + Reviewer's evaluation and applies targeted fixes in a single pass:
+- Dimensions scoring 90+: preserve as-is
+- Dimensions scoring 70-89: apply Reviewer's specific fixes
+- Dimensions scoring <70: major rewrite of that aspect
 
-```
-iteration = 0, best_score = 0, no_improve_streak = 0
-
-WHILE iteration < 5:
-    iteration 0: NLM draft → Refiner (Step 2)
-    iteration 1+: restart from best_draft if score drops
-
-    Reviewer evaluation (6 dimensions, 0-100 continuous)
-    update best or no_improve_streak++
-    iteration++
-
-    IF iteration < 3: CONTINUE          # always run 3 times
-    IF all dimensions >= 90: BREAK      # goal achieved
-    IF no_improve_streak >= 3: BREAK    # plateau → use best version
-```
+Outputs the final document with a change log.
 
 ---
 
