@@ -107,6 +107,32 @@ vim ~/.claude/hooks/slack_config.json
 }
 ```
 
+### Prerequisites
+
+The `collab` bundle requires **GitHub CLI (`gh`)** for full functionality:
+
+| Feature | Requires `gh` | Without `gh` |
+|---------|:---:|---|
+| Worktree creation | No | Works fine |
+| Work item generation | No | Works fine |
+| GitHub Issue creation (`/work-plan` Step 7) | **Yes** | Silently skipped, `issue` stays `null` in dispatch.json |
+| `/gha-branch-sync` CI audit | **Yes** | Cannot run |
+
+```bash
+# Install gh CLI
+# Ubuntu/Debian
+sudo apt install gh
+
+# macOS
+brew install gh
+
+# Conda
+conda install gh --channel conda-forge
+
+# Then authenticate
+gh auth login
+```
+
 ### Install Options
 
 ```bash
