@@ -86,7 +86,7 @@ After all commits are created:
    - If the branch has no upstream, use `git push -u origin <branch>`
    - Otherwise, use `git push`
 
-**Do NOT ask for confirmation — push automatically after commits.**
+Proceed automatically (same as Step 2).
 
 ---
 
