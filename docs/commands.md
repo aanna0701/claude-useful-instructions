@@ -100,58 +100,25 @@ Sync project documentation to the current codebase state. Detects outdated docs 
 
 ---
 
-## /cover-letter
+## /polish-doc
 
-NotebookLM MCP-based Korean cover letter writing multi-agent system. Optimized for experienced hire applications.
+Apply writing-style and structural fixes directly to existing documents. Counterpart to `/write-doc` (creates) and `doc-reviewer` (suggests only).
 
 **Usage**:
 ```
-/cover-letter           # Start cover letter pipeline
+/polish-doc [filepath]              # Full polish (style + structure)
+/polish-doc [filepath] --quick      # Quick polish (style only)
+/polish-doc [glob-pattern]          # Multiple files
 ```
 
-### 3-Stage Pipeline
+### Workflow
 
-| Stage | Description | Session |
-|-------|-------------|---------|
-| 1 | Context extraction from NotebookLM | Chat A |
-| 2 | Career description & essay generation | Chat A |
-| 3 | Cover letter writing (Writer-Reviewer loop) | Chat B (new session recommended) |
-
-### Writing Modes
-
-| Mode | Description |
-|------|-------------|
-| A | Write from scratch |
-| B | Improve user's own draft |
-| C | Improve previously generated + user-edited draft |
-
-### Evaluation Criteria (7 items, 0-100 scale)
-
-| # | Item | Description |
-|---|------|-------------|
-| 1 | Grammar/Spelling | Spacing, particles, spelling |
-| 2 | Naturalness & Expertise | Flow, professional tone |
-| 3 | Fact Verification | Cross-check against Stage 1/2 docs |
-| 4 | AI Style/Exaggeration | Detect AI-sounding phrases |
-| 5 | Job Fit | JD matching, competency framing |
-| 6 | Structure | Narrative arc, intro-conclusion coverage |
-| 7 | Character Count | Within limits, space utilization |
-
-### Exit Conditions
-
-- **Normal**: Minimum 3 iterations AND all items >= 90 points
-- **Plateau**: 3 consecutive iterations with no improvement → submit best-scoring draft
-
-### Prerequisites
-
-```bash
-uv tool install notebooklm-mcp-cli   # Install
-nlm login                             # Google login
-nlm setup add cursor                  # Register MCP in Cursor
-nlm doctor                            # Diagnose
-```
-
-Upload resume/portfolio to the "Cover Letter" notebook in NotebookLM before starting.
+| Step | Action |
+|------|--------|
+| 1 | Read file, detect doc type from frontmatter or content |
+| 2 | Show assessment (type, depth, estimated issues) |
+| 3 | Delegate to `doc-polisher` agent |
+| 4 | Completion report with per-file summary |
 
 ---
 

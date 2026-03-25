@@ -91,6 +91,7 @@ Auto-triggered by Claude Code based on conversation context.
 | `diagram-architect` | "Draw diagram", "System structure", "ERD" |
 | `data-pipeline-architect` | "Design data pipeline", "ETL architecture" |
 | `html-presentation` | "PPT format", "Slide conversion", "format-presentation" |
+| `career-docs` | "자소서 써줘", "Cover letter", "경력기술서" |
 | `collab-workflow` | "Work item", "Codex", "Hand off", "Delegate" |
 
 > Full reference: [docs/skills.md](docs/skills.md)
@@ -103,8 +104,9 @@ Subagents delegated by Claude for specific tasks.
 |-------|--------|-------|
 | Documentation | `doc-writer-tutorial`, `-howto`, `-explain`, `-reference` | 4 |
 | Delivery | `doc-writer-task`, `-contract`, `-checklist`, `-review` | 4 |
+| Doc Quality | `doc-polisher`, `doc-reviewer` | 2 |
 | Diagram | `diagram-writer` | 1 |
-| Cover Letter | `cover-letter-writer`, `-reviewer` | 2 |
+| Career Docs | `career-docs-writer`, `-reviewer`, `-reviser` | 3 |
 | VLA Project | `vla-capture`, `-data`, `-model`, `-train`, `-eval`, `-infra` | 6 |
 
 > Full reference: [docs/agents.md](docs/agents.md)
@@ -117,9 +119,9 @@ Subagents delegated by Claude for specific tasks.
 | `/work-status` | Check work item progress |
 | `/work-review` | Review Codex implementation against contract |
 | `/write-doc` | Diataxis-based document writing |
+| `/polish-doc` | Apply writing-style and structural fixes to existing docs |
 | `/init-docs` | Scaffold docs site structure (numbering + MkDocs) |
 | `/sync-docs` | Sync docs to current codebase state |
-| `/cover-letter` | Multi-agent cover letter pipeline (Korean) |
 | `/smart-git-commit-push` | Auto-split commits by feature and push |
 | `/create-presentation` | Generate HTML slide deck from content |
 | `/format-presentation` | Convert HTML to standard 16:9 dark-theme format |
@@ -159,7 +161,9 @@ claude-useful-instructions/
 ├── agents/                          # Subagents delegated by Claude
 │   ├── doc-writer-*.md              # Diataxis doc writers (4 types + delivery agents)
 │   ├── diagram-writer.md            # Mermaid diagram generation
-│   ├── career-docs-*.md             # Career document writer & reviewer
+│   ├── doc-polisher.md               # Doc writing-style polish
+│   ├── doc-reviewer.md               # Doc quality review
+│   ├── career-docs-*.md              # Career document writer & reviewer
 │   └── vla-*.md                     # VLA robotics project (6 domains)
 ├── commands/                        # User-invocable slash commands
 ├── rules/                           # Shared code standards

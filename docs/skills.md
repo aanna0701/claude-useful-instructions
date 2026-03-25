@@ -181,3 +181,53 @@ HTML presentation formatting skill. Converts existing HTML slides into a standar
 - **`/format-presentation`** command: Convert existing HTML to standard format
 - **`/edit-presentation`** command: Modify content in formatted presentations
 - **`/export-pdf`** command: Convert to PDF
+
+---
+
+## career-docs
+
+Korean career document generation & refinement skill. NotebookLM drafts; AI refines through a 6-step checklist and iterative Writer-Reviewer loop.
+
+**Triggers**: "자소서 써줘", "경력기술서 작성", "포트폴리오 정리", "커버레터 작성", "cover letter", "career description", "portfolio"
+
+### Supported Document Types
+
+| Type | Korean | Key Structure |
+|------|--------|---------------|
+| `cover-letter` | 자소서 (자기소개서) | 기승전결, competency framing |
+| `career-desc` | 경력기술서 | Chronological, per-company chapters |
+| `portfolio` | 포트폴리오 | Per-project, challenge→solution→impact |
+| `cover-letter-en` | 커버레터 (영문/국문) | Hook → Value Prop → Fit → Close |
+| `hr-essay` | 인사관점 에세이 | Soft-skill claims backed by cases |
+
+### Workflow
+
+```
+User Input (doc type + JD/context + constraints)
+  → [Optional] Context Update (new CV/info → NLM merge)
+  → NLM Draft Request (type-specific prompt)
+  → Writer: 6-Step Refinement (career-docs-writer)
+  → Reviewer: 6-Dimension Evaluation (career-docs-reviewer)
+  → Reviser: Targeted Fixes (career-docs-reviser)
+  → Final Output
+```
+
+### 3-Stage Pipeline
+
+| Stage | Agent | Role |
+|-------|-------|------|
+| Writer | `career-docs-writer` | 6-step checklist refinement of NLM draft |
+| Reviewer | `career-docs-reviewer` | 6-dimension scoring (0-100) + specific fix instructions |
+| Reviser | `career-docs-reviser` | Apply Reviewer fixes in single pass (score <90 only) |
+
+### Prerequisites
+
+- NotebookLM MCP connected
+- "자소서" notebook with CV, portfolio, project descriptions uploaded
+- Context documents (컨텍스트 정리, 경력 기술서, 인사관점 에세이) already in NLM
+
+### Related
+
+- **`career-docs-writer`** agent: 6-step refinement
+- **`career-docs-reviewer`** agent: Evaluation scoring
+- **`career-docs-reviser`** agent: Targeted fix application
