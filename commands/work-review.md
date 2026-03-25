@@ -38,6 +38,22 @@ Read in parallel:
 - `checklist.md` — verification items
 - `status.md` — changed files, progress, ambiguities
 
+### Step 3.5: Branch Map Validation
+
+Read the "## Branch Map" section from `contract.md`. If present:
+
+1. **Freshness check**: Compare the implementation branch against the declared `Parent Branch`:
+   ```bash
+   git rev-list --left-right --count <parent>...<branch>
+   ```
+   If the branch is behind its parent, warn: "Branch is N commits behind {parent}. Recommend rebase before merge."
+
+2. **Merge target**: Use `Merge Target` from the contract (not a hardcoded branch) for the merge in Step 8.
+
+3. **Role consistency**: Verify that changed files (from status.md) fall within the declared role's expected paths. Flag unexpected path modifications.
+
+If no Branch Map section exists (legacy work items), attempt to read `.claude/branch-map.yaml` directly. If that also doesn't exist, fall back to default behavior (merge into current branch's upstream).
+
 ### Step 4: Resolve Implementation Worktree
 
 Read `Worktree` and `Worktree Path` from `status.md`. If it differs from the current cwd, use that path for all file reads, git commands, and test runs in subsequent steps. See `rules/collab-workflow.md` → "Review worktree rule" for rationale.
@@ -62,9 +78,12 @@ Update `status.md`:
 ### Step 8: Execute Decision
 
 **MERGE**:
-1. Ask user: "FEAT-NNN: MERGE decision. Merge, delete branch, and clean up work item? [Y/n]"
-2. If confirmed (or default Y):
+1. Resolve merge target: use `Merge Target` from contract's Branch Map section, or fall back to the branch's upstream.
+2. If Step 3.5 flagged freshness issues, block merge and suggest rebase first.
+3. Ask user: "FEAT-NNN: MERGE into {merge_target}. Proceed, delete branch, and clean up? [Y/n]"
+4. If confirmed (or default Y):
    ```bash
+   git checkout <merge_target>
    git merge feat/FEAT-NNN-slug
    git branch -d feat/FEAT-NNN-slug
    ```

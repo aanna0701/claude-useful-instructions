@@ -35,6 +35,20 @@ For each topic, gather or infer:
 - **Scope**: What is in-scope vs out-of-scope
 - **Boundaries**: Files/modules that may or may not be changed
 
+### Step 1.5: Resolve Branch Map
+
+Read `.claude/branch-map.yaml`. If missing, auto-detect or ask once (see `/branch-init` logic).
+
+Resolve:
+- **working_parent**: the branch feature branches are based on
+- **default_merge_target**: where completed work merges back
+- **role** (if roles defined): classify the task by affected paths
+- **ci_scope**: infer which CI checks apply based on affected paths (e.g., paths under `src/` → `lint`, `typecheck`, `test`; paths under `docs/` → `docs-build`; paths under `.github/` → `ci-validate`)
+
+These values will be injected into each FEAT's contract under "## Branch Map".
+
+If `.claude/branch-map.yaml` doesn't exist and this is a single-branch project, skip — use `main`/`master` as default.
+
 ### Step 2: Decompose into Parallel Sub-tasks
 
 For **each topic**, analyze the scope and identify independent implementation units. A unit is independent when it:
@@ -78,7 +92,7 @@ Create slug from sub-task: lowercase, kebab-case, max 30 chars. Use consistent p
 
 Spawn **parallel agents** (one per FEAT). Each agent:
 1. **Generate Brief** — Spawn `doc-writer-task` agent with `bundle: true`, or fill from `.claude/templates/work-item/brief.md`
-2. **Generate Contract** — Spawn `doc-writer-contract`, or fill from `.claude/templates/work-item/contract.md`. **Ensure Allowed Modifications are disjoint** from sibling FEATs.
+2. **Generate Contract** — Spawn `doc-writer-contract`, or fill from `.claude/templates/work-item/contract.md`. **Ensure Allowed Modifications are disjoint** from sibling FEATs. Fill the "## Branch Map" section with values from Step 1.5 (role, parent_branch, merge_target, target_worktree).
 3. **Generate Checklist** — Spawn `doc-writer-checklist` agent, or fill from template
 4. **Initialize Status** — From `.claude/templates/work-item/status.md`, set status=open, agent=TBD
 

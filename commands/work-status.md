@@ -18,10 +18,12 @@ Glob `work/items/FEAT-*/status.md`. For each, extract frontmatter and key fields
 
 Print summary table:
 
-| ID | Title | Status | Agent | Branch |
-|----|-------|--------|-------|--------|
-| FEAT-001 | User Auth | in-progress | Codex | feat/FEAT-001-user-auth |
-| FEAT-002 | Cache Layer | open | TBD | — |
+| ID | Title | Status | Agent | Branch | Merge Target | Freshness |
+|----|-------|--------|-------|--------|--------------|-----------|
+| FEAT-001 | User Auth | in-progress | Codex | feat/FEAT-001-user-auth | research | fresh |
+| FEAT-002 | Cache Layer | open | TBD | — | research | — |
+
+If `.claude/branch-map.yaml` exists, populate Merge Target from each contract's Branch Map section and check freshness against the declared parent branch.
 
 If no work items found: "No work items found. Use `/work-plan` to create one."
 

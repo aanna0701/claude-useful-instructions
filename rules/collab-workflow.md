@@ -41,6 +41,14 @@
 - If planning docs mention a worktree that conflicts with the contract paths, the contract paths win
 - **Review worktree rule**: `/work-review` MUST read files and run tests from the `Worktree Path` in `status.md`, not from the current cwd
 
+## Branch Map Integration
+
+- Read `.claude/branch-map.yaml` before creating branches or merging
+- If missing during `/work-plan` or `/work-review`, auto-initialize via `/branch-init` logic
+- Contracts carry branch metadata: role, parent branch, merge target, CI scope
+- Merge target comes from contract's Branch Map section, never hardcoded
+- See `rules/branch-map-policy.md` for full branch selection rules
+
 ## Principles
 
 - Contract = single source of truth for boundaries
@@ -49,6 +57,6 @@
 - Ambiguities recorded in `status.md`, never resolved by implementer
 - `review.md` required before merge
 - On `REVISE`, the latest `review.md` becomes the mandatory delta for the next Codex run; every `MUST-fix` item must be injected into the re-dispatch prompt and resolved before optional work
-- MERGE decision: ask user → `git merge` → `git branch -d` → apply doc changes → remove work item dir
+- MERGE decision: ask user → merge into declared `merge_target` → `git branch -d` → apply doc changes → remove work item dir
 - Worktree setups: commit on worktree branch, no sub-branches
 - Human intervention: dispatch + review only

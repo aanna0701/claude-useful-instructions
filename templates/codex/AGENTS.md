@@ -66,9 +66,11 @@ Update `work/items/FEAT-NNN-slug/status.md` on **every state change**:
 If this repo uses **git worktrees**, you are already on the correct branch for your worktree. Do NOT create sub-branches.
 
 - **Branch**: Use the current worktree branch (or `feat/FEAT-NNN-slug` if not using worktrees)
+- **Parent branch**: If the contract has a "Branch Map" section, the branch must be based on the declared `Parent Branch`. If the current branch is not based on it, STOP and set `Status: blocked` with reason `needs-sync` in `status.md`.
 - **Commits**: `feat(FEAT-NNN): description` (conventional commit format)
 - **One concern per commit**: separate logical changes into distinct commits
 - Do NOT force push or rewrite history
+- Do NOT merge from sibling feature branches — only rebase/merge from the parent branch
 - `work/` may be a symlink to the planning worktree — treat it as read-only
 
 ## What You Must NOT Do

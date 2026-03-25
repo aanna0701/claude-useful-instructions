@@ -8,6 +8,16 @@ updated: YYYY-MM-DD
 
 # FEAT-NNN Contract
 
+## Branch Map
+
+| Field | Value |
+|-------|-------|
+| Role | [docs/backend/frontend/infra/cross-cutting] |
+| Parent Branch | [from branch-map.yaml working_parent] |
+| Merge Target | [same as parent branch unless overridden] |
+| Target Worktree | [worktree name if using worktrees, else —] |
+| CI Scope | [lint, typecheck, test — inferred from affected paths] |
+
 ## Interfaces
 
 | Interface | Type | Owner | Spec |
