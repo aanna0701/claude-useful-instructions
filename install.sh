@@ -697,22 +697,21 @@ for entry in "${INSTALL_LIST[@]}"; do
       install_hook "$path"
       ;;
     workflow)
-      local wf_src="$REPO_DIR/templates/workflows/$path"
-      local wf_dst="$PROJECT_ROOT/.github/workflows/$path"
-      if [ -f "$wf_src" ]; then
-        mkdir -p "$(dirname "$wf_dst")"
-        install_file "$wf_src" "$wf_dst"
-        # Copy companion scripts if they exist
-        local scripts_dir="$REPO_DIR/templates/workflows/scripts"
-        if [ -d "$scripts_dir" ]; then
+      _wf_src="$REPO_DIR/templates/workflows/$path"
+      _wf_dst="$PROJECT_ROOT/.github/workflows/$path"
+      if [ -f "$_wf_src" ]; then
+        mkdir -p "$(dirname "$_wf_dst")"
+        install_file "$_wf_src" "$_wf_dst"
+        _scripts_dir="$REPO_DIR/templates/workflows/scripts"
+        if [ -d "$_scripts_dir" ]; then
           mkdir -p "$PROJECT_ROOT/.github/workflows/scripts"
-          for s in "$scripts_dir"/*.py; do
+          for s in "$_scripts_dir"/*.py; do
             [ -f "$s" ] || continue
             install_file "$s" "$PROJECT_ROOT/.github/workflows/scripts/$(basename "$s")"
           done
         fi
       else
-        echo "WARNING: Workflow template not found: $wf_src" >&2
+        echo "WARNING: Workflow template not found: $_wf_src" >&2
       fi
       ;;
     claude-hook)
