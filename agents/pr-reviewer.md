@@ -92,10 +92,18 @@ You review a single GitHub Pull Request by comparing the diff against the work i
    ```
    Use sparingly — only for findings that are clearer with line-level context.
 
-8. **Print summary**:
+8. **Auto-merge on APPROVE**:
+   If verdict is APPROVE:
+   ```bash
+   gh pr merge <pr_number> --squash --delete-branch
+   ```
+   If merge fails (e.g., branch protection, merge conflicts), print warning and continue — the user can merge manually.
+
+9. **Print summary**:
    ```
    PR #<number> reviewed: <APPROVE|REQUEST_CHANGES>
    Findings: N total, M blocking
+   Merged: yes|no (APPROVE only)
    ```
 
 ## Error Handling

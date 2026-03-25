@@ -111,9 +111,9 @@ Update `status.md`:
    ```bash
    gh issue comment <number> --body "PR created: <pr_url>"
    ```
-5. **Auto PR review**: Spawn `pr-reviewer` agent with the PR number, FEAT ID, work item directory, and repo root. The agent reviews the diff against the contract and submits an `APPROVE` or `REQUEST_CHANGES` review via `gh pr review`.
+5. **Auto PR review + merge**: Spawn `pr-reviewer` agent with the PR number, FEAT ID, work item directory, and repo root. The agent reviews the diff against the contract, submits a `gh pr review`, and if APPROVE, auto-merges via `gh pr merge --squash --delete-branch`.
 6. Update `status.md`: set Status to `merged`, add `PR` field with the PR URL.
-7. Print: "PR created: <pr_url>. Review submitted. Merge on GitHub to complete."
+7. Print: "PR created and merged: <pr_url>."
 8. **Post-merge cleanup** (run after PR is merged on GitHub, or via `/work-status` detecting merged PRs):
    - Remove worktree:
      ```bash
