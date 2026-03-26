@@ -1,25 +1,33 @@
-# work-plan — Create Work Items for Claude-Codex Delegation
+# work-plan — Create Work Items for Delegation
 
-Create work item bundles (brief + contract + checklist + status) for delegating implementation to Codex. Automatically splits topics into parallelizable sub-tasks for maximum Codex throughput.
+Split topics into parallelizable work items with contract boundaries for Codex/Claude dispatch.
 
 ---
 
 ## Input
 
-**$ARGUMENTS**: One or more feature topics (newline-separated), or a path to a source RFC/ADR.
-
-If no arguments provided, ask:
-> "What feature(s) should I plan? Provide topic(s) or path to source RFC/ADR."
+**$ARGUMENTS**: Feature topics (newline-separated) or path to source RFC/ADR.
 
 ```
 /work-plan DuckDB schema cleanup
+/work-plan --type=chore Dependency upgrade
 ```
 
-```
-/work-plan
-DuckDB schema cleanup
-Add JWT auth middleware
-```
+---
+
+## Work Types
+
+| Type | ID Prefix | Branch Prefix | Commit Prefix | When to Use |
+|------|-----------|---------------|---------------|-------------|
+| feat | `FEAT-NNN` | `feat/` | `feat` | New functionality |
+| fix | `FIX-NNN` | `fix/` | `fix` | Bug fixes |
+| docs | `DOCS-NNN` | `docs/` | `docs` | Documentation only |
+| chore | `CHORE-NNN` | `chore/` | `chore` | Maintenance, deps |
+| refactor | `REFAC-NNN` | `refactor/` | `refactor` | Code restructuring |
+| test | `TEST-NNN` | `test/` | `test` | Test additions |
+| perf | `PERF-NNN` | `perf/` | `perf` | Performance tuning |
+
+**Type resolution order**: explicit `--type=` flag > infer from topic keywords > ask user.
 
 ---
 
@@ -27,166 +35,96 @@ Add JWT auth middleware
 
 ### Step 1: Gather Context
 
-If `$ARGUMENTS` is a file path (RFC/ADR), read it for context.
-
-For each topic, gather or infer:
-- **Objective**: What this work achieves (1-3 sentences)
-- **Source**: Path to RFC/ADR (if available)
-- **Scope**: What is in-scope vs out-of-scope
-- **Boundaries**: Files/modules that may or may not be changed
+If `$ARGUMENTS` is a file path, read it. For each topic gather: Objective, Source (RFC/ADR path), Scope (in/out), Boundaries (files/modules).
 
 ### Step 1.5: Resolve Branch Map
 
-Follow `rules/branch-map-policy.md` § Branch Selection to resolve the branch hierarchy.
-
-Read `.claude/branch-map.yaml`. If missing, auto-initialize via `/branch-init`.
-
-Extract and carry forward for each FEAT's contract "## Branch Map" section:
-- **working_parent**: from branch-map derivation
-- **default_merge_target**: from `branch_rules.default_merge_target`
-- **role** (if roles defined): classify the task by affected paths
-- **ci_scope**: infer which CI checks apply based on affected paths
-
-If `.claude/branch-map.yaml` doesn't exist and this is a single-branch project, skip — use `main`/`master` as default.
+Per `rules/branch-map-policy.md` § Branch Selection. Read `.claude/branch-map.yaml` (auto-init via `/branch-init` if missing). Extract: `working_parent`, `default_merge_target`, `role`, `ci_scope`. Single-branch projects default to `main`/`master`.
 
 ### Step 2: Decompose into Parallel Sub-tasks
 
-For **each topic**, analyze the scope and identify independent implementation units. A unit is independent when it:
-- Touches a **disjoint set of files/modules** from other units
-- Has **no runtime dependency** on other units during implementation
-- Can be **tested in isolation**
+For each topic, find independent units (disjoint files, no runtime deps, testable in isolation).
 
-Decomposition strategy:
-1. **By module/table**: Each module or data model that changes independently (e.g., `frames` table vs `windows` table)
-2. **By layer**: API layer vs data layer vs test layer (only if truly independent)
-3. **By feature boundary**: Separate functional concerns within the same topic
+Strategies: by module/table, by layer (if truly independent), by feature boundary.
 
-Each sub-task becomes its own FEAT with its own contract boundaries.
-
-**When NOT to split:**
-- The scope is small enough that splitting adds overhead (< 3 files total)
-- All changes are tightly coupled (same function, same class)
-- The user explicitly requests a single work item
-
-If unsure about the split, propose the decomposition and ask the user to confirm.
+**Don't split** if < 3 files total, tightly coupled, or user requests single item. If unsure, propose and confirm.
 
 ### Step 3: Assign IDs
 
 ```bash
-# Find next FEAT number
-ls work/items/ 2>/dev/null | grep -oP 'FEAT-\K\d+' | sort -n | tail -1
+ls work/items/ 2>/dev/null | grep -oP '\w+-\K\d+' | sort -n | tail -1
 ```
 
-Assign sequential `FEAT-NNN` (3-digit, zero-padded). First item is `FEAT-001`.
-Create slug from sub-task: lowercase, kebab-case, max 30 chars. Use consistent prefix for sibling FEATs (e.g., `FEAT-001-duckdb-frames-cleanup`).
+Sequential `{TYPE}-NNN` (3-digit, zero-padded). Slug: lowercase kebab-case, max 30 chars. Sibling items share a consistent prefix.
 
 ### Step 4: Generate Work Items (parallel)
 
-Spawn parallel agents (one per FEAT). Each generates `brief.md`, `contract.md`, `checklist.md`, `status.md` from `.claude/templates/work-item/`. Ensure Allowed Modifications are **disjoint** across sibling FEATs. Fill the contract's "## Branch Map" section with values from Step 1.5.
+Spawn parallel agents (one per item). Each generates `brief.md`, `contract.md`, `checklist.md`, `status.md` from `.claude/templates/work-item/`. Ensure Allowed Modifications are **disjoint** across siblings. Fill contract's "## Branch Map" section from Step 1.5.
 
-Write all files to `work/items/FEAT-NNN-slug/`.
+Write to `work/items/{TYPE}-NNN-slug/`.
 
 ### Step 5: Boundary Overlap Check
 
-**Always run when 2+ work items exist** (including previously existing open items in `work/items/`).
+**Always run when 2+ items exist** (including previously open items).
 
-Extract "Allowed Modifications" from each contract. For each pair of items (i, j):
-```
-overlap = allowed_paths[i] ∩ allowed_paths[j]
-```
+Extract "Allowed Modifications" from each contract. Check all pairs for path overlap (directory contains file = overlap). Print boundary matrix (independent / overlap / dependency).
 
-Path matching rules:
-- `src/models/` overlaps with `src/models/user.py` (directory contains file)
-- `src/models/user.py` overlaps with `src/models/user.py` (exact match)
-- `src/models/` does NOT overlap with `src/views/` (independent)
-
-Print a **boundary matrix** (✓ = independent, ⚠ = overlap, dep = dependency).
-
-**If overlaps found:**
-1. Print conflicting files and which FEATs touch them
-2. Suggest: narrow one contract's boundaries, or merge the overlapping FEATs back into one
-3. Ask user to confirm or adjust
+If overlaps found: print conflicts, suggest narrowing or merging, ask user to confirm.
 
 ### Step 6: Create Worktrees & Branches
 
-For each FEAT, create an isolated worktree from `working_parent`:
-
 ```bash
-# Derive project name from repo root directory
 PROJECT=$(basename "$(git rev-parse --show-toplevel)")
-PARENT=$(working_parent from branch-map)
-SLUG="FEAT-NNN-slug"
-BRANCH="feat/$SLUG"
+PARENT=<working_parent>
+TYPE_PREFIX=<branch prefix from Work Types table>
+SLUG="{TYPE}-NNN-slug"
+BRANCH="${TYPE_PREFIX}${SLUG}"
 WT_PATH="../${PROJECT}-${SLUG}"
 
 git branch "$BRANCH" "$PARENT"
 git worktree add "$WT_PATH" "$BRANCH"
 
-# Seed planning artifacts into worktree and commit on the feature branch
+# Seed planning artifacts into worktree
 BASE_REPO="$(git rev-parse --show-toplevel)"
 FEAT_DIR="work/items/$SLUG"
-
 mkdir -p "$WT_PATH/$FEAT_DIR"
 cp "$BASE_REPO/$FEAT_DIR"/{brief,contract,checklist,status}.md "$WT_PATH/$FEAT_DIR/"
 cp "$BASE_REPO/AGENTS.md" "$WT_PATH/AGENTS.md" 2>/dev/null || true
-
 git -C "$WT_PATH" add "$FEAT_DIR/" AGENTS.md
 git -C "$WT_PATH" commit -m "chore($SLUG): seed work item artifacts"
 ```
 
-**Critical**: After `git worktree add`, always seed planning artifacts into the feature branch:
-1. Copy the FEAT's `work/items/FEAT-NNN-slug/` directory (brief, contract, checklist, status)
-2. Copy `AGENTS.md` into worktree root
-3. Commit on the feature branch: `chore(FEAT-NNN-slug): seed work item artifacts`
-
-This ensures Codex finds all files natively — no symlinks, no path resolution failures.
-
-Update `status.md` for each FEAT: Branch, Worktree, Worktree Path (absolute).
-Naming: `../${PROJECT}-${SLUG}` (e.g., `../VasIntelli-research-FEAT-001-schema-cleanup`).
+Update `status.md`: Branch, Worktree, Worktree Path (absolute).
 
 ### Step 7: Create GitHub Issues
 
-Spawn `issue-creator` agent for each FEAT (parallel). Each agent:
-1. Creates a GitHub Issue from brief + contract + checklist
-2. Records issue number in `status.md` → `Issue` field
-3. Adds worktree path to issue body for Codex reference
-
-If `gh` is not available or remote is not GitHub, agents skip silently.
+Spawn `issue-creator` agent per item (parallel). Creates GitHub Issue from brief + contract + checklist, records issue number in `status.md`. Skip silently if `gh` unavailable.
 
 ### Step 8: Generate Dispatch Manifest
 
-Create or update `work/dispatch.json` with fields: `batch_id`, `created`, `parent_topic`, `items` (array of `{feat_id, slug, status, issue, worktree_path, depends_on, conflicts_with}`), and `parallel_groups` (array of arrays — same group = concurrent, different groups = sequential, topology-ordered).
+Create/update `work/dispatch.json`: `batch_id`, `created`, `parent_topic`, `items[]` ({id, slug, type, status, issue, worktree_path, depends_on, conflicts_with}), `parallel_groups[]`.
 
 ### Step 9: Summary
 
-Print summary table, then **always print all dispatch options** so the user can copy-paste:
+Print summary table, then **all dispatch options**:
 
 ```
 Work Plan Ready
 ──────────────────────────────────────────────
   FEAT-001  schema-cleanup   #42  ../project-FEAT-001-schema-cleanup
-  FEAT-002  enum-removal     #43  ../project-FEAT-002-enum-removal
+  CHORE-002 dep-upgrade      #43  ../project-CHORE-002-dep-upgrade
 ──────────────────────────────────────────────
 
 Next Steps — pick one:
 ──────────────────────────────────────────────
-# Option A: Batch dispatch (recommended for 2+ items)
-bash codex-run.sh FEAT-001 FEAT-002
+# Batch dispatch
+bash codex-run.sh FEAT-001 CHORE-002
 
-# Option B: Single item via Claude
+# Single item via Claude
 /work-impl FEAT-001
-/work-impl FEAT-002
 
-# Option C: Direct codex exec (per item, run in separate terminals)
-codex exec --full-auto --cd ../project-FEAT-001-schema-cleanup \
-  "Implement FEAT-001. Read work/items/FEAT-001-schema-cleanup/contract.md and follow AGENTS.md."
-
-codex exec --full-auto --cd ../project-FEAT-002-enum-removal \
-  "Implement FEAT-002. Read work/items/FEAT-002-enum-removal/contract.md and follow AGENTS.md."
+# Direct codex exec (per item)
+codex exec --full-auto --cd <worktree_path> \
+  "Implement {ID}. Read work/items/{SLUG}/contract.md and follow AGENTS.md."
 ──────────────────────────────────────────────
 ```
-
-The `codex exec` commands MUST include:
-- `--full-auto` flag
-- `--cd <worktree_path>` pointing to the FEAT's worktree
-- A prompt referencing the contract path and AGENTS.md

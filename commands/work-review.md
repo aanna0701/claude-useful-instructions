@@ -1,151 +1,93 @@
-# work-review — Review Codex Implementation Against Contract
+# work-review — Review Implementation Against Contract
 
-Review completed work item(s) by comparing the implementation against the contract, checklist, and brief. Supports single or batch review.
+Compare implementation against contract, checklist, and brief. Supports batch review.
 
 ---
 
 ## Input
 
-**$ARGUMENTS**: One or more work item IDs (e.g., `FEAT-001` or `FEAT-001 FEAT-002 FEAT-003`).
+**$ARGUMENTS**: Work item IDs (e.g., `FEAT-001` or `FEAT-001 CHORE-002`).
 
-If no arguments provided:
-1. Glob `work/items/FEAT-*/status.md` for items with status "done"
-2. If found, review all of them (batch mode)
-3. If none found, report: "No work items ready for review."
+No arguments: auto-glob `work/items/*/status.md` for items with status `done`. If none found: "No work items ready for review."
 
-**Batch mode**: When multiple FEAT IDs are given, review each in parallel using concurrent agents, then present a consolidated summary.
+**Batch mode**: Multiple IDs reviewed in parallel with consolidated summary.
 
 ---
 
 ## Execution Steps
 
-### Step 1: Locate Work Item
+### Step 1: Locate & Pre-flight
 
-Resolve `$ARGUMENTS` to a directory under `work/items/`.
-Verify all required files exist: brief.md, contract.md, checklist.md, status.md.
+Resolve `$ARGUMENTS` to `work/items/` directory. Verify brief.md, contract.md, checklist.md, status.md exist. If status is `open`/`in-progress`, warn and confirm.
 
-### Step 2: Pre-flight Check
+### Step 2: Read Work Item (parallel)
 
-Read `status.md`. Verify status is `done` or `review`.
-If status is `open` or `in-progress`, warn:
-> "Work item FEAT-NNN is still {status}. Review anyway? (implementation may be incomplete)"
+Read brief.md, contract.md, checklist.md, status.md in parallel.
 
-### Step 3: Read Work Item
+### Step 2.5: Branch Map Validation
 
-Read in parallel:
-- `brief.md` — scope and objective
-- `contract.md` — boundaries, interfaces, invariants, test requirements
-- `checklist.md` — verification items
-- `status.md` — changed files, progress, ambiguities
+Per `rules/branch-map-policy.md` § Safety Rules and `rules/review-merge-policy.md` § Merge Gating.
 
-### Step 3.5: Branch Map Validation
+From contract.md "## Branch Map" (fallback: `.claude/branch-map.yaml`, then upstream):
+1. **Freshness**: branch must include all parent commits
+2. **Merge target**: use contract's declared target for Step 7 merge
+3. **Role consistency**: changed files must fall within declared role's paths
 
-Follow `rules/branch-map-policy.md` § Safety Rules and `rules/review-merge-policy.md` § Merge Gating.
+### Step 3: Resolve Worktree & PR
 
-Read the "## Branch Map" section from `contract.md`. If present:
+Use `Worktree Path` from status.md for all subsequent file reads/commands.
 
-1. **Freshness check**: Branch must include all parent commits (per branch-map-policy Safety Rules).
-2. **Merge target**: Use `Merge Target` from the contract for the merge in Step 8.
-3. **Role consistency**: Verify changed files fall within declared role's paths.
+Find PR: `status.md` PR field > `gh pr list --head <branch>` > create as fallback (see `/work-impl` Step 7 format).
 
-If no Branch Map section exists, read `.claude/branch-map.yaml` directly. If neither exists, fall back to current branch's upstream.
+### Step 4: Review Changed Files
 
-### Step 4: Resolve Implementation Worktree & PR
+Read each file from "Changed Files" in status.md. Fallback: `git log --name-only` in worktree.
 
-Read `Worktree` and `Worktree Path` from `status.md`. If it differs from the current cwd, use that path for all file reads, git commands, and test runs in subsequent steps.
+### Step 5: Generate Review
 
-Read `PR` from `status.md`. If present, verify the PR exists and is open:
-```bash
-gh pr view <pr_number> --json state -q .state
-```
-If no PR field exists, check for an existing PR on the branch:
-```bash
-gh pr list --head feat/FEAT-NNN-slug --json number,url -q '.[0]'
-```
-If still no PR found, create one now as a fallback (see `/work-impl` Step 7 for format).
+Spawn `doc-writer-review` agent with `bundle: true`, passing contract + checklist + changed files. Decision: MERGE / REVISE / REJECT.
 
-### Step 5: Review Changed Files
+Write to `work/items/{SLUG}/review.md`. Update status.md: Status → `review`, Agent → `Claude`.
 
-From `status.md` "Changed Files" section, read each modified file **from the resolved worktree** (Step 4).
-If "Changed Files" is empty, use `git log --name-only` on the implementation worktree to find changes.
-
-### Step 6: Generate Review
-
-Spawn `doc-writer-review` agent with `bundle: true`, passing contract + checklist + changed files as findings. The agent handles compliance checks, quality assessment, and decision (MERGE/REVISE/REJECT).
-
-Write to `work/items/FEAT-NNN-slug/review.md`
-
-### Step 7: Update Status
-
-Update `status.md`:
-- Status: `review`
-- Agent: `Claude`
-
-### Step 8: Execute Decision
+### Step 6: Execute Decision
 
 **MERGE**:
-1. Resolve the PR: read `PR` field from `status.md`, or find via `gh pr list --head feat/FEAT-NNN-slug`.
-   If no PR exists (legacy flow), create one now using the same format as `/work-impl` Step 7.
+1. If Step 2.5 flagged freshness issues, block and suggest rebase first
+2. Convert draft PR to ready: `gh pr ready <pr>`
+3. Update PR body with review summary: `gh pr edit <pr> --body "..."`
+4. Spawn `pr-reviewer` agent — reviews diff against contract, submits `gh pr review`, if APPROVE auto-merges via `gh pr merge --squash --delete-branch`
+5. Update status.md: Status → `merged`, update PR field
+6. Post-merge cleanup:
+   - Close issue: `gh issue close <num> --comment "Merged via PR <url>"`
+   - Remove worktree: `git worktree remove <path> && git branch -d <branch>`
+   - Handle "Doc Changes Needed" from status.md
+   - Remove work item: `rm -r work/items/{SLUG}/`
+   - Update `work/dispatch.json`: remove merged entry
 
-2. If Step 3.5 flagged freshness issues, block merge and suggest rebase first.
-
-3. Convert draft PR to ready (if still draft):
-   ```bash
-   gh pr ready <pr_number>
-   ```
-
-4. Update PR body with review summary:
-   ```bash
-   gh pr edit <pr_number> --body "<updated body with review summary>"
-   ```
-
-5. Spawn `pr-reviewer` agent with the PR number, FEAT ID, work item directory, and repo root. The agent reviews the diff against the contract, submits `gh pr review`, and if APPROVE, auto-merges via `gh pr merge --squash --delete-branch`.
-
-6. Update `status.md`: set Status to `merged`, update `PR` field.
-
-7. **Post-merge cleanup**:
-   - Close linked GitHub Issue (safety net — `Closes #N` in PR body may not always trigger):
-     ```bash
-     gh issue close <issue_number> --comment "Merged via PR <pr_url>"
-     ```
-   - Remove worktree:
-     ```bash
-     git worktree remove <worktree_path>
-     git branch -d feat/FEAT-NNN-slug
-     ```
-   - Handle doc changes from `status.md` "Doc Changes Needed" section
-   - Remove work item directory: `rm -r work/items/FEAT-NNN-slug/`
-   - Update `work/dispatch.json`: remove the merged FEAT entry
-
-**REVISE**: Write `review.md` with an explicit `MUST-fix` section (concrete file-level actions). Then spawn `work-reviser` agent for the FEAT — it extracts MUST-fix items, updates status to `revision`, and re-dispatches to the appropriate target (Codex or agent).
-
-After writing `review.md`, **always print the re-dispatch commands**:
+**REVISE**: Write review.md with explicit `MUST-fix` section. Spawn `work-reviser` agent. Print re-dispatch commands:
 ```
-REVISE: FEAT-NNN (N MUST-fix items)
+REVISE: {ID} (N MUST-fix items)
 ──────────────────────────────────────────────
-# Re-dispatch (pick one):
-  /work-revise FEAT-NNN
-  bash codex-run.sh FEAT-NNN
-  codex exec --full-auto --cd <worktree_path> \
-    "Revise FEAT-NNN. Read work/items/FEAT-NNN-slug/review.md for MUST-fix items, then contract.md. Follow AGENTS.md."
+/work-revise {ID}
+bash codex-run.sh {ID}
+codex exec --full-auto --cd <worktree_path> \
+  "Revise {ID}. Read work/items/{SLUG}/review.md then contract.md. Follow AGENTS.md."
 ──────────────────────────────────────────────
 ```
 
-**REJECT**: State reason. Close GitHub Issue if exists (`gh issue close <number> --reason "not planned" --comment "Rejected: <reason>"`). Remove work item directory: `rm -r work/items/FEAT-NNN-slug/`.
+**REJECT**: State reason. Close issue (`gh issue close <num> --reason "not planned"`). Remove `work/items/{SLUG}/`.
 
-### Step 9: Batch Summary (when reviewing multiple items)
-
-When reviewing multiple items, also check for "Doc Changes Needed" in each `status.md` and consolidate:
+### Step 7: Batch Summary
 
 ```
 Review Complete
 ──────────────────────────────────────────────
-  FEAT-001  duckdb-schema-cleanup      PR #51 (merged)     #42 closed
-  FEAT-002  jwt-auth-middleware        PR #52 (merged)     #43 closed
-  FEAT-003  refactor-logging           PR #53 (revise)     #44 open
+  FEAT-001  schema-cleanup    PR #51 (merged)   #42 closed
+  DOCS-002  api-reference     PR #52 (merged)   #43 closed
+  FIX-003   null-pointer      PR #53 (revise)   #44 open
 
 Revisions needed:
-  bash codex-run.sh FEAT-003
+  bash codex-run.sh FIX-003
 ──────────────────────────────────────────────
 ```
 

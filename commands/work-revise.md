@@ -1,62 +1,32 @@
-# work-revise — Re-dispatch Failed Review Items
-
-Re-dispatch work items that received a REVISE decision from `/work-review`.
+# work-revise — Re-dispatch REVISE Items
 
 ---
 
 ## Input
 
-**$ARGUMENTS**: One or more FEAT IDs (e.g., `FEAT-003`) or a branch glob (e.g., `feat-*`).
+**$ARGUMENTS**: Work item IDs (e.g., `FIX-003`) or glob.
 
-If no arguments provided:
-1. Glob `work/items/FEAT-*/review.md` for items with REVISE decision
-2. If found, revise all of them
-3. If none found: "No items pending revision."
+No arguments: auto-glob items with REVISE decision in review.md. If none: "No items pending revision."
 
 ---
 
 ## Execution
 
-### Step 1: Resolve Work Items
+Resolve IDs to `work/items/` directories with REVISE decision. Spawn `work-reviser` agent per item (parallel). Each agent extracts MUST-fix items, updates status to `revision`, and re-dispatches.
 
-For each argument:
-- If FEAT ID: resolve to `work/items/FEAT-NNN-*/`
-- If glob pattern: match against `work/items/` directories, filter to those with `review.md` containing REVISE decision
-
-### Step 2: Dispatch
-
-Spawn `work-reviser` agent for each item (parallel if multiple).
-
-The agent:
-1. Extracts MUST-fix items from review.md
-2. Updates status.md to `revision`
-3. Re-dispatches to the appropriate target (Codex or agent)
-
-### Step 3: Summary
-
-Print consolidated table with copy-pasteable commands:
+## Summary
 
 ```
 Revision Dispatched
 ──────────────────────────────────────────────
-  FEAT-003  refactor-logging    3 MUST-fix  → codex     #44 open
-  FEAT-005  cache-invalidation  1 MUST-fix  → agent     #46 open
+  FIX-003   null-pointer       3 MUST-fix  → codex     #44 open
+  REFAC-005 cache-invalidation 1 MUST-fix  → agent     #46 open
 ──────────────────────────────────────────────
 
-Codex Commands (copy-paste to run):
-──────────────────────────────────────────────
-# Batch:
-  bash codex-run.sh FEAT-003 FEAT-005
+# Dispatch:
+  bash codex-run.sh FIX-003 REFAC-005
+  /work-impl FIX-003
 
-# Or per item:
-  codex exec --full-auto --cd <FEAT-003-worktree> \
-    "Revise FEAT-003. Read work/items/FEAT-003-refactor-logging/review.md for MUST-fix items, then contract.md. Follow AGENTS.md."
-
-  codex exec --full-auto --cd <FEAT-005-worktree> \
-    "Revise FEAT-005. Read work/items/FEAT-005-cache-invalidation/review.md for MUST-fix items, then contract.md. Follow AGENTS.md."
-──────────────────────────────────────────────
-After completion (codex-run.sh will push + update existing draft PR):
-  /work-review FEAT-003 FEAT-005
+# After completion:
+  /work-review FIX-003 REFAC-005
 ```
-
-Replace `<FEAT-NNN-worktree>` with the actual `Worktree Path` from each item's `status.md`.
