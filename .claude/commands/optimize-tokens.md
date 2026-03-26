@@ -28,7 +28,7 @@ Type        Files   Lines   Largest file
 command     5       450     cover-letter.md (143)
 agent       14      820     cover-letter-reviewer.md (97)
 skill       3       380     diataxis-doc-system.md (120)
-rule        2       160     vla-code-standards.md (90)
+rule        2       160     pytorch-dl-standards.md (90)
 reference   8       520     parallelism.md (75)
 ──────────────────────────────────────────────
 Total       32      2330

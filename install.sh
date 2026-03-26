@@ -9,10 +9,10 @@
 #   --docs          Documentation & diagrams (diataxis, write-doc, init-docs, sync-docs, doc/diagram agents)
 #   --data-pipeline Data pipeline architect skill
 #   --career        Career document tools (career-docs skill, career agents)
-#   --vla           VLA robotics project (vla-code-standards, vla agents)
+#   --dl            PyTorch DL standards + agents (capture, data, model, train, eval, infra)
 #   --collab        Claude-Codex collaboration (work items, AGENTS.md, CLAUDE.md)
 #   --slack         Slack notifications (session summary, confirmation alerts)
-#   --exclude NAME  Exclude a bundle (repeatable, e.g. --exclude vla --exclude career)
+#   --exclude NAME  Exclude a bundle (repeatable, e.g. --exclude dl --exclude career)
 #   --interactive   Interactive mode: choose bundles from a menu
 #   --list          List available bundles and exit
 #   --uninstall     Remove installed files (respects bundle flags)
@@ -21,7 +21,7 @@
 # Examples:
 #   ./install.sh                                  # Install all to ~/.claude
 #   ./install.sh --core --docs                    # Install core + docs only
-#   ./install.sh --exclude career --exclude vla   # Install all except career and vla
+#   ./install.sh --exclude career --exclude dl    # Install all except career and dl
 #   ./install.sh --interactive ~/proj             # Interactive selection
 #   ./install.sh --uninstall ~/proj               # Uninstall all from ~/proj
 #   ./install.sh --uninstall --collab ~/proj      # Uninstall collab bundle only
@@ -73,14 +73,14 @@ BUNDLE_CAREER=(
   "agents:career-docs-reviewer.md"
 )
 
-BUNDLE_VLA=(
-  "rules:vla-code-standards.md"
-  "agents:vla-capture.md"
-  "agents:vla-data.md"
-  "agents:vla-eval.md"
-  "agents:vla-infra.md"
-  "agents:vla-model.md"
-  "agents:vla-train.md"
+BUNDLE_DL=(
+  "rules:pytorch-dl-standards.md"
+  "agents:dl-capture.md"
+  "agents:dl-data.md"
+  "agents:dl-eval.md"
+  "agents:dl-infra.md"
+  "agents:dl-model.md"
+  "agents:dl-train.md"
 )
 
 BUNDLE_COLLAB=(
@@ -115,13 +115,13 @@ BUNDLE_PRESENTATION=(
   "script:scripts/html_to_pdf.py"
 )
 
-BUNDLE_NAMES=("core" "docs" "data-pipeline" "career" "vla" "collab" "slack" "presentation")
+BUNDLE_NAMES=("core" "docs" "data-pipeline" "career" "dl" "collab" "slack" "presentation")
 BUNDLE_DESCRIPTIONS=(
   "Core utilities (smart-git-commit-push, optimize-tokens)"
   "Documentation & diagrams (diataxis framework, doc agents, diagram-architect)"
   "Data pipeline architect"
   "Career document tools (cover letters, Korean)"
-  "VLA robotics project (vla agents, code standards)"
+  "PyTorch DL standards + agents (capture, data, model, train, eval, infra)"
   "Claude-Codex collaboration (work items, AGENTS.md, CLAUDE.md)"
   "Slack notifications (session summary, confirmation alerts)"
   "HTML presentation generator (16:9 dark theme slides + PDF export)"
@@ -143,7 +143,7 @@ while [[ $# -gt 0 ]]; do
     --docs)          SELECTED_BUNDLES+=("docs"); shift ;;
     --data-pipeline) SELECTED_BUNDLES+=("data-pipeline"); shift ;;
     --career)        SELECTED_BUNDLES+=("career"); shift ;;
-    --vla)           SELECTED_BUNDLES+=("vla"); shift ;;
+    --dl)            SELECTED_BUNDLES+=("dl"); shift ;;
     --collab)        SELECTED_BUNDLES+=("collab"); shift ;;
     --slack)         SELECTED_BUNDLES+=("slack"); shift ;;
     --presentation)  SELECTED_BUNDLES+=("presentation"); shift ;;
@@ -213,7 +213,7 @@ if [[ ${#SELECTED_BUNDLES[@]} -eq 0 ]]; then
         exit 0
       fi
     else
-      echo "Use -y to confirm, or specify bundles (e.g. --uninstall --vla)."
+      echo "Use -y to confirm, or specify bundles (e.g. --uninstall --dl)."
       exit 1
     fi
   else
@@ -253,7 +253,7 @@ get_bundle_items() {
     docs)          printf '%s\n' "${BUNDLE_DOCS[@]}" ;;
     data-pipeline) printf '%s\n' "${BUNDLE_DATA_PIPELINE[@]}" ;;
     career)        printf '%s\n' "${BUNDLE_CAREER[@]}" ;;
-    vla)           printf '%s\n' "${BUNDLE_VLA[@]}" ;;
+    dl)            printf '%s\n' "${BUNDLE_DL[@]}" ;;
     collab)        printf '%s\n' "${BUNDLE_COLLAB[@]}" ;;
     slack)         printf '%s\n' "${BUNDLE_SLACK[@]}" ;;
     presentation)  printf '%s\n' "${BUNDLE_PRESENTATION[@]}" ;;

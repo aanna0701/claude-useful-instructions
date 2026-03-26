@@ -59,7 +59,7 @@ cui-install --collab /path/to/my-project
 | `slack` | Slack notifications (session summary, confirmation alerts) | Global |
 | `career` | career-docs skill, career agents | Either |
 | `presentation` | html-presentation skill, create/format/edit/export-pdf commands | Global |
-| `vla` | vla-code-standards, vla agents (6 domains) | Either |
+| `dl` | pytorch-dl-standards + dl agents (capture, data, model, train, eval, infra) | Either |
 
 > **Global** (`~/.claude/`): language-agnostic tools usable everywhere.
 > **Per-project** (`project/.claude/`): CLAUDE.md, AGENTS.md, work items, MCP are project-specific.
@@ -140,7 +140,7 @@ gh auth login
 ./install.sh /path/to/project                       # All bundles → project
 ./install.sh --list                                 # Show available bundles
 ./install.sh --core --docs                          # Specific bundles only
-./install.sh --exclude career --exclude vla         # All except specific bundles
+./install.sh --exclude career --exclude dl           # All except specific bundles
 ./install.sh --interactive                          # Interactive menu
 
 # Uninstall
@@ -178,7 +178,7 @@ Subagents delegated by Claude for specific tasks.
 | Token Analysis | `token-duplication-detector`, `-load-measurer`, `-mcp-analyzer`, `-split-detector` | 4 |
 | Career Docs | `career-docs-writer`, `-reviewer`, `-reviser` | 3 |
 | CI Audit | `ci-audit-agent` | 1 |
-| VLA Project | `vla-capture`, `-data`, `-model`, `-train`, `-eval`, `-infra` | 6 |
+| DL Pipeline | `dl-capture`, `-data`, `-model`, `-train`, `-eval`, `-infra` | 6 |
 
 > Full reference: [docs/agents.md](docs/agents.md)
 
@@ -215,7 +215,7 @@ Shared code standards installed to `.claude/rules/`.
 | `branch-map-policy.md` | Branch hierarchy selection, safety rules, worktree routing |
 | `collab-workflow.md` | Claude-Codex role separation, work item protocol |
 | `review-merge-policy.md` | Merge gating: freshness, CI checks, MUST-fix resolution |
-| `vla-code-standards.md` | pydantic vs dataclass, frozen patterns, TDD, import order |
+| `pytorch-dl-standards.md` | PyTorch DL standards: config/DTO, frozen patterns, kornia, tech stack |
 
 > Subagents do NOT auto-read rules. Agent definitions must include explicit Read instructions.
 
@@ -243,7 +243,7 @@ claude-useful-instructions/
 │   ├── token-*.md                   # Token optimization analysis (4 agents)
 │   ├── ci-audit-agent.md             # GitHub Actions topology audit
 │   ├── career-docs-*.md             # Career document writer & reviewer
-│   └── vla-*.md                     # VLA robotics project (6 domains)
+│   └── dl-*.md                      # DL pipeline agents (6 domains)
 ├── commands/                        # User-invocable slash commands
 ├── rules/                           # Shared code standards
 ├── templates/                       # Installable templates

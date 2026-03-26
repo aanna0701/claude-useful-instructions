@@ -98,20 +98,20 @@ Reads `.claude/branch-map.yaml`, `.claude/rules/branch-map-policy.md`, and `.cla
 
 ## VLA Project Agents
 
-Domain-specific agents for the VLA (Vision-Language-Action) robotics project.
+PyTorch DL pipeline agents covering the full lifecycle from data acquisition to evaluation.
 
 | Agent | Domain | Tools | Model |
 |-------|--------|-------|-------|
-| `vla-capture` | Camera capture, robot communication | Read, Write, Edit, Bash, Glob, Grep | sonnet |
-| `vla-data` | Data pipeline, preprocessing, lerobot format | Read, Write, Edit, Bash, Glob, Grep | sonnet |
-| `vla-model` | VLM backbone + Action decoder | Read, Write, Edit, Bash, Glob, Grep | sonnet |
-| `vla-train` | QLoRA fine-tuning, Action BC training | Read, Write, Edit, Bash, Glob, Grep | sonnet |
-| `vla-eval` | Performance metrics, safety_guard validation | Read, Write, Edit, Bash, Glob, Grep | sonnet |
-| `vla-infra` | Docker, docker-compose, build/deploy scripts | Read, Write, Edit, Bash, Glob, Grep | sonnet |
+| `dl-capture` | Data acquisition, sensor/camera capture | Read, Write, Edit, Bash, Glob, Grep | sonnet |
+| `dl-data` | Data pipeline, preprocessing, dataset conversion | Read, Write, Edit, Bash, Glob, Grep | sonnet |
+| `dl-model` | Model architecture, backbone + head/decoder | Read, Write, Edit, Bash, Glob, Grep | sonnet |
+| `dl-train` | Training pipeline, fine-tuning, distributed training | Read, Write, Edit, Bash, Glob, Grep | sonnet |
+| `dl-eval` | Evaluation metrics, validation, benchmarks | Read, Write, Edit, Bash, Glob, Grep | sonnet |
+| `dl-infra` | Docker, docker-compose, build/deploy scripts | Read, Write, Edit, Bash, Glob, Grep | sonnet |
 
 ### Naming Convention
 
-Project prefix pattern: `<project>-<domain>.md` (e.g., `vla-capture.md`)
+Domain prefix pattern: `dl-<domain>.md` (e.g., `dl-capture.md`)
 
 ---
 
