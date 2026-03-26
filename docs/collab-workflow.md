@@ -22,7 +22,7 @@ Claude: /work-plan topic1, topic2, topic3
   → parallel agent generation + boundary check + dispatch manifest
                                           ↓
 TOUCH 1 — Human: bash codex-run.sh FEAT-001 FEAT-002 FEAT-003
-  → auto: boundary check → link worktrees → parallel codex exec → monitor
+  → auto: boundary check → seed artifacts → parallel codex exec → monitor
   → Codex implements per contract, records doc changes in status.md
   → prints: /work-review FEAT-001 FEAT-002 FEAT-003
                                           ↓
@@ -41,7 +41,7 @@ graph LR
     end
 
     subgraph "2 codex-run.sh"
-        B --> BC["boundary check\n+ worktree link"]
+        B --> BC["boundary check\n+ seed artifacts"]
         BC --> D["codex exec ×N\n(parallel)"]
         D --> E["code +\nstatus.md"]
     end
@@ -84,7 +84,7 @@ project/
     └── templates/work-item/*.md       # Brief, contract, checklist, status, review
 ```
 
-The `post-checkout` hook is also installed to `.git/hooks/`, auto-linking `work/` when switching branches in new worktrees.
+`/work-plan` seeds each worktree with its work item files and `AGENTS.md` by committing them on the feature branch. `codex-run.sh` re-seeds as a fallback if artifacts are missing.
 
 ---
 
@@ -95,17 +95,22 @@ The `post-checkout` hook is also installed to `.git/hooks/`, auto-linking `work/
 ```
 workspace/
 ├── VasIntelli-research/                    ← main repo (working_parent)
-│   └── work/items/FEAT-001-slug/           ← work items live here
+│   └── work/items/FEAT-001-slug/           ← work items (source of truth)
 ├── VasIntelli-research-FEAT-001-slug/      ← auto-created worktree
+│   ├── AGENTS.md                           ← seeded from main repo
+│   └── work/items/FEAT-001-slug/           ← seeded + committed on feature branch
 └── VasIntelli-research-FEAT-002-slug/      ← auto-created worktree
+    ├── AGENTS.md
+    └── work/items/FEAT-002-slug/
 ```
 
 ### How it works
 
-- `/work-plan` creates branch + worktree per FEAT, records path in `status.md`
-- `codex-run.sh` and `/work-impl` resolve worktree from `status.md` Worktree Path
+- `/work-plan` creates branch + worktree per FEAT, copies work item files + `AGENTS.md` into the worktree, and commits them on the feature branch (`chore(FEAT-NNN-slug): seed work item artifacts`)
+- `codex-run.sh` resolves worktree from `status.md` Worktree Path; if artifacts are missing, it copies and commits them as a fallback
 - On MERGE, `/work-review` runs `git worktree remove` + `git branch -d`
 - Each worktree is temporary — exists only for the FEAT's lifetime
+- Feature branch is deleted after merge, so the seed commit does not pollute history
 
 ---
 

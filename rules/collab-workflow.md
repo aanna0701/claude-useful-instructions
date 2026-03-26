@@ -29,7 +29,7 @@
 
 - `/work-plan` auto-splits topics into parallelizable FEATs with disjoint boundaries
 - Boundary overlap check runs before dispatch — overlapping items grouped sequentially
-- `codex-run.sh` handles: boundary check → worktree link → parallel `codex exec` → monitor → output `/work-review`
+- `codex-run.sh` handles: boundary check → seed artifacts → parallel `codex exec` → monitor → output `/work-review`
 
 ## Worktree Convention
 
