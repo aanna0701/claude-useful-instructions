@@ -386,6 +386,7 @@ dispatch_group() {
 
   # Monitor until all done
   local all_done=false
+  local -A notified_done=()
   while ! $all_done; do
     sleep 10
     all_done=true
@@ -407,9 +408,17 @@ dispatch_group() {
         if [[ "$status" == "done" ]]; then
           ((done_count++)) || true
           printf "  %-40s ✓ done\n" "$slug"
+          if [ -z "${notified_done[$fid]:-}" ]; then
+            notified_done["$fid"]=1
+            notify_slack "✅ *$slug* done ($done_count/${#group_ids[@]})"
+          fi
         else
           printf "  %-40s ✗ exited (status: %s)\n" "$slug" "$status"
           ((done_count++)) || true
+          if [ -z "${notified_done[$fid]:-}" ]; then
+            notified_done["$fid"]=1
+            notify_slack "⚠️ *$slug* exited (status: $status)"
+          fi
         fi
       fi
     done
@@ -435,8 +444,11 @@ cmd_dispatch() {
     exit 1
   fi
 
+  _codex_run_dispatching=true
+
   notify_slack "🚀 *Codex Run Start*
 • Items: ${feat_ids[*]}
+• Count: ${#feat_ids[@]}
 • Host: $(hostname)
 • Repo: $(basename "$PWD")"
 
@@ -546,9 +558,25 @@ cmd_dispatch() {
 • Next: \`/work-review ${review_ids[*]}\`"
   fi
   notify_slack "$slack_text"
+  _codex_run_dispatching=false
 }
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
+
+# ─── Trap: notify on unexpected exit ─────────────────────────────────────────
+
+_codex_run_dispatching=false
+
+cleanup_trap() {
+  local exit_code=$?
+  if $_codex_run_dispatching && [ "$exit_code" -ne 0 ]; then
+    notify_slack "❌ *Codex Run Failed*
+• Exit code: $exit_code
+• Host: $(hostname)
+• Repo: $(basename "$PWD")"
+  fi
+}
+trap cleanup_trap EXIT
 
 case "${1:-}" in
   --check|-c)
