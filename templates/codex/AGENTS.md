@@ -43,9 +43,9 @@ Contract takes precedence if it conflicts with discovered rules.
 
 ### Worktree Resolution
 
+- Work item files (`work/items/FEAT-NNN-slug/`) and `AGENTS.md` are committed on your feature branch — they are local files, not symlinks
 - Determine the implementation worktree from the contract's "Allowed Modifications" paths first
 - Verify which repo/worktree actually contains those allowed paths before editing anything
-- Treat `work/` symlinks as the location of planning artifacts only, not as proof of the implementation worktree
 - If `review.md`, `status.md`, or other planning docs mention a worktree that conflicts with the contract paths, follow the contract paths and record the mismatch in `status.md`
 
 ### Ambiguity Handling
@@ -82,7 +82,6 @@ If this repo uses **git worktrees**, you are already on the correct branch for y
 - **One concern per commit**: separate logical changes into distinct commits
 - Do NOT force push or rewrite history
 - Do NOT merge from sibling feature branches — only rebase/merge from the parent branch
-- `work/` may be a symlink to the planning worktree — treat it as read-only
 
 ## What You Must NOT Do
 

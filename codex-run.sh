@@ -73,6 +73,47 @@ resolve_work_dir() {
   return 1
 }
 
+# Ensure worktree has planning artifacts (copy + commit on feature branch)
+sync_worktree_artifacts() {
+  local feat_id="$1"
+  local target_dir="$2"
+  local base_repo
+  base_repo="$(git rev-parse --show-toplevel)"
+
+  [ -z "$target_dir" ] || [ ! -d "$target_dir" ] && return 0
+  [ "$target_dir" = "$base_repo" ] && return 0
+
+  local wdir
+  wdir=$(resolve_work_dir "$feat_id") || return 0
+  local slug
+  slug=$(basename "$wdir")
+  local needs_commit=false
+
+  # Copy work item files if missing in worktree
+  local wt_feat_dir="$target_dir/work/items/$slug"
+  if [ ! -f "$wt_feat_dir/contract.md" ] && [ -d "$wdir" ]; then
+    mkdir -p "$wt_feat_dir"
+    cp "$wdir"/*.md "$wt_feat_dir/"
+    git -C "$target_dir" add "work/items/$slug/"
+    needs_commit=true
+    echo "    [sync] copied work/items/$slug/"
+  fi
+
+  # Copy AGENTS.md if missing
+  if [ ! -f "$target_dir/AGENTS.md" ] && [ -f "$base_repo/AGENTS.md" ]; then
+    cp "$base_repo/AGENTS.md" "$target_dir/AGENTS.md"
+    git -C "$target_dir" add AGENTS.md
+    needs_commit=true
+    echo "    [sync] copied AGENTS.md"
+  fi
+
+  # Commit seeded artifacts on the feature branch
+  if $needs_commit; then
+    git -C "$target_dir" commit -m "chore($slug): seed work item artifacts" || true
+    echo "    [sync] committed artifacts on feature branch"
+  fi
+}
+
 extract_allowed() {
   local contract="$1"
   local in_section=false
@@ -366,6 +407,10 @@ dispatch_group() {
     fi
 
     if command -v codex &>/dev/null; then
+      # Ensure worktree has planning artifacts before spawning
+      if [ -n "$target_dir" ] && [ -d "$target_dir" ]; then
+        sync_worktree_artifacts "$fid" "$target_dir"
+      fi
       echo "  Spawning: $slug → $log_file${target_dir:+ (cd $target_dir)}"
       if [ -n "$target_dir" ] && [ -d "$target_dir" ]; then
         codex exec --full-auto --cd "$target_dir" "$prompt" > "$log_file" 2>&1 &

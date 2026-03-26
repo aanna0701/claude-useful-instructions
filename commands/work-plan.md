@@ -121,7 +121,25 @@ WT_PATH="../${PROJECT}-${SLUG}"
 
 git branch "$BRANCH" "$PARENT"
 git worktree add "$WT_PATH" "$BRANCH"
+
+# Seed planning artifacts into worktree and commit on the feature branch
+BASE_REPO="$(git rev-parse --show-toplevel)"
+FEAT_DIR="work/items/$SLUG"
+
+mkdir -p "$WT_PATH/$FEAT_DIR"
+cp "$BASE_REPO/$FEAT_DIR"/{brief,contract,checklist,status}.md "$WT_PATH/$FEAT_DIR/"
+cp "$BASE_REPO/AGENTS.md" "$WT_PATH/AGENTS.md" 2>/dev/null || true
+
+git -C "$WT_PATH" add "$FEAT_DIR/" AGENTS.md
+git -C "$WT_PATH" commit -m "chore($SLUG): seed work item artifacts"
 ```
+
+**Critical**: After `git worktree add`, always seed planning artifacts into the feature branch:
+1. Copy the FEAT's `work/items/FEAT-NNN-slug/` directory (brief, contract, checklist, status)
+2. Copy `AGENTS.md` into worktree root
+3. Commit on the feature branch: `chore(FEAT-NNN-slug): seed work item artifacts`
+
+This ensures Codex finds all files natively — no symlinks, no path resolution failures.
 
 Update `status.md` for each FEAT: Branch, Worktree, Worktree Path (absolute).
 Naming: `../${PROJECT}-${SLUG}` (e.g., `../VasIntelli-research-FEAT-001-schema-cleanup`).
