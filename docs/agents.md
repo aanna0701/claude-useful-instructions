@@ -12,8 +12,7 @@ Used by the `diataxis-doc-system` skill and `/write-doc` command.
 
 | Agent | Type | Description |
 |-------|------|-------------|
-| `doc-writer-tutorial` | Tutorial | Step-by-step learning guides. Checkpoint pattern, golden path principle. |
-| `doc-writer-howto` | How-to Guide | Problem-solving recipes. Flexible steps, prerequisite gates. |
+| `doc-writer-guide` | Guide | Step-by-step procedures (beginner or practitioner level). Checkpoint pattern, workflow organization, DRY linking. |
 | `doc-writer-explain` | Explanation | Design Docs (RFC) and ADRs. 4+1 View Model, alternatives comparison required. |
 | `doc-writer-reference` | Reference | API/Config/CLI specs. Tables first, consistent structure, code-synced. |
 

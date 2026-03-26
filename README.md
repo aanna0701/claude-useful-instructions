@@ -171,7 +171,7 @@ Subagents delegated by Claude for specific tasks.
 
 | Group | Agents | Count |
 |-------|--------|-------|
-| Documentation | `doc-writer-tutorial`, `-howto`, `-explain`, `-reference` | 4 |
+| Documentation | `doc-writer-guide`, `-explain`, `-reference` | 3 |
 | Delivery | `doc-writer-task`, `-contract`, `-checklist`, `-review` | 4 |
 | Doc Quality | `doc-polisher`, `doc-reviewer`, `doc-reviewer-execution` | 3 |
 | Diagram | `diagram-writer` | 1 |

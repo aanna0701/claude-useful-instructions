@@ -23,8 +23,7 @@ Dual-axis documentation system. Classifies documents into **Diataxis** (reader-o
 
 | Type | Purpose | Reader State | Agent |
 |------|---------|-------------|-------|
-| Tutorial | Learning | First encounter | `doc-writer-tutorial` |
-| How-to Guide | Problem solving | Knows basics, has specific problem | `doc-writer-howto` |
+| Guide | Step-by-step procedures | Wants to accomplish a task (beginner or practitioner) | `doc-writer-guide` |
 | Explanation | Understanding | Wants to know "why" | `doc-writer-explain` |
 | Reference | Information lookup | Needs exact specs | `doc-writer-reference` |
 

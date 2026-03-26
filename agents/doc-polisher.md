@@ -16,8 +16,7 @@ Before polishing any document, Read:
 1. `skills/diataxis-doc-system/references/writing-style.md` — Readability and style rules
 2. `skills/diataxis-doc-system/references/common-rules.md` — Docs as Code common rules
 3. The type-specific rules file matching the document's `type` frontmatter:
-   - tutorial → `tutorial-rules.md`
-   - howto → `howto-rules.md`
+   - guide → `guide-rules.md`
    - explanation → `explain-rules.md`
    - reference → `reference-rules.md`
    - task/contract/checklist/review → `execution-rules.md`
