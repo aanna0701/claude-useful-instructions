@@ -37,6 +37,10 @@
 - Implementation location is resolved from `status.md` Worktree Path (contract paths win over planning docs)
 - `/work-review` reads files and runs tests from `Worktree Path` in `status.md`, not cwd
 - On MERGE, worktree is removed via `git worktree remove`
+- A newly created worktree is not assumed to be implementation-ready.
+- `codex-run.sh` should auto-sync the feature branch from its contract parent branch before spawning Codex.
+- If the runner cannot sync cleanly, it marks the item `blocked` with `needs-sync`.
+- Even after auto-sync, dependency FEAT outputs must still exist in the worktree; otherwise Codex blocks rather than recreating moved files or violating boundaries.
 
 ## Worktree Routing
 
@@ -69,3 +73,4 @@
 - MERGE decision: ask user → review existing draft PR → `gh pr merge` → apply doc changes → cleanup worktree + work item dir
 - Worktree setups: commit on worktree branch, no sub-branches
 - Human intervention: dispatch + review only
+- If contract invariants depend on upstream FEATs, treat branch sync and dependency-presence checks as a precondition, not as part of implementation.

@@ -112,6 +112,15 @@ workspace/
 - Each worktree is temporary — exists only for the FEAT's lifetime
 - Feature branch is deleted after merge, so the seed commit does not pollute history
 
+### Preflight before implementation
+
+A worktree existing on disk does not guarantee it is synced to the right base.
+
+- `codex-run.sh` should first auto-sync the feature branch from the contract's `Parent Branch`.
+- If upstream FEATs changed the expected file layout, verify those dependency outputs are already present in the worktree.
+- If runner auto-sync fails or dependency outputs are still missing, do not start implementation. Resolve the branch state, then rerun `codex-run.sh`.
+- This prevents false-starts where Codex correctly blocks on missing invariant prerequisites such as moved files, split docs, or renamed paths.
+
 ---
 
 ## Parallel Codex Execution
