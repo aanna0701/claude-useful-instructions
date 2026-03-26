@@ -61,8 +61,37 @@ Update `status.md`:
 - Changed Files: list all modified/created files
 - Doc Changes Needed: record any documentation updates that the implementer cannot make
 
-### Step 7: Commit & Push
+### Step 7: Commit, Push & Draft PR
 
-Commit changed files with `feat(FEAT-NNN): <description>`, push with `-u`.
+1. Commit changed files with `feat(FEAT-NNN): <description>`, push with `-u`.
 
-Print summary: FEAT ID, issue, branch, status `done`, and next command `/work-review FEAT-NNN`.
+2. Create a draft Pull Request:
+   ```bash
+   # Read merge target from contract's Branch Map section
+   MERGE_TARGET=<from contract.md Branch Map>
+   ISSUE=<from status.md Issue field>
+
+   gh pr create \
+     --base "$MERGE_TARGET" \
+     --head feat/FEAT-NNN-slug \
+     --title "FEAT-NNN: <readable title from brief>" \
+     --body "## Objective
+   <from brief.md>
+
+   ## Changed Files
+   <from status.md>
+
+   ## Checklist
+   <from checklist.md — checked items>
+
+   ---
+   Closes #${ISSUE}
+   Work item: \`work/items/FEAT-NNN-slug/\`" \
+     --draft
+   ```
+
+3. Update `status.md`: add `PR` field with the draft PR URL.
+
+4. If `gh` is not available or fails, print warning and continue — PR can be created manually or by `/work-review` as a fallback.
+
+Print summary: FEAT ID, issue, branch, PR (draft), status `done`, and next command `/work-review FEAT-NNN`.

@@ -204,6 +204,98 @@ verify_commits() {
   return 0
 }
 
+push_and_create_pr() {
+  local feat_id="$1"
+  local wdir
+  wdir=$(resolve_work_dir "$feat_id") || return 1
+  local slug
+  slug=$(basename "$wdir")
+
+  # Resolve worktree path
+  local target_dir=""
+  if [ -f "$wdir/status.md" ]; then
+    target_dir=$(grep -oP '^\| Worktree Path \| \K[^\s|]+' "$wdir/status.md" || true)
+    [ "$target_dir" = "—" ] && target_dir=""
+  fi
+  local git_dir="${target_dir:-.}"
+
+  # Push branch
+  local branch
+  branch=$(git -C "$git_dir" rev-parse --abbrev-ref HEAD 2>/dev/null)
+  echo "    Pushing $branch..."
+  if ! git -C "$git_dir" push -u origin "$branch" 2>/dev/null; then
+    echo "    ⚠ $slug: push failed"
+    return 1
+  fi
+
+  # Check if gh is available
+  if ! command -v gh &>/dev/null; then
+    echo "    ⚠ $slug: gh CLI not available — skip draft PR creation"
+    return 0
+  fi
+
+  # Check if PR already exists
+  local existing_pr
+  existing_pr=$(gh pr list --head "$branch" --json number -q '.[0].number' 2>/dev/null || true)
+  if [ -n "$existing_pr" ]; then
+    echo "    ✓ $slug: PR #$existing_pr already exists"
+    local pr_url
+    pr_url=$(gh pr view "$existing_pr" --json url -q .url 2>/dev/null || true)
+    if [ -n "$pr_url" ]; then
+      sed -i "s|^\| PR \| .* |$|\| PR \| $pr_url \||" "$wdir/status.md" 2>/dev/null || true
+    fi
+    return 0
+  fi
+
+  # Resolve merge target from contract
+  local merge_target=""
+  if [ -f "$wdir/contract.md" ]; then
+    merge_target=$(grep -oP '^\- \*\*Merge Target\*\*: `\K[^`]+' "$wdir/contract.md" || true)
+  fi
+  if [ -z "$merge_target" ] && [ -f ".claude/branch-map.yaml" ]; then
+    merge_target=$(grep 'default_merge_target:' .claude/branch-map.yaml | head -1 | awk '{print $2}' || true)
+  fi
+  [ -z "$merge_target" ] && merge_target="main"
+
+  # Read issue number from status.md
+  local issue=""
+  issue=$(grep -oP '^\| Issue \| #\K\d+' "$wdir/status.md" 2>/dev/null || true)
+
+  # Read title from brief.md
+  local title="$feat_id"
+  if [ -f "$wdir/brief.md" ]; then
+    title=$(grep -m1 '^# ' "$wdir/brief.md" | sed 's/^# //' || echo "$feat_id")
+  fi
+
+  # Build PR body
+  local closes_line=""
+  [ -n "$issue" ] && closes_line="Closes #$issue"
+
+  local pr_url
+  pr_url=$(gh pr create \
+    --base "$merge_target" \
+    --head "$branch" \
+    --title "$feat_id: $title" \
+    --body "$(cat <<EOF
+## Work Item: $slug
+
+$closes_line
+Work item: \`work/items/$slug/\`
+EOF
+)" \
+    --draft 2>/dev/null || true)
+
+  if [ -n "$pr_url" ]; then
+    echo "    ✓ $slug: draft PR created → $pr_url"
+    sed -i "s|^\| PR \| .* |$|\| PR \| $pr_url \||" "$wdir/status.md" 2>/dev/null || true
+    git -C "$git_dir" add "work/items/$slug/status.md" 2>/dev/null || true
+    git -C "$git_dir" commit -m "chore($feat_id): record PR URL" 2>/dev/null || true
+    git -C "$git_dir" push 2>/dev/null || true
+  else
+    echo "    ⚠ $slug: draft PR creation failed"
+  fi
+}
+
 get_item_status() {
   local wdir="$1"
   python3 - "$wdir/status.md" <<'PY' 2>/dev/null || echo "unknown"
@@ -545,7 +637,7 @@ cmd_dispatch() {
   local feat_ids=("$@")
 
   # Step 1: Boundary check
-  echo "Step 1/3: Boundary check"
+  echo "Step 1/4: Boundary check"
   if ! boundary_check "${feat_ids[@]}"; then
     echo ""
     echo "Resolve boundary conflicts before dispatching."
@@ -563,7 +655,7 @@ cmd_dispatch() {
 
   # Step 3: Resolve groups and dispatch
   echo ""
-  echo "Step 2/3: Dispatching ${#feat_ids[@]} Codex instance(s)"
+  echo "Step 2/4: Dispatching ${#feat_ids[@]} Codex instance(s)"
   echo "──────────────────────────────────────────────"
 
   local groups=()
@@ -623,7 +715,7 @@ cmd_dispatch() {
 
   # Step 4: Collect results + verify commits
   echo ""
-  echo "Step 3/3: Results + Verification"
+  echo "Step 3/4: Results + Verification"
   echo "──────────────────────────────────────────────"
   local success=0 failed=0 warn=0
   local review_ids=()
@@ -647,6 +739,22 @@ cmd_dispatch() {
       ((failed++)) || true
     fi
   done
+
+  # Step 3.5: Push + draft PR for verified items
+  if [ ${#review_ids[@]} -gt 0 ]; then
+    echo ""
+    echo "Pushing branches + creating draft PRs..."
+    local pr_urls=()
+    for fid in "${review_ids[@]}"; do
+      local pr_result
+      pr_result=$(push_and_create_pr "$fid" 2>&1) || true
+      echo "$pr_result"
+      # Extract PR URL if created
+      local url
+      url=$(echo "$pr_result" | grep -oP '→ \K.*' || true)
+      [ -n "$url" ] && pr_urls+=("$fid: $url")
+    done
+  fi
 
   # Print summary + next step
   echo "══════════════════════════════════════════════"
@@ -681,6 +789,14 @@ cmd_dispatch() {
 • Success: $success  Failed: $failed
 • Items: ${feat_ids[*]}
 • Host: $(hostname)"
+  if [ ${#pr_urls[@]:-0} -gt 0 ]; then
+    slack_text+="
+• PRs:"
+    for pr_info in "${pr_urls[@]}"; do
+      slack_text+="
+  - $pr_info"
+    done
+  fi
   if [ ${#review_ids[@]} -gt 0 ]; then
     slack_text+="
 • Next: \`/work-review ${review_ids[*]}\`"
@@ -729,9 +845,9 @@ Usage: codex-run.sh [options] FEAT-ID [FEAT-ID ...]
 
 Flow:
   1. Validates contract boundary overlaps
-  2. Auto-links worktrees (if applicable)
-  3. Spawns parallel codex exec processes
-  4. Monitors status.md until all items complete
+  2. Spawns parallel codex exec processes + monitors
+  3. Verifies commits on completion
+  4. Pushes branches + creates draft PRs
   5. Prints /work-review command for Claude
 HELP
     ;;

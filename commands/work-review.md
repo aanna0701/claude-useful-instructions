@@ -40,23 +40,29 @@ Read in parallel:
 
 ### Step 3.5: Branch Map Validation
 
+Follow `rules/branch-map-policy.md` § Safety Rules and `rules/review-merge-policy.md` § Merge Gating.
+
 Read the "## Branch Map" section from `contract.md`. If present:
 
-1. **Freshness check**: Compare the implementation branch against the declared `Parent Branch`:
-   ```bash
-   git rev-list --left-right --count <parent>...<branch>
-   ```
-   If the branch is behind its parent, warn: "Branch is N commits behind {parent}. Recommend rebase before merge."
+1. **Freshness check**: Branch must include all parent commits (per branch-map-policy Safety Rules).
+2. **Merge target**: Use `Merge Target` from the contract for the merge in Step 8.
+3. **Role consistency**: Verify changed files fall within declared role's paths.
 
-2. **Merge target**: Use `Merge Target` from the contract (not a hardcoded branch) for the merge in Step 8.
+If no Branch Map section exists, read `.claude/branch-map.yaml` directly. If neither exists, fall back to current branch's upstream.
 
-3. **Role consistency**: Verify that changed files (from status.md) fall within the declared role's expected paths. Flag unexpected path modifications.
+### Step 4: Resolve Implementation Worktree & PR
 
-If no Branch Map section exists (legacy work items), attempt to read `.claude/branch-map.yaml` directly. If that also doesn't exist, fall back to default behavior (merge into current branch's upstream).
+Read `Worktree` and `Worktree Path` from `status.md`. If it differs from the current cwd, use that path for all file reads, git commands, and test runs in subsequent steps.
 
-### Step 4: Resolve Implementation Worktree
-
-Read `Worktree` and `Worktree Path` from `status.md`. If it differs from the current cwd, use that path for all file reads, git commands, and test runs in subsequent steps. See `rules/collab-workflow.md` → "Review worktree rule" for rationale.
+Read `PR` from `status.md`. If present, verify the PR exists and is open:
+```bash
+gh pr view <pr_number> --json state -q .state
+```
+If no PR field exists, check for an existing PR on the branch:
+```bash
+gh pr list --head feat/FEAT-NNN-slug --json number,url -q '.[0]'
+```
+If still no PR found, create one now as a fallback (see `/work-impl` Step 7 for format).
 
 ### Step 5: Review Changed Files
 
@@ -78,44 +84,27 @@ Update `status.md`:
 ### Step 8: Execute Decision
 
 **MERGE**:
-1. Resolve merge target: use `Merge Target` from contract's Branch Map section, or fall back to the branch's upstream.
+1. Resolve the PR: read `PR` field from `status.md`, or find via `gh pr list --head feat/FEAT-NNN-slug`.
+   If no PR exists (legacy flow), create one now using the same format as `/work-impl` Step 7.
+
 2. If Step 3.5 flagged freshness issues, block merge and suggest rebase first.
-3. Create Pull Request:
+
+3. Convert draft PR to ready (if still draft):
    ```bash
-   gh pr create \
-     --base <merge_target> \
-     --head feat/FEAT-NNN-slug \
-     --title "FEAT-NNN: <readable title from brief>" \
-     --body "<body>"
+   gh pr ready <pr_number>
    ```
-   PR body format:
-   ```
-   ## Objective
-   <from brief.md>
 
-   ## Review Summary
-   <verdict and key findings from review.md>
-
-   ## Changed Files
-   <from status.md>
-
-   ## Checklist
-   <from checklist.md — checked items>
-
-   ---
-   Closes #<issue_number>
-   Work item: `work/items/FEAT-NNN-slug/`
-   ```
-   The `Closes #N` line auto-closes the linked GitHub Issue when the PR is merged.
-4. Link PR to Issue (if issue exists):
+4. Update PR body with review summary:
    ```bash
-   gh issue comment <number> --body "PR created: <pr_url>"
+   gh pr edit <pr_number> --body "<updated body with review summary>"
    ```
-5. **Auto PR review + merge**: Spawn `pr-reviewer` agent with the PR number, FEAT ID, work item directory, and repo root. The agent reviews the diff against the contract, submits a `gh pr review`, and if APPROVE, auto-merges via `gh pr merge --squash --delete-branch`.
-6. Update `status.md`: set Status to `merged`, add `PR` field with the PR URL.
-7. Print: "PR created and merged: <pr_url>."
-8. **Post-merge cleanup** (run after PR is merged on GitHub, or via `/work-status` detecting merged PRs):
-   - Close linked GitHub Issue (explicit, in case `Closes #N` in PR body didn't trigger):
+
+5. Spawn `pr-reviewer` agent with the PR number, FEAT ID, work item directory, and repo root. The agent reviews the diff against the contract, submits `gh pr review`, and if APPROVE, auto-merges via `gh pr merge --squash --delete-branch`.
+
+6. Update `status.md`: set Status to `merged`, update `PR` field.
+
+7. **Post-merge cleanup**:
+   - Close linked GitHub Issue (safety net — `Closes #N` in PR body may not always trigger):
      ```bash
      gh issue close <issue_number> --comment "Merged via PR <pr_url>"
      ```
@@ -151,13 +140,9 @@ When reviewing multiple items, also check for "Doc Changes Needed" in each `stat
 ```
 Review Complete
 ──────────────────────────────────────────────
-  FEAT-001  duckdb-schema-cleanup      PR #51 → research   #42 linked
-  FEAT-002  jwt-auth-middleware        PR #52 → research   #43 linked
-  FEAT-003  refactor-logging           REVISE               #44 open
-
-PRs ready to merge on GitHub:
-  https://github.com/org/repo/pull/51
-  https://github.com/org/repo/pull/52
+  FEAT-001  duckdb-schema-cleanup      PR #51 (merged)     #42 closed
+  FEAT-002  jwt-auth-middleware        PR #52 (merged)     #43 closed
+  FEAT-003  refactor-logging           PR #53 (revise)     #44 open
 
 Revisions needed:
   bash codex-run.sh FEAT-003

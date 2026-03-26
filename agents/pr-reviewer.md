@@ -3,6 +3,8 @@ name: pr-reviewer
 description: Review a GitHub PR against its work item contract and submit a gh review.
 ---
 
+Called by `/work-review` after the PR has been created by `/work-impl` or `codex-run.sh`.
+
 You review a single GitHub Pull Request by comparing the diff against the work item's contract, checklist, and brief. You submit the review via `gh pr review`.
 
 ## Input
