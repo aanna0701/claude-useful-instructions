@@ -73,6 +73,154 @@ resolve_work_dir() {
   return 1
 }
 
+extract_contract_field() {
+  local contract="$1"
+  local field="$2"
+
+  [ -f "$contract" ] || return 1
+
+  python3 - "$contract" "$field" <<'PY' 2>/dev/null || true
+import re
+import sys
+from pathlib import Path
+
+text = Path(sys.argv[1]).read_text(encoding="utf-8")
+field = sys.argv[2]
+
+for line in text.splitlines():
+    if not line.startswith("|"):
+        continue
+    parts = [part.strip() for part in line.split("|")]
+    if len(parts) >= 4 and parts[1] == field:
+        value = parts[2]
+        if value not in {"", "Value"}:
+            print(value)
+            raise SystemExit(0)
+
+match = re.search(rf'^- \*\*{re.escape(field)}\*\*: `([^`]+)`\s*$', text, re.MULTILINE)
+if match:
+    print(match.group(1))
+PY
+}
+
+resolve_target_dir() {
+  local feat_id="$1"
+  local wdir="$2"
+  local target_dir=""
+
+  if [ -f "$wdir/status.md" ]; then
+    target_dir=$(grep -oP '^\| Worktree Path \| \K[^\s|]+' "$wdir/status.md" || true)
+    [ "$target_dir" = "—" ] && target_dir=""
+  fi
+  if [ -z "$target_dir" ] && [ -f "work/dispatch.json" ] && command -v jq &>/dev/null; then
+    target_dir=$(jq -r --arg fid "$feat_id" '.items[] | select(.feat_id == $fid) | .worktree_path // empty' work/dispatch.json 2>/dev/null || true)
+  fi
+  if [ -z "$target_dir" ] && [ -f "$wdir/contract.md" ]; then
+    target_dir=$(extract_contract_field "$wdir/contract.md" "Target Worktree" || true)
+    [ "$target_dir" = "—" ] && target_dir=""
+  fi
+
+  echo "$target_dir"
+}
+
+update_status_state() {
+  local status_file="$1"
+  local status_value="$2"
+  local agent_value="$3"
+
+  python3 - "$status_file" "$status_value" "$agent_value" <<'PY'
+import re
+import sys
+from datetime import datetime
+from pathlib import Path
+
+path = Path(sys.argv[1])
+status_value = sys.argv[2]
+agent_value = sys.argv[3]
+text = path.read_text(encoding="utf-8")
+
+text = re.sub(r'^updated: .*$', f'updated: {datetime.now():%Y-%m-%d %H:%M}', text, flags=re.MULTILINE)
+text = re.sub(r'^\|\s*Status\s*\|\s*[^|]+?\s*\|$', f'| Status | {status_value} |', text, flags=re.MULTILINE)
+text = re.sub(r'^\|\s*Agent\s*\|\s*[^|]+?\s*\|$', f'| Agent | {agent_value} |', text, flags=re.MULTILINE)
+text = re.sub(r'^##\s*Current\s+Status:\s*\S+.*$', f'## Current Status: {status_value}', text, flags=re.MULTILINE)
+text = re.sub(r'^##\s*Agent:\s*.*$', f'## Agent: {agent_value}', text, flags=re.MULTILINE)
+
+path.write_text(text, encoding="utf-8")
+PY
+}
+
+mark_status_blocked() {
+  local status_file="$1"
+  local issue_value="$2"
+  local blocker_text="$3"
+
+  python3 - "$status_file" "$issue_value" "$blocker_text" <<'PY'
+import re
+import sys
+from datetime import datetime
+from pathlib import Path
+
+path = Path(sys.argv[1])
+issue_value = sys.argv[2]
+blocker_text = sys.argv[3]
+text = path.read_text(encoding="utf-8")
+
+text = re.sub(r'^updated: .*$', f'updated: {datetime.now():%Y-%m-%d %H:%M}', text, flags=re.MULTILINE)
+text = re.sub(r'^\|\s*Status\s*\|\s*[^|]+?\s*\|$', '| Status | blocked |', text, flags=re.MULTILINE)
+text = re.sub(r'^\|\s*Issue\s*\|\s*[^|]+?\s*\|$', f'| Issue | {issue_value} |', text, flags=re.MULTILINE)
+
+pattern = re.compile(r'(^## Blockers\n)(.*?)(?=\n## |\Z)', re.MULTILINE | re.DOTALL)
+match = pattern.search(text)
+replacement_body = f"- {blocker_text}"
+if match:
+    text = text[:match.start()] + match.group(1) + replacement_body + text[match.end():]
+
+path.write_text(text, encoding="utf-8")
+PY
+}
+
+sync_branch_from_parent() {
+  local feat_id="$1"
+  local wdir="$2"
+  local git_dir="$3"
+
+  local contract="$wdir/contract.md"
+  [ -f "$contract" ] || return 0
+
+  local parent_branch=""
+  parent_branch=$(extract_contract_field "$contract" "Parent Branch" || true)
+  if [ -z "$parent_branch" ] || [ "$parent_branch" = "—" ] || [[ "$parent_branch" == \[* ]]; then
+    return 0
+  fi
+
+  local branch
+  branch=$(git -C "$git_dir" rev-parse --abbrev-ref HEAD 2>/dev/null || true)
+  local parent_ref="$parent_branch"
+
+  echo "    [sync] checking branch freshness: $branch <- $parent_branch"
+
+  git -C "$git_dir" fetch origin "$parent_branch" >/dev/null 2>&1 || git -C "$git_dir" fetch origin >/dev/null 2>&1 || true
+  if git -C "$git_dir" show-ref --verify --quiet "refs/remotes/origin/$parent_branch"; then
+    parent_ref="origin/$parent_branch"
+  fi
+
+  if git -C "$git_dir" merge-base --is-ancestor "$parent_ref" HEAD >/dev/null 2>&1; then
+    echo "    [sync] already includes $parent_ref"
+    return 0
+  fi
+
+  echo "    [sync] merging $parent_ref into $branch"
+  if git -C "$git_dir" merge --no-edit "$parent_ref" >/dev/null 2>&1; then
+    echo "    [sync] merge complete"
+    return 0
+  fi
+
+  git -C "$git_dir" merge --abort >/dev/null 2>&1 || true
+  mark_status_blocked "$wdir/status.md" "needs-sync" "Runner auto-sync from parent branch '$parent_branch' failed. Resolve branch sync or merge conflicts, then rerun codex-run.sh."
+  echo "    [sync] merge failed; status marked blocked"
+  return 1
+}
+
 # Ensure worktree has planning artifacts (copy + commit on feature branch)
 sync_worktree_artifacts() {
   local feat_id="$1"
@@ -158,12 +306,9 @@ rescue_uncommitted() {
   local slug
   slug=$(basename "$wdir")
 
-  # Resolve worktree path from status.md
+  # Resolve worktree path from status.md / dispatch / contract
   local target_dir=""
-  if [ -f "$wdir/status.md" ]; then
-    target_dir=$(grep -oP '^\| Worktree Path \| \K[^\s|]+' "$wdir/status.md" || true)
-    [ "$target_dir" = "—" ] && target_dir=""
-  fi
+  target_dir=$(resolve_target_dir "$feat_id" "$wdir")
   local git_dir="${target_dir:-.}"
 
   local dirty
@@ -254,12 +399,9 @@ verify_commits() {
   local slug
   slug=$(basename "$wdir")
 
-  # Resolve worktree path from status.md
+  # Resolve worktree path from status.md / dispatch / contract
   local target_dir=""
-  if [ -f "$wdir/status.md" ]; then
-    target_dir=$(grep -oP '^\| Worktree Path \| \K[^\s|]+' "$wdir/status.md" || true)
-    [ "$target_dir" = "—" ] && target_dir=""
-  fi
+  target_dir=$(resolve_target_dir "$feat_id" "$wdir")
   local git_dir="${target_dir:-.}"
 
   # Check for uncommitted changes — rescue if found
@@ -278,7 +420,7 @@ verify_commits() {
   branch=$(git -C "$git_dir" rev-parse --abbrev-ref HEAD 2>/dev/null)
   local parent_branch=""
   if [ -f "$wdir/contract.md" ]; then
-    parent_branch=$(grep -oP '^\- \*\*Parent Branch\*\*: `\K[^`]+' "$wdir/contract.md" || true)
+    parent_branch=$(extract_contract_field "$wdir/contract.md" "Parent Branch" || true)
   fi
   if [ -z "$parent_branch" ] && [ -f ".claude/branch-map.yaml" ]; then
     parent_branch=$(grep 'working_parent:' .claude/branch-map.yaml | head -1 | awk '{print $2}' || true)
@@ -314,10 +456,7 @@ push_and_create_pr() {
 
   # Resolve worktree path
   local target_dir=""
-  if [ -f "$wdir/status.md" ]; then
-    target_dir=$(grep -oP '^\| Worktree Path \| \K[^\s|]+' "$wdir/status.md" || true)
-    [ "$target_dir" = "—" ] && target_dir=""
-  fi
+  target_dir=$(resolve_target_dir "$feat_id" "$wdir")
   local git_dir="${target_dir:-.}"
 
   # Push branch
@@ -351,7 +490,7 @@ push_and_create_pr() {
   # Resolve merge target from contract
   local merge_target=""
   if [ -f "$wdir/contract.md" ]; then
-    merge_target=$(grep -oP '^\- \*\*Merge Target\*\*: `\K[^`]+' "$wdir/contract.md" || true)
+    merge_target=$(extract_contract_field "$wdir/contract.md" "Merge Target" || true)
   fi
   if [ -z "$merge_target" ] && [ -f ".claude/branch-map.yaml" ]; then
     merge_target=$(grep 'default_merge_target:' .claude/branch-map.yaml | head -1 | awk '{print $2}' || true)
@@ -555,12 +694,7 @@ build_codex_prompt() {
 
   if [ -f "$review_file" ]; then
     review_instructions=$(cat <<EOF
-4. $wdir/review.md — latest review feedback; treat every MUST-fix item as required
-
-Additional revise-loop rules:
-- On re-dispatch, review.md is the authoritative delta over the original implementation state
-- FIX every MUST-fix item from review.md before optional cleanup
-- UPDATE $wdir/status.md to reflect each review item you resolved
+4. $wdir/review.md — latest review feedback; FIX every MUST-fix item before optional cleanup
 
 EOF
 )
@@ -573,21 +707,15 @@ You are implementing work item $slug. Read these files in order:
 2. $wdir/contract.md — understand boundaries, interfaces, invariants
 3. $wdir/checklist.md — understand verification requirements
 ${review_instructions}
-Follow AGENTS.md for all implementation rules.
+Follow AGENTS.md for the full workflow.
 
-## Completion Protocol (MANDATORY — do NOT skip)
-
-1. VERIFY: run checklist verification commands
-2. SAVE all implementation files to disk
-3. UPDATE $wdir/status.md:
-   - Status: done
-   - Changed Files: list all modified files
-   - Verification: record commands/results that show the checklist passed
-   - Intended Commit Message: feat($feat_id): <description>
-4. VERIFY: run "git diff --check" and "git status --short"
-5. PRINT as your final output: /work-review $feat_id
-
-If git commit fails because the sandbox blocks .git/worktrees/* metadata writes, do not treat that as a task failure. Leave files saved and status.md complete; codex-run.sh will rescue the commit outside the sandbox.
+Non-negotiables:
+- Assume codex-run.sh already attempted parent-branch auto-sync before spawning you.
+- Stay inside contract boundaries only.
+- Update $wdir/status.md on every state change.
+- Run the checklist verification commands before marking done.
+- Print /work-review $feat_id as your final output.
+- If git commit fails due to sandbox restrictions, leave files saved; codex-run.sh will rescue the commit.
 
 Begin implementation.
 EOF
@@ -643,34 +771,20 @@ dispatch_group() {
     local slug
     slug=$(basename "$wdir")
     local log_file="$LOG_DIR/${slug}.log"
+    local target_dir=""
+    target_dir=$(resolve_target_dir "$fid" "$wdir")
     local prompt
     prompt=$(build_codex_prompt "$fid")
-
-    # Initialize status (support both table and heading formats)
-    sed -i 's/| Status | .*/| Status | in-progress |/' "$wdir/status.md"
-    sed -i 's/^## Current Status: .*/## Current Status: in-progress/' "$wdir/status.md"
-    sed -i 's/| Agent | .*/| Agent | Codex |/' "$wdir/status.md"
-    sed -i 's/^## Agent: .*/## Agent: Codex/' "$wdir/status.md"
-    sed -i "s/^updated: .*/updated: $(date '+%Y-%m-%d %H:%M')/" "$wdir/status.md"
-
-    # Resolve target worktree: status.md → dispatch.json → contract.md
-    local target_dir=""
-    if [ -f "$wdir/status.md" ]; then
-      target_dir=$(grep -oP '^\| Worktree Path \| \K[^\s|]+' "$wdir/status.md" || true)
-      # Ignore placeholder
-      [ "$target_dir" = "—" ] && target_dir=""
-    fi
-    if [ -z "$target_dir" ] && [ -f "work/dispatch.json" ] && command -v jq &>/dev/null; then
-      target_dir=$(jq -r --arg fid "$fid" '.items[] | select(.feat_id == $fid) | .worktree_path // empty' work/dispatch.json 2>/dev/null || true)
-    fi
-    if [ -z "$target_dir" ] && [ -f "$wdir/contract.md" ]; then
-      target_dir=$(grep -oP '^\- \*\*Path\*\*: `\K[^`]+' "$wdir/contract.md" || true)
-    fi
+    update_status_state "$wdir/status.md" "in-progress" "Codex"
 
     if command -v codex &>/dev/null; then
-      # Ensure worktree has planning artifacts before spawning
+      # Ensure worktree has planning artifacts and latest parent-branch changes before spawning.
       if [ -n "$target_dir" ] && [ -d "$target_dir" ]; then
         sync_worktree_artifacts "$fid" "$target_dir"
+        if ! sync_branch_from_parent "$fid" "$wdir" "$target_dir"; then
+          echo "  Blocked: $slug → auto-sync failed; skipping Codex spawn"
+          continue
+        fi
       fi
       echo "  Spawning: $slug → $log_file${target_dir:+ (cd $target_dir)}"
       if [ -n "$target_dir" ] && [ -d "$target_dir" ]; then
@@ -950,10 +1064,11 @@ Usage: codex-run.sh [options] FEAT-ID [FEAT-ID ...]
 
 Flow:
   1. Validates contract boundary overlaps
-  2. Spawns parallel codex exec processes + monitors
-  3. Verifies commits on completion
-  4. Pushes branches + creates draft PRs
-  5. Prints /work-review command for Claude
+  2. Auto-syncs each worktree from its contract parent branch
+  3. Spawns parallel codex exec processes + monitors
+  4. Verifies commits on completion
+  5. Pushes branches + creates draft PRs
+  6. Prints /work-review command for Claude
 HELP
     ;;
   -*)
