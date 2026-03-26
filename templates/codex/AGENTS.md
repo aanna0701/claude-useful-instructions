@@ -15,6 +15,17 @@ You are dispatched via `codex-run.sh` which provides your work item context. If 
    - `contract.md` — understand boundaries, interfaces, invariants
    - `checklist.md` — understand verification requirements
 
+## Project Context Discovery
+
+Before starting implementation, scan for project-specific guidance. **List filenames only first**, then read only the ones relevant to your work item's domain.
+
+1. **CLAUDE.md**: If it exists in the project root, read it.
+2. **Rules**: List `.claude/rules/` filenames — read any that relate to your task (e.g., coding standards, tech stack).
+3. **Agents**: List `.claude/agents/` filenames — read any whose name matches your work item's domain for scope and conventions.
+4. **Skills**: List `.claude/commands/` or `.claude/skills/` filenames — note any that may apply but do not invoke them unless the contract requires it.
+
+Contract takes precedence if it conflicts with discovered rules.
+
 ## Implementation Rules
 
 ### Scope
