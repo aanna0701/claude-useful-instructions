@@ -1,5 +1,8 @@
 # Review and Merge Policy
 
+PRs are created during implementation (`/work-impl` or `codex-run.sh`) as drafts.
+Review operates on existing PRs — it does not create them (unless none exists as a fallback).
+
 ## Merge Gating
 
 Before any merge:
@@ -13,6 +16,7 @@ Before any merge:
 
 - Ask user confirmation if `ask_confirm_before_merge` is true.
 - Delete feature branch only if `delete_branch_after_merge` is true.
+- Remove worktree via `git worktree remove` (per `rules/collab-workflow.md` Worktree Convention).
 - If design/contract changes were made, check whether sibling open work items need sync.
 
 ## Review Failure

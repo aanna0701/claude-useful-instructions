@@ -15,13 +15,6 @@
 - Never assume `main`, `develop`, or `research` exists — check `trunk_chain`.
 - A feature branch may only rebase/merge FROM its parent branch.
 
-## Worktree Routing (when collab workflow is active)
-
-- Resolve implementation location from contract "Allowed Modifications" paths first.
-- Fall back to `roles[].paths` in `branch-map.yaml` for worktree selection.
-- If paths conflict between planning docs and contract, contract wins.
-- Cross-cutting tasks that span multiple roles: split into separate work items or mark sequential.
-
 ## Hub-and-Spoke Auto-Sync
 
 Feature branches sync through the hub (working_parent), never directly between siblings:
@@ -52,7 +45,6 @@ feature-B ──push──→ hub (working_parent) ──cascade──→ featur
 
 When `.claude/branch-map.yaml` is modified (trunk_chain, working_parent, or merge_policy changes):
 - If `.github/workflows/` exists, proactively run `/gha-branch-sync` to detect misalignment.
-- If a work item contract has a `CI Scope` field, verify that matching workflows exist for those checks.
 
 ## Examples
 
