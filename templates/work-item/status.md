@@ -14,6 +14,7 @@ updated: YYYY-MM-DD HH:MM
 | Branch | — |
 | Worktree | — |
 | Worktree Path | — |
+| PR | — |
 
 ## Progress
 
