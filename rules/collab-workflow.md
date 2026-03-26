@@ -37,6 +37,17 @@
 - Implementation location is resolved from `status.md` Worktree Path (contract paths win over planning docs)
 - `/work-review` reads files and runs tests from `Worktree Path` in `status.md`, not cwd
 - On MERGE, worktree is removed via `git worktree remove`
+
+### Worktree-First File Resolution (CRITICAL)
+
+Work item files (`status.md`, `brief.md`, `contract.md`, etc.) may exist in **both** the main repo and the worktree, and the worktree copy is the authoritative one during review.
+
+**Bootstrap order for `/work-review`:**
+1. Resolve `FEAT-NNN` to slug via `work/items/FEAT-NNN-*/` glob (cwd is fine here — just need the slug)
+2. Read `Worktree Path` from `status.md` — try **worktree path first**: `../${PROJECT}-${SLUG}/work/items/${SLUG}/status.md`; fall back to cwd only if worktree does not exist
+3. ALL subsequent file reads (brief, contract, checklist, changed files, tests) MUST use the resolved worktree path, never cwd
+
+**Why:** The main repo's `work/items/` may contain stale copies (e.g. `status: open`) while the worktree has the updated version (`status: done`). Reading cwd first causes false "not ready for review" errors.
 - A newly created worktree is not assumed to be implementation-ready.
 - `codex-run.sh` should auto-sync the feature branch from its contract parent branch before spawning Codex.
 - If the runner cannot sync cleanly, it marks the item `blocked` with `needs-sync`.
