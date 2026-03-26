@@ -242,7 +242,7 @@ sync_worktree_artifacts() {
   if [ ! -f "$wt_feat_dir/contract.md" ] && [ -d "$wdir" ]; then
     mkdir -p "$wt_feat_dir"
     cp "$wdir"/*.md "$wt_feat_dir/"
-    git -C "$target_dir" add "work/items/$slug/"
+    git -C "$target_dir" add -f "work/items/$slug/"
     needs_commit=true
     echo "    [sync] copied work/items/$slug/"
   fi
@@ -361,6 +361,8 @@ PY
   fi
 
   # Stage all changes and commit
+  # Force-add work items (gitignored by work/ rule) then add everything else
+  git -C "$git_dir" add -f "work/items/$slug/" 2>/dev/null || true
   git -C "$git_dir" add -A 2>/dev/null || { echo "    ✗ $slug: rescue git add failed"; return 1; }
   git -C "$git_dir" commit -m "$commit_msg" 2>/dev/null || { echo "    ✗ $slug: rescue git commit failed"; return 1; }
 
@@ -381,7 +383,7 @@ text = re.sub(r'^##\s*Current\s+Status:\s*\S+.*$', '## Current Status: done', te
 path.write_text(text, encoding="utf-8")
 PY
       if ! git -C "$git_dir" diff --quiet -- "work/items/$slug/status.md" 2>/dev/null; then
-        git -C "$git_dir" add "work/items/$slug/status.md" 2>/dev/null || true
+        git -C "$git_dir" add -f "work/items/$slug/status.md" 2>/dev/null || true
         git -C "$git_dir" commit -m "chore($feat_id): mark done (rescue commit)" 2>/dev/null || true
       fi
     fi
@@ -528,7 +530,7 @@ EOF
   if [ -n "$pr_url" ]; then
     echo "    ✓ $slug: draft PR created → $pr_url"
     sed -i "s|^\| PR \| .* |$|\| PR \| $pr_url \||" "$wdir/status.md" 2>/dev/null || true
-    git -C "$git_dir" add "work/items/$slug/status.md" 2>/dev/null || true
+    git -C "$git_dir" add -f "work/items/$slug/status.md" 2>/dev/null || true
     git -C "$git_dir" commit -m "chore($feat_id): record PR URL" 2>/dev/null || true
     git -C "$git_dir" push 2>/dev/null || true
   else
