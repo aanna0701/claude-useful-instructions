@@ -7,20 +7,19 @@ Defines the **hierarchy, numbering scheme, and governance rules** for MkDocs-bas
 
 ## 1. 3-Level Folder Hierarchy
 
-The `00-99` numbering scheme enforces sort order. Numbers represent **categories**;
-each category contains multiple Diataxis types (Tutorial / How-to / Explanation / Reference).
+The `00-99` numbering scheme enforces sort order. Numbers represent **topic categories**;
+each category contains multiple Diataxis types (Guide / Explanation / Reference) organized by topic.
 
 ```
 docs/
-├── index.md                         # Doc home (project overview + doc map)
+├── index.md                         # Doc home (project overview + workflow map)
 ├── glossary.md                      # Glossary (SSOT)
 │
 ├── 00_context/                      # Context: why this project
 │   ├── index.md
 │   ├── business-goals.md            # [Explanation]
 │   ├── personas.md                  # [Reference]
-│   ├── requirements.md              # [Reference]
-│   └── glossary-guide.md            # [How-to]
+│   └── requirements.md              # [Reference]
 │
 ├── 10_architecture/                 # Design: how to build it
 │   ├── index.md
@@ -38,21 +37,22 @@ docs/
 │   ├── cli-reference.md             # [Reference]
 │   └── module-guide.md              # [Explanation]
 │
-├── 30_guides/                       # Guides: practical work
-│   ├── index.md
-│   ├── tutorials/                   # [Tutorial]
-│   │   ├── getting-started.md
-│   │   └── first-deployment.md
-│   └── howto/                       # [How-to]
-│       ├── migrate-database.md
-│       ├── rotate-tokens.md
-│       └── troubleshooting.md
+├── 30_guides/                       # Guides: practical work (by workflow)
+│   ├── index.md                     # Workflow map
+│   ├── auth/                        # Auth workflow
+│   │   ├── getting-started.md       # [Guide: beginner]
+│   │   └── add-oauth-provider.md    # [Guide: practitioner]
+│   ├── deploy/                      # Deploy workflow
+│   │   ├── first-deploy.md          # [Guide: beginner]
+│   │   └── rollback.md              # [Guide: practitioner]
+│   └── data/                        # Data workflow
+│       ├── first-migration.md       # [Guide: beginner]
+│       └── zero-downtime-migration.md # [Guide: practitioner]
 │
 ├── 40_operations/                   # Operations: production management
 │   ├── index.md
-│   ├── deploy-guide.md              # [How-to]
 │   ├── monitoring.md                # [Explanation]
-│   ├── runbook.md                   # [How-to]
+│   ├── runbook.md                   # [Guide: practitioner]
 │   └── sla-reference.md             # [Reference]
 │
 └── 90_archive/                      # Archive: no longer valid
@@ -67,7 +67,7 @@ docs/
 | `00` | Context | **Why** this project? |
 | `10` | Architecture | **How** to build it? (design) |
 | `20` | Implementation | **What** was built? (code-level) |
-| `30` | Guides | **How** to use it? (practical) |
+| `30` | Guides | **How** to use it? (practical, by workflow) |
 | `40` | Operations | **How** to run it? (production) |
 | `50-80` | (Reserved) | Project-specific extensions |
 | `90` | Archive | Deprecated documents |
@@ -77,17 +77,24 @@ docs/
 Numbering = **topic (domain)** classification. Diataxis = **purpose** classification. They are orthogonal.
 
 ```
-              Tutorial   How-to   Explanation   Reference
-00_context       -          ●          ●            ●
-10_architecture  -          -          ●            ●
-20_implementation-          -          ●            ●
-30_guides        ●          ●          -            -
-40_operations    -          ●          ●            ●
+              Guide      Explanation   Reference
+00_context       -          ●            ●
+10_architecture  -          ●            ●
+20_implementation-          ●            ●
+30_guides        ●          -            -
+40_operations    ●          ●            ●
 ```
 
-Diataxis type is specified via the `type` field in YAML frontmatter.
+Diataxis type is specified via the `type` field in YAML frontmatter. Guide level via `level` field.
 
-Three orthogonal axes: **Domain** (numbered folders `00-90`), **Diataxis** (reader goal: Tutorial/How-to/Explanation/Reference), **Delivery** (execution artifacts in `work/`). Domain and Diataxis intersect within `docs/`; Delivery lives in a separate root — same repo, different concerns.
+### Guide Workflow Organization
+
+Guides in `30_guides/` are organized by **workflow topic**, not by level or document type.
+
+Each workflow subfolder contains beginner and practitioner guides for one domain:
+- Beginner guides are prerequisites for practitioner guides in the same workflow
+- All guides link to relevant Reference and Explanation docs
+- `30_guides/index.md` contains the **workflow map** — a table listing all workflows with links to their guides, references, and explanations
 
 ---
 
@@ -101,7 +108,7 @@ Three orthogonal axes: **Domain** (numbered folders `00-90`), **Diataxis** (read
 
 **Tags:** Define allowed tags in `extra.tags` (e.g., `auth`, `database`, `api`, `infra`, `security`).
 
-**Nav structure** mirrors the numbered folder hierarchy: Home, Glossary, Context, Architecture (with ADR sub-section), Implementation, Guides (Tutorials + How-to), Operations, Archive.
+**Nav structure** mirrors the numbered folder hierarchy: Home, Glossary, Context, Architecture (with ADR sub-section), Implementation, Guides (by workflow), Operations, Archive.
 
 ### Category index.md Template
 
@@ -124,27 +131,54 @@ tags: []
 | [System Overview](system-overview.md) | Explanation | Full architecture description | 2025-03-18 |
 ```
 
-> **Tip:** Add `Status` and `Owner` columns when your team needs governance tracking per document.
+### Guides Workflow Map Template (`30_guides/index.md`)
+
+```markdown
+---
+title: "Guides"
+tags: []
+---
+
+# Guides
+
+Step-by-step procedures organized by workflow.
+
+## Workflows
+
+| Workflow | Beginner Guide | Practitioner Guide | Reference | Explanation |
+|----------|---------------|-------------------|-----------|-------------|
+| Auth | [Getting Started](auth/getting-started.md) | [Add OAuth](auth/add-oauth-provider.md) | [Auth API](../20_implementation/auth-api.md) | [Auth Strategy](../10_architecture/adr/002-auth-strategy.md) |
+| Deploy | [First Deploy](deploy/first-deploy.md) | [Rollback](deploy/rollback.md) | [CI/CD Config](../20_implementation/cicd-config.md) | [Deploy Overview](../10_architecture/deploy-overview.md) |
+```
 
 ---
 
 ## 3. Five Governance Rules
 
-### Rule 1: Single Source of Truth (SSOT)
+### Rule 1: Single Source of Truth (SSOT) — Write Once, Link Everywhere
 
-Same information exists in **exactly one place**.
+Same information exists in **exactly one place**. This is the most critical rule.
 
 | Pattern | DO | DON'T |
 |---------|-----|-------|
 | API spec | Auto-generate from code, link from design docs | Copy-paste spec into design docs |
 | Config values | One config reference file | Duplicate in README + guides |
 | Term definitions | Define in `glossary.md`, link elsewhere | Redefine in each document |
+| Setup steps | Write in one beginner guide, link from others | Repeat in every guide |
+| Parameter tables | Write in Reference, link from Guides | Copy tables into Guides |
 
-Violation: if same info exists in 2+ places, designate one as canonical and replace others with links.
+**Violation test:** If the same info exists in 2+ places, designate one as canonical and replace others with links.
+
+**DRY Enforcement for Guides:**
+- Guide needs parameter details → link to Reference doc
+- Guide needs architecture context → link to Explanation doc
+- Practitioner guide needs setup → link to beginner guide as prerequisite
+- Multiple guides share a common step → extract to a shared guide, link from others
 
 ### Rule 2: Date & Status
 
 Required frontmatter: `title`, `type`, `status`, `author`, `owner`, `created`, `updated`, `tags`, `audience`.
+For Guides: also `level` (`beginner` | `practitioner`) and `workflow` (workflow name).
 Lifecycle: `draft → review → published → deprecated → 90_archive/`
 
 ### Rule 3: Tagging

@@ -1,6 +1,6 @@
 # Common Rules: Docs as Code
 
-These rules apply to **all documents** regardless of type (Tutorial / How-to / Explanation / Reference).
+These rules apply to **all documents** regardless of type (Guide / Explanation / Reference).
 Agents MUST Read this file before writing any document.
 
 ---
@@ -15,22 +15,8 @@ Agents MUST Read this file before writing any document.
 - **Markdown** (.md) by default; AsciiDoc (.adoc) for complex layouts.
 - Word/PDF are delivery artifacts, not source files.
 
-### File Structure
+### File Structure — MkDocs + Numbered Hierarchy (Always)
 
-Choose based on project scale:
-
-**Small (< 20 docs) — Diataxis-based:**
-```
-docs/
-├── tutorials/
-├── howto/
-├── explanation/
-│   └── adr/
-├── reference/
-└── glossary.md
-```
-
-**Medium/Large (20+ docs) — Numbered + MkDocs:**
 ```
 docs/
 ├── index.md
@@ -38,10 +24,11 @@ docs/
 ├── 00_context/          # Why: business goals, requirements
 ├── 10_architecture/     # How to build: system design, ADR
 ├── 20_implementation/   # What was built: API/Config/CLI specs
-├── 30_guides/           # How to use: Tutorial + How-to
-│   ├── tutorials/
-│   └── howto/
-├── 40_operations/       # How to run: deploy, monitoring, runbook
+├── 30_guides/           # How to use: Guides by workflow
+│   ├── auth/
+│   ├── deploy/
+│   └── ...
+├── 40_operations/       # How to run: monitoring, runbook
 └── 90_archive/          # Deprecated documents
 ```
 
@@ -50,7 +37,23 @@ docs/
 
 ---
 
-## 2. Diagrams as Code
+## 2. Write Once, Link Everywhere (DRY)
+
+**The most important content rule.** Each piece of information exists in exactly one canonical location.
+
+| Content Type | Canonical Location | Other Docs |
+|-------------|-------------------|------------|
+| Parameter details, types, defaults | **Reference** doc | Guides link to Reference |
+| Architecture rationale, trade-offs | **Explanation** doc | Guides/Reference link to Explanation |
+| Step-by-step procedures | **Guide** doc | Other Guides link as prerequisite |
+| Term definitions | **glossary.md** | All docs link to glossary |
+| API specs | Auto-generated from code | Reference links to generated docs |
+
+**Before writing any content**, check if it already exists elsewhere. If it does, **link to it** instead of duplicating.
+
+---
+
+## 3. Diagrams as Code
 
 Diagrams are managed as **text code**, not image files — enabling Git diffs and single-line edits.
 
@@ -66,7 +69,7 @@ Diagrams are managed as **text code**, not image files — enabling Git diffs an
 
 ---
 
-## 3. Terminology Consistency
+## 4. Terminology Consistency
 
 Maintain `glossary.md` at the project root:
 
@@ -82,20 +85,22 @@ Maintain `glossary.md` at the project root:
 
 ---
 
-## 4. Metadata
+## 5. Metadata
 
 All documents require YAML frontmatter:
 
 ```yaml
 ---
 title: "Document Title"
-type: tutorial | howto | explanation | reference | task | contract | checklist | review
+type: guide | explanation | reference | task | contract | checklist | review
+level: beginner | practitioner    # Guide only
+workflow: "auth"                  # Guide only — workflow name
 status: draft | review | published | deprecated
 author: "Author"
-owner: "Maintainer"           # Contact when info is stale
+owner: "Maintainer"               # Contact when info is stale
 created: 2025-01-15
 updated: 2025-03-18
-tags: [auth, api]              # From allowed list only
+tags: [auth, api]                  # From allowed list only
 audience: "Backend Engineers"
 ---
 ```
@@ -108,13 +113,13 @@ audience: "Backend Engineers"
 
 ---
 
-## 4-1. Dual-Axis Model
+## 5-1. Dual-Axis Model
 
 The documentation system has two **orthogonal** axes:
 
 | Axis | Question | Types | Location |
 |------|----------|-------|----------|
-| **Diataxis** (reader purpose) | What kind of document for which reader? | Tutorial, How-to, Explanation, Reference | `docs/` |
+| **Diataxis** (reader purpose) | What kind of document for which reader? | Guide, Explanation, Reference | `docs/` |
 | **Delivery** (execution control) | How to control and verify this change? | Work Item bundle, Task, Contract, Checklist, Review | `work/` |
 
 **Work Item Bundle** (primary pattern for multi-agent work): 5 co-located files in `work/items/FEAT-NNN-slug/` — brief, contract, checklist, status, review. Claude designs and reviews; Codex implements by contract.
@@ -131,34 +136,40 @@ Execution docs MUST link to related Diataxis docs (and vice versa is recommended
 
 ---
 
-## 5. Cross-linking
+## 6. Cross-linking
 
 Document types are complementary — link actively:
 
 ```
-Diataxis axis:  Tutorial → How-to → Reference → Explanation → Tutorial
+Diataxis axis:  Guide → Reference → Explanation → Guide
 Delivery axis:  RFC/ADR → Contract → Brief → Checklist → Review
 Cross-Axis:     Brief ↔ Explanation, Contract ↔ Reference, Review → Explanation
 ```
 
-- Use relative paths: `[Related guide](../howto/migrate-database.md)`
+- Use relative paths: `[Related guide](../deploy/rollback.md)`
 - Absolute URLs for external links only
 - `docs/` ↔ `work/` links use relative paths (e.g., `../../work/items/FEAT-001-slug/brief.md`)
 - Include broken link checks in CI/CD
 
 ---
 
-## 6. Review Checklist
+## 7. Review Checklist
 
 ### Type & Structure
-- [ ] Document type is clear (one of: Tutorial/How-to/Explanation/Reference/Task/Contract/Checklist/Review)
+- [ ] Document type is clear (one of: Guide/Explanation/Reference/Task/Contract/Checklist/Review)
 - [ ] No mixed types within a single document
 - [ ] YAML frontmatter complete (title, type, status, author, owner, tags)
+- [ ] Guide docs have `level` and `workflow` fields
 - [ ] Execution docs: source/task_id links are valid
 - [ ] Diagrams use text code (Mermaid/PlantUML)
 
+### DRY & SSOT
+- [ ] No content duplicated from another document
+- [ ] Parameter details linked to Reference (not copied into Guide)
+- [ ] Architecture rationale linked to Explanation (not explained in Guide)
+- [ ] Terms match glossary (linked, not redefined)
+
 ### Quality & Consistency
-- [ ] Terms match glossary
 - [ ] Cross-reference links to related docs exist
 - [ ] Content remains valid in 6 months (no hardcoded volatile values)
 
@@ -170,5 +181,4 @@ Cross-Axis:     Brief ↔ Explanation, Contract ↔ Reference, Review → Explan
 
 ### Governance
 - [ ] `owner` field assigned
-- [ ] No duplicate information across documents (SSOT)
 - [ ] `tags` from allowed list only

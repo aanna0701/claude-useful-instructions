@@ -2,7 +2,7 @@
 name: diataxis-doc-system
 description: >
   Diátaxis Framework + Work Item documentation system.
-  Two axes: (1) Diátaxis — Tutorial, How-to, Explanation, Reference,
+  Two axes: (1) Diátaxis — Guide, Explanation, Reference,
   (2) Delivery — Work Item Bundle (brief/contract/checklist/status/review) + standalone Task/Contract/Checklist/Review.
   Delegates to type-specific sub-agents.
   Triggers on: "write doc", "technical doc", "architecture doc", "API doc",
@@ -28,19 +28,22 @@ Analyze request → **axis determination** → type routing → agent delegation
 
 ---
 
-## Core Principle
+## Core Principles
 
-Most documentation failures stem from **mixing different purposes in one document**.
-This skill separates docs into **two axes** and delegates to specialized agents.
+1. **No mixed types** — Each document has exactly one purpose.
+2. **Write once, link everywhere** — Content exists in one place only. Other docs link to it.
+3. **Topic-first organization** — Organize by domain/workflow, not by document type.
+4. **MkDocs always** — All projects use numbered hierarchy + MkDocs Material.
 
 ### Diátaxis Axis (reader-oriented — informational docs)
 
 | Type | Purpose | Reader State |
 |------|---------|-------------|
-| **Tutorial** | Learning | First encounter |
-| **How-to Guide** | Problem solving | Knows basics, has specific problem |
+| **Guide** | Doing (step-by-step) | Wants to accomplish a task (beginner or practitioner) |
 | **Explanation** | Understanding | Wants to know "why" |
 | **Reference** | Information lookup | Needs exact specs |
+
+Guide replaces both Tutorial and How-to from classic Diátaxis. Level (`beginner` / `practitioner`) in frontmatter controls depth and tone.
 
 ### Delivery Axis (execution-oriented — action docs)
 
@@ -52,7 +55,7 @@ This skill separates docs into **two axes** and delegates to specialized agents.
 | **Checklist** | Completion verification | Task acceptance |
 | **Review** | Result assessment | Post-task completion |
 
-**Work Item Bundle** = `brief.md` + `contract.md` + `checklist.md` + `status.md` + `review.md` co-located in `work/items/FEAT-NNN-slug/`. Primary pattern for multi-agent workflows.
+**Work Item Bundle** = `brief.md` + `contract.md` + `checklist.md` + `status.md` + `review.md` co-located in `work/items/FEAT-NNN-slug/`.
 
 ---
 
@@ -65,7 +68,7 @@ This skill separates docs into **two axes** and delegates to specialized agents.
 
 ### Phase 0.5: Axis Determination
 
-- Understanding/learning/lookup → **Diátaxis** (Phase 1)
+- Understanding/learning/doing/lookup → **Diátaxis** (Phase 1)
 - Work assignment/interface/verification/assessment → **Delivery** (Phase 1-D)
 - Keywords: `work item`, `task`, `contract`, `checklist`, `review` → Delivery
 - If ambiguous, ask: "Is this for reading/understanding, or for assigning/tracking work?"
@@ -74,10 +77,21 @@ This skill separates docs into **two axes** and delegates to specialized agents.
 
 | Reader State | Type |
 |-------------|------|
-| New, will build by following along | **Tutorial** |
-| Knows basics, has specific problem | **How-to Guide** |
-| Wants to understand "why" | **Explanation** |
+| Wants to do something step by step (beginner or experienced) | **Guide** |
+| Wants to understand "why" or design rationale | **Explanation** |
 | Needs exact specs/parameters | **Reference** |
+
+For Guide, also determine `level`:
+- First encounter, learning from scratch → `beginner`
+- Knows basics, solving a specific problem → `practitioner`
+
+### Phase 1-W: Workflow Discovery (Guide only)
+
+Before writing a Guide, identify which **workflow** it belongs to:
+1. Read `docs/30_guides/index.md` for existing workflows
+2. If workflow exists → place guide in that workflow's folder
+3. If new workflow → create folder, add entry to workflow map
+4. Link related guides (beginner ↔ practitioner) within the workflow
 
 ### Phase 1-D: Delivery Subtype Routing
 
@@ -93,7 +107,7 @@ This skill separates docs into **two axes** and delegates to specialized agents.
 
 Pass all Phase 0 context to the matching agent:
 
-**Diátaxis:** Tutorial → `doc-writer-tutorial` | How-to → `doc-writer-howto` | Explanation → `doc-writer-explain` | Reference → `doc-writer-reference`
+**Diátaxis:** Guide → `doc-writer-guide` | Explanation → `doc-writer-explain` | Reference → `doc-writer-reference`
 
 **Delivery (standalone):** Task → `doc-writer-task` | Contract → `doc-writer-contract` | Checklist → `doc-writer-checklist` | Review → `doc-writer-review`
 
@@ -120,6 +134,7 @@ After draft completion, run review checklist from `references/common-rules.md` �
 | "Review this doc" | Phase 3 only |
 | "Polish this doc" | Delegate to `/polish-doc` |
 | "Add a Reference" | Phase 2 direct (type known) |
+| "Write a Guide" | Phase 1-W (workflow) → Phase 2 |
 | "Write a Task" | Phase 2 direct (Delivery axis, Task) |
 | "Create work item" | Phase 2 direct (Delivery axis, Work Item bundle) |
 | "Set up doc structure" | Redirect to `/init-docs` |
@@ -139,16 +154,15 @@ Both handled by `doc-writer-explain` with internal template branching.
 
 ## Related Skills/Commands
 
-- **`/init-docs`**: Initialize doc site structure (numbered hierarchy + MkDocs) + work item structure (`work/`)
-- **`/polish-doc`**: Apply writing-style and structural fixes directly to existing docs (counterpart to review)
+- **`/init-docs`**: Initialize MkDocs site structure (numbered hierarchy) + work item structure (`work/`)
+- **`/polish-doc`**: Apply writing-style and structural fixes directly to existing docs
 - **diagram-architect**: Delegate for architecture diagrams in Explanation docs
 - **doc-reviewer**: Review Diataxis docs (readability, type purity, style)
 - **doc-reviewer-execution**: Review execution artifacts (structural integrity, contract compliance)
-- **doc-polisher**: Apply fixes directly to docs (used by `/polish-doc`)
 
 ## Doc Site Architecture
 
 For project-wide doc structure before writing individual docs:
-> See `references/site-architecture.md` for numbering scheme (00-90), MkDocs config, and 5 governance rules.
+> See `references/site-architecture.md` for numbering scheme (00-90), MkDocs config, workflow-based guide organization, and governance rules.
 > See `references/execution-rules.md` for Work Item rules; `references/execution-templates.md` for YAML templates.
 > `/init-docs` auto-generates structure per these rules.

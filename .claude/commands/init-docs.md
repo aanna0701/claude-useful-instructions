@@ -1,6 +1,6 @@
 # init-docs — Initialize Project Documentation Structure
 
-Create MkDocs-based doc site structure (numbered hierarchy + Diataxis) and work item structure (`work/`), with auto-generated mkdocs.yml and category index files.
+Create MkDocs-based doc site structure (numbered hierarchy + Diataxis) and work item structure (`work/`), with auto-generated mkdocs.yml, workflow map, and category index files.
 
 Target: $ARGUMENTS (project root path; defaults to current directory)
 
@@ -28,6 +28,7 @@ Confirm with user (skip if already in conversation):
 - Language: en/ko — default: en
 - Theme: material (default)
 - Categories to include (default: all)
+- Initial workflows for guides (e.g., auth, deploy, data) — default: empty
 - Include work item structure (`work/`) — default: yes
 
 ---
@@ -48,14 +49,19 @@ Use its folder structure, mkdocs.yml template, and index.md templates as the bas
 Per `site-architecture.md` §1. Create folders:
 
 ```bash
-mkdir -p docs/{00_context,10_architecture/{adr,rfc},20_implementation,30_guides/{tutorials,howto},40_operations,90_archive}
+mkdir -p docs/{00_context,10_architecture/{adr,rfc},20_implementation,30_guides,40_operations,90_archive}
 ```
 
-Create `index.md` per category using templates from `site-architecture.md` §4.
+If initial workflows were specified, create workflow folders:
+```bash
+mkdir -p docs/30_guides/{auth,deploy,...}
+```
+
+Create `index.md` per category using templates from `site-architecture.md`.
 
 ### Work item structure (when work/ included)
 
-Per `site-architecture.md` §7. Create directories and `work/index.md` with overview, workflow diagram, and directory table.
+Per `site-architecture.md` §6. Create directories and `work/index.md` with overview, workflow diagram, and directory table.
 
 ---
 
@@ -93,26 +99,51 @@ Single Source of Truth for all project terminology. Add terms here before using 
 
 ## Step 6: Create docs/index.md
 
-Per `site-architecture.md` §2 index.md template, using Step 1 project info for title and description. Include document map table and quick-start links.
+Per `site-architecture.md` §2 index.md template, using Step 1 project info for title and description. Include document map table and workflow overview links.
 
 ---
 
-## Step 7: Create 90_archive/index.md
+## Step 7: Create 30_guides/index.md (Workflow Map)
 
-Per `site-architecture.md` §5 archive rules and template.
+Per `site-architecture.md` §2 workflow map template:
+
+```markdown
+---
+title: "Guides"
+tags: []
+---
+
+# Guides
+
+Step-by-step procedures organized by workflow.
+
+## Workflows
+
+| Workflow | Beginner Guide | Practitioner Guide | Reference | Explanation |
+|----------|---------------|-------------------|-----------|-------------|
+| | | | | |
+```
+
+If initial workflows were specified, pre-fill rows with placeholder links.
 
 ---
 
-## Step 8: CI/CD Files (optional)
+## Step 8: Create 90_archive/index.md
+
+Per `site-architecture.md` §4 archive rules and template.
+
+---
+
+## Step 9: CI/CD Files (optional)
 
 Ask user:
 > "Set up GitHub Actions for auto-deploy (gh-pages) and link checking?"
 
-If yes, create `.github/workflows/docs.yml` and `.github/workflows/docs-lint.yml` per `site-architecture.md` §6.
+If yes, create `.github/workflows/docs.yml` and `.github/workflows/docs-lint.yml` per `site-architecture.md` §5.
 
 ---
 
-## Step 9: Completion Report
+## Step 10: Completion Report
 
 List created items:
 
@@ -122,6 +153,7 @@ Documentation structure initialized
 Project:  [project name]
 Created:
   docs/           index.md, glossary.md, category indexes
+  30_guides/      Workflow map + [N] workflow folders
   work/           index.md + subdirectories (if included)
   mkdocs.yml      CREATED
   CI/CD           [CREATED / SKIPPED]
@@ -129,8 +161,8 @@ Created:
 Next steps:
   pip install mkdocs-material       # Install MkDocs
   mkdocs serve                      # Local preview
-  /write-doc [topic]                # Write Diataxis doc
+  /write-doc guide [topic]          # Write Guide
+  /write-doc explanation [topic]    # Write Explanation
+  /write-doc reference [topic]      # Write Reference
   /write-doc work-item [topic]      # Create Work Item bundle
-  /write-doc task [topic]           # Write standalone Task
-  /write-doc contract [topic]       # Write standalone Contract
 ```

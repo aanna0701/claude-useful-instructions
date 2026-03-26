@@ -18,30 +18,22 @@ After agent completes, save output to the appropriate project location.
 
 ### Diataxis docs → `docs/`
 
-**Structure detection:** If `docs/00_context/` exists, use numbered hierarchy; otherwise use type-based layout.
+Always use numbered hierarchy (MkDocs):
 
-#### Numbered hierarchy (when docs/00_context/ exists)
 ```
 docs/
 ├── 00_context/          ← Explanation (business), Reference (requirements)
 ├── 10_architecture/     ← Explanation (design, ADR)
 ├── 20_implementation/   ← Reference (API, Config, CLI)
-├── 30_guides/           ← Tutorial, How-to
-│   ├── tutorials/
-│   └── howto/
-├── 40_operations/       ← How-to (deploy, runbook), Reference (SLA)
+├── 30_guides/           ← Guides (organized by workflow)
+│   ├── auth/
+│   ├── deploy/
+│   └── [workflow-name]/
+├── 40_operations/       ← Guide (runbook), Explanation (monitoring), Reference (SLA)
 └── 90_archive/
 ```
 
-#### Type-based layout (default)
-```
-docs/
-├── tutorials/      ← Tutorial
-├── howto/          ← How-to Guide
-├── explanation/    ← Explanation (Design Doc, ADR)
-│   └── adr/
-└── reference/      ← Reference
-```
+For Guide docs: place in `30_guides/[workflow-name]/`. If workflow folder doesn't exist, create it and update `30_guides/index.md` workflow map.
 
 ### Work Item bundles → `work/items/`
 
@@ -77,6 +69,8 @@ Document complete
 ─────────────────────────────────
 Axis:     [Diataxis / Delivery]
 Type:     [specific type]
+Level:    [beginner / practitioner] (Guide only)
+Workflow: [workflow name] (Guide only)
 File:     [full path]
 Audience: [reader or assignee]
 ─────────────────────────────────
