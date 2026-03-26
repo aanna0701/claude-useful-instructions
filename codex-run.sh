@@ -147,6 +147,63 @@ paths_overlap() {
   return 1
 }
 
+verify_commits() {
+  # Check that a feature branch has at least one feat() commit beyond its parent
+  local feat_id="$1"
+  local wdir
+  wdir=$(resolve_work_dir "$feat_id") || return 1
+  local slug
+  slug=$(basename "$wdir")
+
+  # Resolve worktree path from status.md
+  local target_dir=""
+  if [ -f "$wdir/status.md" ]; then
+    target_dir=$(grep -oP '^\| Worktree Path \| \K[^\s|]+' "$wdir/status.md" || true)
+    [ "$target_dir" = "—" ] && target_dir=""
+  fi
+  local git_dir="${target_dir:-.}"
+
+  # Check for uncommitted changes
+  local dirty
+  dirty=$(git -C "$git_dir" status --porcelain 2>/dev/null | head -5)
+  if [ -n "$dirty" ]; then
+    echo "    ⚠ $slug: uncommitted changes detected"
+    echo "$dirty" | sed 's/^/      /'
+    return 1
+  fi
+
+  # Check for at least one feat() commit on the branch
+  local branch
+  branch=$(git -C "$git_dir" rev-parse --abbrev-ref HEAD 2>/dev/null)
+  local parent_branch=""
+  if [ -f "$wdir/contract.md" ]; then
+    parent_branch=$(grep -oP '^\- \*\*Parent Branch\*\*: `\K[^`]+' "$wdir/contract.md" || true)
+  fi
+  if [ -z "$parent_branch" ] && [ -f ".claude/branch-map.yaml" ]; then
+    parent_branch=$(grep 'working_parent:' .claude/branch-map.yaml | head -1 | awk '{print $2}' || true)
+  fi
+
+  if [ -n "$parent_branch" ]; then
+    local feat_commits
+    feat_commits=$(git -C "$git_dir" log --oneline "${parent_branch}..${branch}" 2>/dev/null | grep -c "feat($feat_id)" || true)
+    if [ "$feat_commits" -eq 0 ]; then
+      echo "    ⚠ $slug: no feat($feat_id) commit found on $branch (since $parent_branch)"
+      return 1
+    fi
+  else
+    # Fallback: check recent commits for feat() pattern
+    local has_feat
+    has_feat=$(git -C "$git_dir" log --oneline -20 2>/dev/null | grep -c "feat($feat_id)" || true)
+    if [ "$has_feat" -eq 0 ]; then
+      echo "    ⚠ $slug: no feat($feat_id) commit found in recent history"
+      return 1
+    fi
+  fi
+
+  echo "    ✓ $slug: commits verified"
+  return 0
+}
+
 get_item_status() {
   local wdir="$1"
   python3 - "$wdir/status.md" <<'PY' 2>/dev/null || echo "unknown"
@@ -323,10 +380,17 @@ You are implementing work item $slug. Read these files in order:
 2. $wdir/contract.md — understand boundaries, interfaces, invariants
 3. $wdir/checklist.md — understand verification requirements
 ${review_instructions}
-Follow AGENTS.md for all implementation rules. Additionally:
-- COMMIT with: feat($feat_id): description
-- UPDATE $wdir/status.md after each milestone
-- When DONE: set "## Current Status: done" in $wdir/status.md
+Follow AGENTS.md for all implementation rules.
+
+## Completion Protocol (MANDATORY — do NOT skip)
+
+1. COMMIT all code changes: git add + git commit -m "feat($feat_id): description"
+2. UPDATE $wdir/status.md — set "## Current Status: done", list all changed files
+3. COMMIT status.md: git commit -m "chore($feat_id): mark done"
+4. VERIFY: run "git status --porcelain" — must be empty (no uncommitted changes)
+5. PRINT as your final output: /work-review $feat_id
+
+If git status shows uncommitted files, you are NOT done. Commit them first.
 
 Begin implementation.
 EOF
@@ -557,19 +621,28 @@ cmd_dispatch() {
     exit 0
   fi
 
-  # Step 4: Collect results
+  # Step 4: Collect results + verify commits
   echo ""
-  echo "Step 3/3: Results"
-  local success=0 failed=0
+  echo "Step 3/3: Results + Verification"
+  echo "──────────────────────────────────────────────"
+  local success=0 failed=0 warn=0
   local review_ids=()
+  local warn_ids=()
   for fid in "${feat_ids[@]}"; do
     local wdir
     wdir=$(resolve_work_dir "$fid")
     local status
     status=$(get_item_status "$wdir")
     if [[ "$status" == "done" ]]; then
-      ((success++)) || true
-      review_ids+=("$fid")
+      # Verify commits exist before declaring success
+      if verify_commits "$fid"; then
+        ((success++)) || true
+        review_ids+=("$fid")
+      else
+        ((warn++)) || true
+        warn_ids+=("$fid")
+        review_ids+=("$fid")  # still reviewable, but flagged
+      fi
     else
       ((failed++)) || true
     fi
@@ -578,9 +651,19 @@ cmd_dispatch() {
   # Print summary + next step
   echo "══════════════════════════════════════════════"
   echo "  Dispatch Complete"
-  echo "  Success: $success  Failed: $failed"
+  echo "  Verified: $success  Warnings: $warn  Failed: $failed"
   echo "══════════════════════════════════════════════"
   echo ""
+
+  if [ "$warn" -gt 0 ]; then
+    echo "⚠ Items with warnings (missing commits or dirty worktree):"
+    for wid in "${warn_ids[@]}"; do
+      echo "  - $wid"
+    done
+    echo ""
+    echo "Fix: cd into the worktree, commit changes, then review."
+    echo ""
+  fi
 
   if [ ${#review_ids[@]} -gt 0 ]; then
     echo "Next step — paste this into Claude:"

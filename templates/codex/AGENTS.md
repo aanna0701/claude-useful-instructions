@@ -83,9 +83,38 @@ If this repo uses **git worktrees**, you are already on the correct branch for y
 - Do NOT force push or rewrite history
 - Do NOT merge from sibling feature branches — only rebase/merge from the parent branch
 
+## Completion Protocol (MANDATORY)
+
+You MUST follow this exact sequence before reporting done. Skipping any step is a contract violation.
+
+1. **Verify all checklist items pass** — run the verification commands from `checklist.md`
+2. **Commit all changes** — every modified file must be committed with `feat(FEAT-NNN): description` (conventional commit). Uncommitted changes = not done.
+3. **Update `status.md`**:
+   - Set `## Current Status: done`
+   - List every changed file under "Changed Files"
+   - Record verification output under "Verification"
+4. **Commit `status.md`** — a separate commit: `chore(FEAT-NNN): mark done`
+5. **Print the review command** as your FINAL output:
+   ```
+   /work-review FEAT-NNN
+   ```
+
+### Completion self-check
+
+Before setting status to `done`, run:
+```bash
+# Must show NO uncommitted changes
+git status --porcelain
+# Must show at least one feat() commit
+git log --oneline --no-walk 2>/dev/null | grep -q "feat(FEAT-" || echo "ERROR: no feat commit found"
+```
+
+If either check fails, fix it before marking done. Do NOT rely on external tooling to commit for you.
+
 ## What You Must NOT Do
 
 - Do NOT write `review.md` — Claude does that
 - Do NOT modify `brief.md`, `contract.md`, or `checklist.md`
 - Do NOT merge your own branch
 - Do NOT make design decisions or propose alternatives
+- Do NOT mark `status.md` as done without committing all changes first
