@@ -105,8 +105,8 @@ Before setting status to `done`, run:
 ```bash
 # Must show NO uncommitted changes
 git status --porcelain
-# Must show at least one feat() commit
-git log --oneline --no-walk 2>/dev/null | grep -q "feat(FEAT-" || echo "ERROR: no feat commit found"
+# Must show at least one feat() commit (check full branch, not just HEAD)
+git log --oneline -20 2>/dev/null | grep -q "feat(FEAT-" || echo "ERROR: no feat commit found"
 ```
 
 If either check fails, fix it before marking done. Do NOT rely on external tooling to commit for you.
