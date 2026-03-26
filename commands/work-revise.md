@@ -55,7 +55,7 @@ Codex Commands (copy-paste to run):
   codex exec --full-auto --cd <FEAT-005-worktree> \
     "Revise FEAT-005. Read work/items/FEAT-005-cache-invalidation/review.md for MUST-fix items, then contract.md. Follow AGENTS.md."
 ──────────────────────────────────────────────
-After completion:
+After completion (codex-run.sh will push + update existing draft PR):
   /work-review FEAT-003 FEAT-005
 ```
 

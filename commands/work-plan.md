@@ -37,15 +37,15 @@ For each topic, gather or infer:
 
 ### Step 1.5: Resolve Branch Map
 
-Read `.claude/branch-map.yaml`. If missing, auto-detect or ask once (see `/branch-init` logic).
+Follow `rules/branch-map-policy.md` § Branch Selection to resolve the branch hierarchy.
 
-Resolve:
-- **working_parent**: the branch feature branches are based on
-- **default_merge_target**: where completed work merges back
+Read `.claude/branch-map.yaml`. If missing, auto-initialize via `/branch-init`.
+
+Extract and carry forward for each FEAT's contract "## Branch Map" section:
+- **working_parent**: from branch-map derivation
+- **default_merge_target**: from `branch_rules.default_merge_target`
 - **role** (if roles defined): classify the task by affected paths
-- **ci_scope**: infer which CI checks apply based on affected paths (e.g., paths under `src/` → `lint`, `typecheck`, `test`; paths under `docs/` → `docs-build`; paths under `.github/` → `ci-validate`)
-
-These values will be injected into each FEAT's contract under "## Branch Map".
+- **ci_scope**: infer which CI checks apply based on affected paths
 
 If `.claude/branch-map.yaml` doesn't exist and this is a single-branch project, skip — use `main`/`master` as default.
 

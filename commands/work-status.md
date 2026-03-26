@@ -18,12 +18,12 @@ Glob `work/items/FEAT-*/status.md`. For each, extract frontmatter and key fields
 
 Print summary table:
 
-| ID | Title | Status | Agent | Branch | Merge Target | Freshness |
-|----|-------|--------|-------|--------|--------------|-----------|
-| FEAT-001 | User Auth | in-progress | Codex | feat/FEAT-001-user-auth | research | fresh |
-| FEAT-002 | Cache Layer | open | TBD | — | research | — |
+| ID | Title | Status | Agent | Branch | Merge Target | PR | Freshness |
+|----|-------|--------|-------|--------|--------------|-----|-----------|
+| FEAT-001 | User Auth | in-progress | Codex | feat/FEAT-001-user-auth | research | #51 (draft) | fresh |
+| FEAT-002 | Cache Layer | open | TBD | — | research | — | — |
 
-If `.claude/branch-map.yaml` exists, populate Merge Target from each contract's Branch Map section and check freshness against the declared parent branch.
+If `.claude/branch-map.yaml` exists, populate Merge Target per `rules/branch-map-policy.md` § Branch Selection and check freshness against the declared parent branch. Populate PR from `status.md` PR field.
 
 If no work items found: "No work items found. Use `/work-plan` to create one."
 
@@ -40,6 +40,7 @@ FEAT-NNN: [Title]
 Status:     in-progress
 Agent:      Codex
 Branch:     feat/FEAT-NNN-slug
+PR:         #51 (draft) | #51 (open) | #51 (merged) | —
 
 Progress:   7/10 checklist items complete
   [x] Item 1
@@ -72,8 +73,8 @@ Next Actions
   # or per item:
   codex exec --full-auto --cd <worktree_path> "Implement FEAT-001. Read work/items/FEAT-001-slug/contract.md and follow AGENTS.md."
 
-# done → review
-  /work-review FEAT-003
+# done (with draft PR) → review
+  /work-review FEAT-003    # PR #51 ready for review
 
 # revision → re-dispatch
   /work-revise FEAT-004
