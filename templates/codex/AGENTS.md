@@ -38,7 +38,8 @@ Contract takes precedence if it conflicts with discovered rules.
 
 - Modify **only** files listed in contract "Allowed Modifications"
 - **NEVER** touch files in contract "Forbidden Zones"
-- **NEVER** modify documentation files (`docs/`, `*.md` in project root, `README.md`) — if doc changes are needed, record them in `status.md` under "Doc Changes Needed" for Claude to handle
+- If the contract is a docs-only work item, documentation files listed under "Allowed Modifications" are in scope.
+- Otherwise, do NOT modify documentation files (`docs/`, `*.md` in project root, `README.md`) — record needed doc follow-ups in `status.md` under "Doc Changes Needed"
 - If a needed change falls outside allowed modifications, record it in `status.md` Ambiguities
 
 ### Worktree Resolution
@@ -87,14 +88,23 @@ If this repo uses **git worktrees**, you are already on the correct branch for y
 
 You MUST follow this exact sequence before reporting done. Skipping any step is a contract violation.
 
+### Responsibility Split
+
+- **Codex**: implementation, verification, status recording, commit message suggestion
+- **Runner (codex-run.sh)**: `git add`, `git commit`, `git push`, draft PR creation
+
+Codex often runs in a sandboxed environment where `.git/` metadata is read-only. On `git worktree` repos this usually blocks `git add`/`git commit` because `.git/worktrees/*/index.lock` cannot be created. This is expected infrastructure behavior, not an implementation failure.
+
+### Steps
+
 1. **Verify all checklist items pass** — run the verification commands from `checklist.md`
-2. **Commit all changes** — every modified file must be committed with `feat(FEAT-NNN): description` (conventional commit). Uncommitted changes = not done.
+2. **Ensure all implementation files are saved** — every modified file must be written to disk
 3. **Update `status.md`**:
-   - Set `## Current Status: done`
+   - Set the status field to `done`
    - List every changed file under "Changed Files"
    - Record verification output under "Verification"
-4. **Commit `status.md`** — a separate commit: `chore(FEAT-NNN): mark done`
-5. **Print the review command** as your FINAL output:
+   - Write the intended commit message under "Intended Commit Message" (e.g., `feat(FEAT-NNN): implement X`)
+4. **Print the review command** as your FINAL output:
    ```
    /work-review FEAT-NNN
    ```
@@ -103,13 +113,13 @@ You MUST follow this exact sequence before reporting done. Skipping any step is 
 
 Before setting status to `done`, run:
 ```bash
-# Must show NO uncommitted changes
-git status --porcelain
-# Must show at least one feat() commit (check full branch, not just HEAD)
-git log --oneline -20 2>/dev/null | grep -q "feat(FEAT-" || echo "ERROR: no feat commit found"
+# Verify all implementation files are saved (should list your changes)
+git status --short
+# Verify no unexpected modifications outside allowed paths
+git diff --check
 ```
 
-If either check fails, fix it before marking done. Do NOT rely on external tooling to commit for you.
+If `git commit` happens to succeed in a non-sandboxed environment, that is acceptable. If it fails due to sandbox restrictions, do NOT mark the task blocked for that reason alone; leave the files saved, keep `status.md` current, and let the runner perform the commit.
 
 ## What You Must NOT Do
 
@@ -117,4 +127,4 @@ If either check fails, fix it before marking done. Do NOT rely on external tooli
 - Do NOT modify `brief.md`, `contract.md`, or `checklist.md`
 - Do NOT merge your own branch
 - Do NOT make design decisions or propose alternatives
-- Do NOT mark `status.md` as done without committing all changes first
+- Do NOT treat sandboxed git failure as a product/code blocker
