@@ -745,7 +745,7 @@ resolve_groups() {
               break
             fi
           done
-        done < <(jq -r ".parallel_groups[$g][]" "$manifest")
+        done < <(jq -r ".parallel_groups[$g].items[]" "$manifest")
 
         if [ ${#group_items[@]} -gt 0 ]; then
           echo "${group_items[*]}"
@@ -948,6 +948,7 @@ cmd_dispatch() {
   local success=0 failed=0 warn=0
   local review_ids=()
   local warn_ids=()
+  local pr_urls=()
   for fid in "${feat_ids[@]}"; do
     local wdir
     wdir=$(resolve_work_dir "$fid")
@@ -981,7 +982,6 @@ cmd_dispatch() {
   if [ ${#review_ids[@]} -gt 0 ]; then
     echo ""
     echo "Pushing branches + creating draft PRs..."
-    local pr_urls=()
     for fid in "${review_ids[@]}"; do
       local pr_result
       pr_result=$(push_and_create_pr "$fid" 2>&1) || true
