@@ -8,9 +8,21 @@
 
 ---
 
+## Worktree-First Resolution (applies to ALL modes)
+
+Per `rules/collab-workflow.md` § Worktree-First File Resolution:
+
+For each work item, resolve the **authoritative** status.md:
+1. Glob `work/items/FEAT-NNN-*/` to get slug
+2. Discover worktree path: `work/dispatch.json` → cwd `status.md` Worktree Path field → convention `../${PROJECT}-${SLUG}/`
+3. If worktree exists: read `${WORKTREE}/work/items/${SLUG}/status.md` (authoritative)
+4. Fallback to cwd copy only if worktree does not exist
+
+**Why**: Codex updates status.md in the worktree. The main repo copy is a stale seed.
+
 ## Mode A: All Items (no argument)
 
-Glob `work/items/*/status.md`. Extract key fields and print:
+Glob `work/items/*/` for slugs, then apply worktree-first resolution to each. Extract key fields and print:
 
 | ID | Title | Type | Status | Agent | Branch | Merge Target | PR | Freshness |
 |----|-------|------|--------|-------|--------|--------------|-----|-----------|
@@ -21,7 +33,7 @@ If `.claude/branch-map.yaml` exists, populate Merge Target and check freshness p
 
 ## Mode B: Specific Item
 
-Read status.md and checklist.md (parallel; also review.md if exists).
+Apply worktree-first resolution, then read status.md and checklist.md (parallel; also review.md if exists).
 
 ```
 {ID}: [Title]

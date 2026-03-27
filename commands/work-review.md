@@ -8,7 +8,7 @@ Compare implementation against contract, checklist, and brief. Supports batch re
 
 **$ARGUMENTS**: Work item IDs (e.g., `FEAT-001` or `FEAT-001 CHORE-002`).
 
-No arguments: auto-glob `work/items/*/status.md` for items with status `done`. If none found: "No work items ready for review."
+No arguments: auto-glob `work/items/*/status.md` for all item slugs, then apply Step 1 worktree-first resolution to each — check **worktree** status.md for `done` status. If none found: "No work items ready for review."
 
 **Batch mode**: Multiple IDs reviewed in parallel with consolidated summary.
 
@@ -16,13 +16,28 @@ No arguments: auto-glob `work/items/*/status.md` for items with status `done`. I
 
 ## Execution Steps
 
-### Step 1: Locate & Pre-flight
+### Step 1: Locate & Resolve Worktree (CRITICAL — worktree-first)
 
-Resolve `$ARGUMENTS` to `work/items/` directory. Verify brief.md, contract.md, checklist.md, status.md exist. If status is `open`/`in-progress`, warn and confirm.
+Per `rules/collab-workflow.md` § Worktree-First File Resolution:
 
-### Step 2: Read Work Item (parallel)
+1. Resolve `$ARGUMENTS` to slug via `work/items/FEAT-NNN-*/` glob (cwd is fine here — just need the slug and worktree pointer)
+2. **Discover worktree path** (resolution order — stop at first hit):
+   a. `work/dispatch.json` → `.items[] | select(.feat_id == $ID) | .worktree_path`
+   b. cwd `status.md` → `Worktree Path` field (may be stale — only use as pointer)
+   c. Convention: `../${PROJECT_DIR_NAME}-${SLUG}/`
+3. **If worktree path found and exists**: read `status.md` from **worktree** (`${WORKTREE}/work/items/${SLUG}/status.md`). This is the authoritative copy.
+4. **Fallback**: if no worktree exists (already merged or local-only), use cwd copy.
 
-Read brief.md, contract.md, checklist.md, status.md in parallel.
+**Why**: Codex updates status.md in the worktree. The main repo copy is a stale seed — it will say `open` even after Codex marks `done`. Always read from worktree first.
+
+Set `$WORK_ROOT` = resolved worktree path (or cwd as fallback). ALL subsequent file reads use `$WORK_ROOT`.
+
+### Step 2: Pre-flight & Read Work Item (parallel)
+
+Using `$WORK_ROOT/work/items/${SLUG}/`:
+- Verify brief.md, contract.md, checklist.md, status.md exist
+- Read all four in parallel
+- If status is `open`/`in-progress`, warn and confirm
 
 ### Step 2.5: Branch Map Validation
 
@@ -33,15 +48,13 @@ From contract.md "## Branch Map" (fallback: `.claude/branch-map.yaml`, then upst
 2. **Merge target**: use contract's declared target for Step 7 merge
 3. **Role consistency**: changed files must fall within declared role's paths
 
-### Step 3: Resolve Worktree & PR
-
-Use `Worktree Path` from status.md for all subsequent file reads/commands.
+### Step 3: Resolve PR
 
 Find PR: `status.md` PR field > `gh pr list --head <branch>` > create as fallback (see `/work-impl` Step 7 format).
 
 ### Step 4: Review Changed Files
 
-Read each file from "Changed Files" in status.md. Fallback: `git log --name-only` in worktree.
+Read each file from "Changed Files" in status.md (already read from `$WORK_ROOT`). Fallback: `git log --name-only` in worktree.
 
 ### Step 5: Generate Review
 
