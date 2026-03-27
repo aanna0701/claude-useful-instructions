@@ -113,7 +113,7 @@ resolve_target_dir() {
     [ "$target_dir" = "—" ] && target_dir=""
   fi
   if [ -z "$target_dir" ] && [ -f "work/dispatch.json" ] && command -v jq &>/dev/null; then
-    target_dir=$(jq -r --arg fid "$feat_id" '.items[] | select(.feat_id == $fid) | .worktree_path // empty' work/dispatch.json 2>/dev/null || true)
+    target_dir=$(jq -r --arg fid "$feat_id" '.items[] | select(.id == $fid) | .worktree_path // empty' work/dispatch.json 2>/dev/null || true)
   fi
   if [ -z "$target_dir" ] && [ -f "$wdir/contract.md" ]; then
     target_dir=$(extract_contract_field "$wdir/contract.md" "Target Worktree" || true)
@@ -820,8 +820,15 @@ dispatch_group() {
       wdir=$(resolve_work_dir "$fid")
       local slug
       slug=$(basename "$wdir")
+      # Read status from worktree (authoritative), fallback to cwd
+      local wt_dir
+      wt_dir=$(resolve_target_dir "$fid" "$wdir")
+      local status_source="${wdir}"
+      if [ -n "$wt_dir" ] && [ -f "$wt_dir/work/items/$slug/status.md" ]; then
+        status_source="$wt_dir/work/items/$slug"
+      fi
       local status
-      status=$(get_item_status "$wdir")
+      status=$(get_item_status "$status_source")
 
       if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
         all_done=false
@@ -944,8 +951,17 @@ cmd_dispatch() {
   for fid in "${feat_ids[@]}"; do
     local wdir
     wdir=$(resolve_work_dir "$fid")
+    local slug
+    slug=$(basename "$wdir")
+    # Read status from worktree (authoritative) — Codex updates status.md there, not in cwd
+    local wt_dir
+    wt_dir=$(resolve_target_dir "$fid" "$wdir")
+    local status_source="${wdir}"
+    if [ -n "$wt_dir" ] && [ -f "$wt_dir/work/items/$slug/status.md" ]; then
+      status_source="$wt_dir/work/items/$slug"
+    fi
     local status
-    status=$(get_item_status "$wdir")
+    status=$(get_item_status "$status_source")
     if [[ "$status" == "done" ]]; then
       # Verify commits exist before declaring success
       if verify_commits "$fid"; then
