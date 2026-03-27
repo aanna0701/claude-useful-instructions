@@ -81,7 +81,7 @@ Work item files (`status.md`, `brief.md`, `contract.md`, etc.) may exist in **bo
 - `review.md` required before merge
 - On `REVISE`, the latest `review.md` becomes the mandatory delta for the next Codex run; every `MUST-fix` item must be injected into the re-dispatch prompt and resolved before optional work
 - Draft PR creation happens at implementation stage (`/work-impl` or `codex-run.sh`), not at review stage
-- MERGE decision: ask user → review existing draft PR → `gh pr merge` → apply doc changes → cleanup worktree + work item dir
+- MERGE decision: review existing draft PR → `gh pr merge` → auto doc sync (`/sync-docs` + commit + push) → cleanup worktree + work item dir
 - Worktree setups: commit on worktree branch, no sub-branches
 - Human intervention: dispatch + review only
 - If contract invariants depend on upstream FEATs, treat branch sync and dependency-presence checks as a precondition, not as part of implementation.

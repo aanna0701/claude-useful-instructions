@@ -66,16 +66,23 @@ Write to `work/items/{SLUG}/review.md`. Update status.md: Status → `review`, A
 
 **MERGE**:
 1. If Step 2.5 flagged freshness issues, block and suggest rebase first
-2. Convert draft PR to ready: `gh pr ready <pr>`
-3. Update PR body with review summary: `gh pr edit <pr> --body "..."`
-4. Spawn `pr-reviewer` agent — reviews diff against contract, submits `gh pr review`, if APPROVE auto-merges via `gh pr merge --squash --delete-branch`
-5. Update status.md: Status → `merged`, update PR field
-6. Post-merge cleanup:
+2. Check `merge_policy.ask_confirm_before_merge` in branch-map.yaml — if true, ask user before proceeding; if false, auto-merge without prompt
+3. Convert draft PR to ready: `gh pr ready <pr>`
+4. Update PR body with review summary: `gh pr edit <pr> --body "..."`
+5. Spawn `pr-reviewer` agent — reviews diff against contract, submits `gh pr review`, if APPROVE auto-merges via `gh pr merge --squash --delete-branch`
+6. Update status.md: Status → `merged`, update PR field
+7. Post-merge cleanup:
    - Close issue: `gh issue close <num> --comment "Merged via PR <url>"`
    - Remove worktree: `git worktree remove <path> && git branch -d <branch>`
-   - Handle "Doc Changes Needed" from status.md
-   - Remove work item: `rm -r work/items/{SLUG}/`
    - Update `work/dispatch.json`: remove merged entry
+8. **Doc sync** (automatic — no user prompt):
+   - `git pull` on current branch (working parent) to pick up squash-merged changes
+   - Read "Doc Changes Needed" section from status.md (saved before worktree removal)
+   - If doc changes exist OR merged files touch `docs/`, `README.md`, or config:
+     - Run `/sync-docs` targeting the affected doc paths
+     - Commit doc updates: `docs: sync after {FEAT-ID} merge`
+     - Push to working parent
+   - Remove work item dir last: `rm -r work/items/{SLUG}/`
 
 **REVISE**: Write review.md with explicit `MUST-fix` section. Spawn `work-reviser` agent. Print re-dispatch commands:
 ```
@@ -104,4 +111,4 @@ Revisions needed:
 ──────────────────────────────────────────────
 ```
 
-Apply doc changes that Codex recorded but could not make (per collab-workflow rule).
+Doc changes are applied automatically per item during Step 6 MERGE (no manual action needed).
