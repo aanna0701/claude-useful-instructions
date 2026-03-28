@@ -51,6 +51,12 @@ Follow contract strictly: only Allowed Modifications, never Forbidden Zones, sat
 
 Update status.md: Status → `done`, Changed Files, Doc Changes Needed.
 
+**Gitignore note**: Target projects may gitignore `work/`. Always use `git add -f` for files under `work/items/`:
+```bash
+git add -f "work/items/${SLUG}/"
+git add -A   # for non-work files
+```
+
 Commit with `{commit_prefix}({ID}): <description>` (prefix from Work Types table in `/work-plan`), push with `-u`.
 
 Create draft PR:

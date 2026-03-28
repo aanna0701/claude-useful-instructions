@@ -90,7 +90,7 @@ FEAT_DIR="work/items/$SLUG"
 mkdir -p "$WT_PATH/$FEAT_DIR"
 cp "$BASE_REPO/$FEAT_DIR"/{brief,contract,checklist,status}.md "$WT_PATH/$FEAT_DIR/"
 cp "$BASE_REPO/AGENTS.md" "$WT_PATH/AGENTS.md" 2>/dev/null || true
-git -C "$WT_PATH" add "$FEAT_DIR/" AGENTS.md
+git -C "$WT_PATH" add -f "$FEAT_DIR/" AGENTS.md
 git -C "$WT_PATH" commit -m "chore($SLUG): seed work item artifacts"
 ```
 

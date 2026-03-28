@@ -62,6 +62,8 @@ Spawn `doc-writer-review` agent with `bundle: true`, passing contract + checklis
 
 Write to `work/items/{SLUG}/review.md`. Update status.md: Status → `review`, Agent → `Claude`.
 
+**Gitignore note**: Use `git add -f work/items/{SLUG}/` when committing review.md or status.md changes — target projects may gitignore `work/`.
+
 ### Step 6: Execute Decision
 
 **MERGE**:
