@@ -15,7 +15,10 @@ Before any merge:
 ## After Merge
 
 - Ask user confirmation if `ask_confirm_before_merge` is true (check **before** merge, not after).
-- Delete feature branch only if `delete_branch_after_merge` is true.
+- Delete feature branch (local + remote) only if `delete_branch_after_merge` is true.
+  - Remote: `git push origin --delete <branch>` (safety net after `--delete-branch` flag)
+  - Local: `git branch -d <branch>`
+  - Prune stale refs: `git fetch --prune`
 - Remove worktree via `git worktree remove` (per `rules/collab-workflow.md` Worktree Convention).
 - If design/contract changes were made, check whether sibling open work items need sync.
 - **Auto doc sync**: `git pull` working parent → read "Doc Changes Needed" from status.md → run `/sync-docs` → commit and push. This is automatic and requires no user prompt.

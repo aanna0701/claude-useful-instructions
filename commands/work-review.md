@@ -75,7 +75,9 @@ Write to `work/items/{SLUG}/review.md`. Update status.md: Status → `review`, A
 6. Update status.md: Status → `merged`, update PR field
 7. Post-merge cleanup:
    - Close issue: `gh issue close <num> --comment "Merged via PR <url>"`
+   - Delete remote branch (safety net — `--delete-branch` may silently fail): `git push origin --delete <branch> 2>/dev/null || true`
    - Remove worktree: `git worktree remove <path> && git branch -d <branch>`
+   - Prune stale remote refs: `git fetch --prune`
    - Update `work/dispatch.json`: remove merged entry
 8. **Doc sync** (automatic — no user prompt):
    - `git pull` on current branch (working parent) to pick up squash-merged changes

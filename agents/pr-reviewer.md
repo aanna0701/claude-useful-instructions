@@ -101,6 +101,12 @@ You review a single GitHub Pull Request by comparing the diff against the work i
    ```
    If merge fails (e.g., branch protection, merge conflicts), print warning and continue — the user can merge manually.
 
+   After successful merge, ensure remote branch is deleted (safety net — `--delete-branch` may silently fail):
+   ```bash
+   git push origin --delete <branch_name> 2>/dev/null || true
+   git fetch --prune
+   ```
+
 9. **Close linked Issue**:
    After successful merge, close the linked GitHub Issue explicitly (as a safety net — `Closes #N` in the PR body may not always trigger):
    ```bash
