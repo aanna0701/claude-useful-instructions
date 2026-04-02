@@ -123,6 +123,24 @@ resolve_target_dir() {
   echo "$target_dir"
 }
 
+resolve_status_files() {
+  local feat_id="$1"
+  local wdir="$2"
+  local slug
+  slug=$(basename "$wdir")
+
+  echo "$wdir/status.md"
+
+  local target_dir=""
+  target_dir=$(resolve_target_dir "$feat_id" "$wdir")
+  if [ -n "$target_dir" ] && [ -f "$target_dir/work/items/$slug/status.md" ]; then
+    local wt_status="$target_dir/work/items/$slug/status.md"
+    if [ "$wt_status" != "$wdir/status.md" ]; then
+      echo "$wt_status"
+    fi
+  fi
+}
+
 update_status_state() {
   local status_file="$1"
   local status_value="$2"
@@ -147,6 +165,19 @@ text = re.sub(r'^##\s*Agent:\s*.*$', f'## Agent: {agent_value}', text, flags=re.
 
 path.write_text(text, encoding="utf-8")
 PY
+}
+
+update_status_state_everywhere() {
+  local feat_id="$1"
+  local wdir="$2"
+  local status_value="$3"
+  local agent_value="$4"
+
+  while IFS= read -r status_file; do
+    [ -n "$status_file" ] || continue
+    [ -f "$status_file" ] || continue
+    update_status_state "$status_file" "$status_value" "$agent_value"
+  done < <(resolve_status_files "$feat_id" "$wdir")
 }
 
 mark_status_blocked() {
@@ -177,6 +208,19 @@ if match:
 
 path.write_text(text, encoding="utf-8")
 PY
+}
+
+mark_status_blocked_everywhere() {
+  local feat_id="$1"
+  local wdir="$2"
+  local issue_value="$3"
+  local blocker_text="$4"
+
+  while IFS= read -r status_file; do
+    [ -n "$status_file" ] || continue
+    [ -f "$status_file" ] || continue
+    mark_status_blocked "$status_file" "$issue_value" "$blocker_text"
+  done < <(resolve_status_files "$feat_id" "$wdir")
 }
 
 sync_branch_from_parent() {
@@ -216,7 +260,7 @@ sync_branch_from_parent() {
   fi
 
   git -C "$git_dir" merge --abort >/dev/null 2>&1 || true
-  mark_status_blocked "$wdir/status.md" "needs-sync" "Runner auto-sync from parent branch '$parent_branch' failed. Resolve branch sync or merge conflicts, then rerun codex-run.sh."
+  mark_status_blocked_everywhere "$feat_id" "$wdir" "needs-sync" "Runner auto-sync from parent branch '$parent_branch' failed. Resolve branch sync or merge conflicts, then rerun codex-run.sh."
   echo "    [sync] merge failed; status marked blocked"
   return 1
 }
@@ -237,22 +281,28 @@ sync_worktree_artifacts() {
   slug=$(basename "$wdir")
   local needs_commit=false
 
-  # Copy work item files if missing in worktree
+  # Sync spec artifacts into the worktree, but never overwrite status.md.
   local wt_feat_dir="$target_dir/work/items/$slug"
-  if [ ! -f "$wt_feat_dir/contract.md" ] && [ -d "$wdir" ]; then
+  if [ -d "$wdir" ]; then
     mkdir -p "$wt_feat_dir"
-    cp "$wdir"/*.md "$wt_feat_dir/"
-    git -C "$target_dir" add -f "work/items/$slug/"
-    needs_commit=true
-    echo "    [sync] copied work/items/$slug/"
+    local spec_file=""
+    for spec_file in brief.md contract.md checklist.md review.md; do
+      [ -f "$wdir/$spec_file" ] || continue
+      if [ ! -f "$wt_feat_dir/$spec_file" ] || ! cmp -s "$wdir/$spec_file" "$wt_feat_dir/$spec_file"; then
+        cp "$wdir/$spec_file" "$wt_feat_dir/$spec_file"
+        git -C "$target_dir" add -f "work/items/$slug/$spec_file"
+        needs_commit=true
+        echo "    [sync] updated work/items/$slug/$spec_file"
+      fi
+    done
   fi
 
-  # Copy AGENTS.md if missing
-  if [ ! -f "$target_dir/AGENTS.md" ] && [ -f "$base_repo/AGENTS.md" ]; then
+  # Keep AGENTS.md aligned with the repo root.
+  if [ -f "$base_repo/AGENTS.md" ] && { [ ! -f "$target_dir/AGENTS.md" ] || ! cmp -s "$base_repo/AGENTS.md" "$target_dir/AGENTS.md"; }; then
     cp "$base_repo/AGENTS.md" "$target_dir/AGENTS.md"
     git -C "$target_dir" add AGENTS.md
     needs_commit=true
-    echo "    [sync] copied AGENTS.md"
+    echo "    [sync] updated AGENTS.md"
   fi
 
   # Commit seeded artifacts on the feature branch
@@ -732,7 +782,7 @@ resolve_groups() {
 
   if [ -f "$manifest" ] && command -v jq &>/dev/null; then
     local num_groups
-    num_groups=$(jq '.parallel_groups | length' "$manifest" 2>/dev/null || echo 0)
+    num_groups=$(jq '(.parallel_groups // []) | length' "$manifest" 2>/dev/null || echo 0)
 
     if [ "$num_groups" -gt 0 ]; then
       # Filter groups to only include requested FEAT IDs
@@ -745,7 +795,7 @@ resolve_groups() {
               break
             fi
           done
-        done < <(jq -r ".parallel_groups[$g].items[]" "$manifest")
+        done < <(jq -r "(.parallel_groups[$g] // []) | if type == \"array\" then .[] else (.items // [])[] end" "$manifest")
 
         if [ ${#group_items[@]} -gt 0 ]; then
           echo "${group_items[*]}"
@@ -764,6 +814,11 @@ resolve_groups() {
 dispatch_group() {
   local group_ids=("$@")
   local -A pids=()
+  local -A log_files=()
+  local -A last_log_mtime=()
+  local -A last_status=()
+  local -A last_progress_epoch=()
+  local stall_timeout="${CODEX_RUN_STALL_TIMEOUT_SECS:-1800}"
 
   mkdir -p "$LOG_DIR"
 
@@ -777,7 +832,7 @@ dispatch_group() {
     target_dir=$(resolve_target_dir "$fid" "$wdir")
     local prompt
     prompt=$(build_codex_prompt "$fid")
-    update_status_state "$wdir/status.md" "in-progress" "Codex"
+    update_status_state_everywhere "$fid" "$wdir" "in-progress" "Codex"
 
     if command -v codex &>/dev/null; then
       # Ensure worktree has planning artifacts and latest parent-branch changes before spawning.
@@ -795,6 +850,10 @@ dispatch_group() {
         codex exec --full-auto "$prompt" > "$log_file" 2>&1 &
       fi
       pids["$fid"]=$!
+      log_files["$fid"]="$log_file"
+      last_log_mtime["$fid"]=$(stat -c %Y "$log_file" 2>/dev/null || echo 0)
+      last_status["$fid"]="in-progress"
+      last_progress_epoch["$fid"]=$(date +%s)
     else
       echo "  [manual] $slug → $log_file"
       echo "$prompt" > "$log_file"
@@ -829,8 +888,31 @@ dispatch_group() {
       fi
       local status
       status=$(get_item_status "$status_source")
+      local now_epoch
+      now_epoch=$(date +%s)
+      local log_file="${log_files[$fid]:-}"
+      local log_mtime=0
+      if [ -n "$log_file" ] && [ -f "$log_file" ]; then
+        log_mtime=$(stat -c %Y "$log_file" 2>/dev/null || echo 0)
+      fi
+      if [ "$log_mtime" -gt "${last_log_mtime[$fid]:-0}" ] || [ "$status" != "${last_status[$fid]:-}" ]; then
+        last_log_mtime["$fid"]="$log_mtime"
+        last_status["$fid"]="$status"
+        last_progress_epoch["$fid"]="$now_epoch"
+      fi
 
       if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+        local stalled_for=$((now_epoch - ${last_progress_epoch[$fid]:-$now_epoch}))
+        if [ "$stall_timeout" -gt 0 ] && [ "$stalled_for" -ge "$stall_timeout" ]; then
+          local stall_message="Runner detected no status or log progress for $stalled_for seconds and stopped the Codex process. Inspect $log_file, then rerun codex-run.sh."
+          echo "  $slug stalled for ${stalled_for}s; terminating pid $pid"
+          kill "$pid" 2>/dev/null || true
+          sleep 1
+          kill -9 "$pid" 2>/dev/null || true
+          mark_status_blocked_everywhere "$fid" "$wdir" "runner-stalled" "$stall_message"
+          last_status["$fid"]="blocked"
+          continue
+        fi
         all_done=false
         printf "  %-40s %s (pid %s)\n" "$slug" "$status" "$pid"
       else
