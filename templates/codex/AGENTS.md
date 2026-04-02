@@ -71,3 +71,4 @@ If git commit fails because the sandbox blocks `.git/worktrees/*` writes, do not
 - Do NOT merge your own branch
 - Do NOT make design decisions or propose alternatives
 - Do NOT treat sandboxed git failure as a product/code blocker
+- Do NOT modify `codex-run.sh` — the runner that spawned you is off-limits
