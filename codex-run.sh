@@ -484,7 +484,7 @@ push_and_create_pr() {
     local pr_url
     pr_url=$(gh pr view "$existing_pr" --json url -q .url 2>/dev/null || true)
     if [ -n "$pr_url" ]; then
-      sed -i "s|^\| PR \| .* |$|\| PR \| $pr_url \||" "$wdir/status.md" 2>/dev/null || true
+      sed -i "s~^| PR | .* |$~| PR | $pr_url |~" "$wdir/status.md" 2>/dev/null || true
     fi
     return 0
   fi
@@ -529,7 +529,7 @@ EOF
 
   if [ -n "$pr_url" ]; then
     echo "    ✓ $slug: draft PR created → $pr_url"
-    sed -i "s|^\| PR \| .* |$|\| PR \| $pr_url \||" "$wdir/status.md" 2>/dev/null || true
+    sed -i "s~^| PR | .* |$~| PR | $pr_url |~" "$wdir/status.md" 2>/dev/null || true
     git -C "$git_dir" add -f "work/items/$slug/status.md" 2>/dev/null || true
     git -C "$git_dir" commit -m "chore($feat_id): record PR URL" 2>/dev/null || true
     git -C "$git_dir" push 2>/dev/null || true
@@ -1026,7 +1026,7 @@ cmd_dispatch() {
 • Success: $success  Failed: $failed
 • Items: ${feat_ids[*]}
 • Host: $(hostname)"
-  if [ ${#pr_urls[@]:-0} -gt 0 ]; then
+  if [ ${#pr_urls[@]} -gt 0 ]; then
     slack_text+="
 • PRs:"
     for pr_info in "${pr_urls[@]}"; do
