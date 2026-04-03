@@ -26,6 +26,12 @@ Located at `work/items/FEAT-NNN-slug/` with 5 files:
 | `status.md` | Codex | Real-time progress, blockers, ambiguities |
 | `review.md` | Claude | Final review, merge decision |
 
+### Review And Refactor Policy
+
+- Do not add a separate `work-refac` command by default.
+- Review fixes stay on the same work item: Claude reviews with `/work-review`, then Codex applies required changes with `/work-revise`.
+- Only create a new work item when refactoring exceeds the current contract boundary or deserves independent tracking as `REFACTOR-NNN` or `CHORE-NNN`.
+
 ### Principles
 
 See `.claude/rules/collab-workflow.md` for the full protocol.

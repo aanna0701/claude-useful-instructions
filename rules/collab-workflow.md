@@ -44,6 +44,13 @@ Illegal shortcuts are not allowed. In particular:
 | `/work-status [FEAT-NNN]` | Check progress |
 | `/work-review [FEAT-NNN ...]` | Review existing PR → merge or revise |
 
+## Review Revision Policy
+
+- Do not introduce a separate `work-refac` command for normal review follow-up.
+- Claude review output is the decision point: merge, revise in-place, or create a separate follow-up item.
+- If fixes stay inside the current contract and do not justify separate tracking, Codex applies them via `/work-revise` on the same `FEAT-NNN`.
+- If refactoring exceeds the contract boundary or should be tracked independently, create a new `REFACTOR-NNN` or `CHORE-NNN` item instead of extending the original implementation scope.
+
 ## Work Items
 
 - Location: `work/items/FEAT-NNN-slug/`

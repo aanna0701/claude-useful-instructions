@@ -32,6 +32,11 @@ TOUCH 2 — Human: /work-review FEAT-001 FEAT-002 FEAT-003
   → REVISE: writes `review.md` MUST-fix items + re-runs `codex-run.sh`, which injects `review.md` into the next Codex prompt
 ```
 
+Review follow-up policy:
+- Do not add a separate `work-refac` command for normal review changes.
+- If the review fixes stay inside the existing contract, keep the same `FEAT-NNN` and use `/work-revise`.
+- Only split out a new `REFACTOR-NNN` or `CHORE-NNN` item when the cleanup exceeds the original contract boundary or deserves separate tracking.
+
 ## Operating Model
 
 The workflow is only stable if ownership is explicit:
@@ -102,7 +107,7 @@ graph LR
 ./install.sh --collab /path/to/project
 ```
 
-This installs everything: `.claude/` artifacts, `AGENTS.md`, `CLAUDE.md`, `codex-run.sh`. Creates `work/items/` directory.
+This installs everything: `.claude/` artifacts, `AGENTS.md`, `CLAUDE.md`, `codex-run.sh`, and the `lib/codex-run-*.sh` helpers. Creates `work/items/` directory.
 
 ### Installed Layout
 
@@ -111,6 +116,7 @@ project/
 ├── AGENTS.md                          # Codex reads this
 ├── CLAUDE.md                          # Claude reads this
 ├── codex-run.sh                       # Codex runner (single + parallel + boundary check)
+├── lib/codex-run-*.sh                 # Runner helpers (work, git, boundary, runner)
 ├── work/items/                        # Work items (created by install.sh)
 ├── work/dispatch.json                 # Parallel dispatch manifest (created by /work-plan)
 └── .claude/
