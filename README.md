@@ -52,7 +52,7 @@ cui-install --collab /path/to/my-project
 
 | Bundle | Contents | Recommended Scope |
 |--------|----------|-------------------|
-| `core` | smart-git-commit-push, optimize-tokens, debug-guide, branch-map | Global (`~/.claude/`) |
+| `core` | smart-git-commit-push, optimize-tokens, debug-guide, what-to-do, branch-map | Global (`~/.claude/`) |
 | `docs` | diataxis-doc-system, diagram-architect, doc/diagram agents, write-doc, init-docs, sync-docs | Global |
 | `data-pipeline` | data-pipeline-architect skill | Global |
 | `collab` | Claude-Codex collaboration, work items, CI audit, AGENTS.md, CLAUDE.md | Per-project |
@@ -131,7 +131,7 @@ Subagents delegated by Claude for specific tasks.
 | Delivery | `doc-writer-task`, `-contract`, `-checklist`, `-review` | 4 |
 | Doc Quality | `doc-polisher`, `doc-reviewer`, `doc-reviewer-execution` | 3 |
 | Diagram | `diagram-writer` | 1 |
-| Debug Guide | `debug-guide` | 1 |
+| Debug / Planning | `debug-guide`, `what-to-do` | 2 |
 | Token Analysis | `token-duplication-detector`, `-load-measurer`, `-mcp-analyzer`, `-split-detector` | 4 |
 | Career Docs | `career-docs-writer`, `-reviewer`, `-reviser` | 3 |
 | CI Audit | `ci-audit-agent` | 1 |
@@ -154,6 +154,7 @@ Subagents delegated by Claude for specific tasks.
 | `/init-docs` | Scaffold docs site structure (numbering + MkDocs) |
 | `/sync-docs` | Sync docs to current codebase state |
 | `/debug-guide` | Analyze recent commits and generate a verification/debug checklist |
+| `/what-to-do` | Review recent commits and generate an action plan (verify, debug, implement) |
 | `/smart-git-commit-push` | Auto-split commits by feature and push |
 | `/create-presentation` | Generate HTML slide deck from content |
 | `/format-presentation` | Convert HTML to standard 16:9 dark-theme format |
@@ -196,6 +197,7 @@ claude-useful-instructions/
 │   ├── doc-writer-*.md              # Diataxis doc writers (4 types + delivery agents)
 │   ├── diagram-writer.md            # Mermaid diagram generation
 │   ├── debug-guide.md               # Commit analysis → verification checklist
+│   ├── what-to-do.md                # Recent work summary → action plan
 │   ├── doc-polisher.md              # Doc writing-style polish
 │   ├── doc-reviewer.md              # Diataxis doc quality review
 │   ├── doc-reviewer-execution.md    # Execution artifact review

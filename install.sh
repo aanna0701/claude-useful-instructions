@@ -38,6 +38,8 @@ BUNDLE_CORE=(
   "commands:optimize-tokens.md"
   "commands:debug-guide.md"
   "agents:debug-guide.md"
+  "commands:what-to-do.md"
+  "agents:what-to-do.md"
   "agents:token-duplication-detector.md"
   "agents:token-load-measurer.md"
   "agents:token-mcp-analyzer.md"
