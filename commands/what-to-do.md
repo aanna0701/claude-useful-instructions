@@ -3,7 +3,7 @@
 Analyze recent git commits to summarize what was done and guide next steps: verification, debugging, and implementation.
 
 Arguments: $ARGUMENTS
-- If empty: analyze today's commits (commits from today's date)
+- If empty: analyze commits from today + the most recent previous commit date (see default logic below)
 - If a number (e.g., `10`): analyze last N commits (`HEAD~N..HEAD`)
 - If a date (e.g., `2026-04-01`): analyze commits since that date
 - If a branch name (e.g., `main`): analyze diff from that branch (`main..HEAD`)
@@ -21,8 +21,14 @@ Extract from `$ARGUMENTS`:
 
 Default behavior (no arguments):
 1. Get today's date: `date +%Y-%m-%d`
-2. Use `--since={today}` with git log to find today's commits
-3. If no commits today, fall back to last 5 commits
+2. Find the most recent **previous** commit date (the latest date before today that has commits):
+   ```bash
+   git log --format='%ad' --date=short | grep -v "$(date +%Y-%m-%d)" | head -1
+   ```
+3. Use `--since={previous_date}` to include all commits from that date through today
+   - This captures: today's work + the last session's work (the natural review window)
+4. If no previous date found (all commits are today or only 1 day of history), use today's commits only
+5. If no commits at all today, still use the previous date's commits as the range
 
 If a date is given (matches `YYYY-MM-DD`):
 - Set DATE_FILTER to that date
