@@ -5,12 +5,12 @@
 #
 # Options:
 #   --all           Install all bundles (default if no bundle flags given)
-#   --core          Core utilities (smart-git-commit-push, optimize-tokens, branch-map)
+#   --core          Core utilities (smart-git-commit-push, optimize-tokens)
 #   --docs          Documentation & diagrams (diataxis, write-doc, init-docs, sync-docs, doc/diagram agents)
 #   --data-pipeline Data pipeline architect skill
 #   --career        Career document tools (career-docs skill, career agents)
 #   --dl            PyTorch DL standards + agents (capture, data, model, train, eval, infra)
-#   --collab        Claude-Codex collaboration (work items, AGENTS.md, CLAUDE.md)
+#   --collab        Claude-Codex collaboration (work items, branch-map, AGENTS.md, CLAUDE.md)
 #   --slack         Slack notifications (session summary, confirmation alerts)
 #   --exclude NAME  Exclude a bundle (repeatable, e.g. --exclude dl --exclude career)
 #   --interactive   Interactive mode: choose bundles from a menu
@@ -37,11 +37,6 @@ REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
 BUNDLE_CORE=(
   "commands:smart-git-commit-push.md"
   "commands:optimize-tokens.md"
-  "rules:branch-map-policy.md"
-  "commands:branch-init.md"
-  "commands:branch-status.md"
-  "templates:branch-map"
-  "workflow:branch-auto-sync.yml"
   "claude-hook:git-auto-pull"
 )
 
@@ -83,8 +78,11 @@ BUNDLE_DL=(
 )
 
 BUNDLE_COLLAB=(
+  "rules:branch-map-policy.md"
   "rules:collab-workflow.md"
   "rules:review-merge-policy.md"
+  "commands:branch-init.md"
+  "commands:branch-status.md"
   "commands:work-plan.md"
   "commands:work-review.md"
   "commands:work-impl.md"
@@ -95,7 +93,9 @@ BUNDLE_COLLAB=(
   "agents:ci-audit-agent.md"
   "agents:issue-creator.md"
   "agents:work-reviser.md"
+  "templates:branch-map"
   "templates:work-item"
+  "workflow:branch-auto-sync.yml"
   "root-file:AGENTS.md"
   "root-file:CLAUDE.md"
   "script:codex-run.sh"
@@ -121,7 +121,7 @@ BUNDLE_DESCRIPTIONS=(
   "Data pipeline architect"
   "Career document tools (cover letters, Korean)"
   "PyTorch DL standards + agents (capture, data, model, train, eval, infra)"
-  "Claude-Codex collaboration (work items, AGENTS.md, CLAUDE.md)"
+  "Claude-Codex collaboration (work items, branch-map, AGENTS.md, CLAUDE.md)"
   "Slack notifications (session summary, confirmation alerts)"
   "HTML presentation generator (16:9 dark theme slides + PDF export)"
 )
@@ -134,6 +134,7 @@ INTERACTIVE=false
 LIST_ONLY=false
 UNINSTALL=false
 FORCE_YES=false
+INSTALL_HAS_COLLAB=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -233,8 +234,17 @@ if [[ ${#EXCLUDED_BUNDLES[@]} -gt 0 ]]; then
   SELECTED_BUNDLES=("${FILTERED[@]}")
 fi
 
+if printf '%s\n' "${SELECTED_BUNDLES[@]}" | grep -qx "collab"; then
+  INSTALL_HAS_COLLAB=true
+fi
+
 # ── Resolve target directory ────────────────────────────────────────────────
 if [ -z "$TARGET_DIR" ]; then
+  if $INSTALL_HAS_COLLAB; then
+    echo "ERROR: --collab requires a project target directory." >&2
+    echo "Usage: ./install.sh --collab /path/to/project" >&2
+    exit 1
+  fi
   PROJECT_ROOT="$HOME"
 else
   PROJECT_ROOT="$(cd "$TARGET_DIR" 2>/dev/null && pwd || echo "$TARGET_DIR")"
@@ -620,6 +630,12 @@ remove_work_dir() {
   fi
 }
 
+ensure_collab_scaffold() {
+  mkdir -p "$PROJECT_ROOT/work/items"
+  mkdir -p "$PROJECT_ROOT/work/batches"
+  mkdir -p "$PROJECT_ROOT/work/locks"
+}
+
 # ── Execute uninstall ─────────────────────────────────────────────────────
 if $UNINSTALL; then
   echo "Uninstalling Claude settings from $CLAUDE_DIR"
@@ -642,9 +658,13 @@ if $UNINSTALL; then
       script)    remove_file "$PROJECT_ROOT/$path" ;;
       hook)        remove_hook "$path" ;;
       claude-hook) remove_claude_hook "$path" ;;
-      mcp)         remove_mcp_dir "$path"; HAS_COLLAB=true ;;
+      mcp)         remove_mcp_dir "$path" ;;
     esac
   done
+
+  if printf '%s\n' "${SELECTED_BUNDLES[@]}" | grep -qx "collab"; then
+    HAS_COLLAB=true
+  fi
 
   # Remove work/ dir if collab bundle is being uninstalled
   if $HAS_COLLAB; then
@@ -723,6 +743,10 @@ for entry in "${INSTALL_LIST[@]}"; do
       ;;
   esac
 done
+
+if $INSTALL_HAS_COLLAB; then
+  ensure_collab_scaffold
+fi
 
 echo "────────────────────────────────────────────────────────"
 echo "Done. Installed bundles: ${SELECTED_BUNDLES[*]}"
