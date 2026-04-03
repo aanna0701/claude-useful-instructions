@@ -39,7 +39,21 @@ If `$ARGUMENTS` is a file path, read it. For each topic gather: Objective, Sourc
 
 ### Step 1.5: Resolve Branch Map
 
-Per `rules/branch-map-policy.md` § Branch Selection. Read `.claude/branch-map.yaml` (auto-init via `/branch-init` if missing). Extract: `working_parent`, `default_merge_target`, `role`, `ci_scope`. Single-branch projects default to `main`/`master`.
+Per `rules/branch-map-policy.md`. Read `.claude/branch-map.yaml` and extract:
+- `working_parent`
+- `default_merge_target`
+- `branch_prefixes`
+- `roles`
+
+Single-branch projects default to `main` if no branch map exists.
+
+### Step 1.6: Preflight Safety
+
+Before creating anything:
+- Acquire `work/locks/planning.lock`
+- Verify the current branch equals `working_parent`
+- Verify the `working_parent` worktree is clean except for intentional planning files
+- Refuse to continue if another planning run appears active
 
 ### Step 2: Decompose into Parallel Sub-tasks
 
@@ -76,7 +90,7 @@ If overlaps found: print conflicts, suggest narrowing or merging, ask user to co
 ```bash
 PROJECT=$(basename "$(git rev-parse --show-toplevel)")
 PARENT=<working_parent>
-TYPE_PREFIX=<branch prefix from Work Types table>
+TYPE_PREFIX=<branch_prefixes[type]>
 SLUG="{TYPE}-NNN-slug"
 BRANCH="${TYPE_PREFIX}${SLUG}"
 WT_PATH="../${PROJECT}-${SLUG}"
@@ -94,15 +108,31 @@ git -C "$WT_PATH" add -f "$FEAT_DIR/" AGENTS.md
 git -C "$WT_PATH" commit -m "chore($SLUG): seed work item artifacts"
 ```
 
-Update `status.md`: Branch, Worktree, Worktree Path (absolute).
+Update `status.md`:
+- `Status = planned`
+- Branch
+- Worktree
+- Worktree Path
+- Batch ID
 
 ### Step 7: Create GitHub Issues
 
 Spawn `issue-creator` agent per item (parallel). Creates GitHub Issue from brief + contract + checklist, records issue number in `status.md`. Skip silently if `gh` unavailable.
 
-### Step 8: Generate Dispatch Manifest
+### Step 8: Generate Batch Manifest
 
-Create/update `work/dispatch.json`: `batch_id`, `created`, `parent_topic`, `items[]` ({id, slug, type, status, issue, worktree_path, depends_on, conflicts_with}), `parallel_groups[]`.
+Write the canonical manifest to `work/batches/{batch_id}.json`:
+- `batch_id`
+- `created`
+- `working_parent`
+- `items[]`
+- `parallel_groups[]`
+
+Optionally refresh `work/dispatch.json` as a latest-batch pointer or mirror.
+
+### Step 8.5: Release Planning Lock
+
+Always release `work/locks/planning.lock`, even on failure.
 
 ### Step 9: Summary
 
@@ -114,6 +144,7 @@ Work Plan Ready
   FEAT-001  schema-cleanup   #42  ../project-FEAT-001-schema-cleanup
   CHORE-002 dep-upgrade      #43  ../project-CHORE-002-dep-upgrade
 ──────────────────────────────────────────────
+Batch: work/batches/2026-04-03-schema-cleanup.json
 
 Next Steps — pick one:
 ──────────────────────────────────────────────
