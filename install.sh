@@ -36,6 +36,12 @@ REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
 BUNDLE_CORE=(
   "commands:smart-git-commit-push.md"
   "commands:optimize-tokens.md"
+  "commands:debug-guide.md"
+  "agents:debug-guide.md"
+  "agents:token-duplication-detector.md"
+  "agents:token-load-measurer.md"
+  "agents:token-mcp-analyzer.md"
+  "agents:token-split-detector.md"
   "claude-hook:git-auto-pull"
 )
 
@@ -52,6 +58,9 @@ BUNDLE_DOCS=(
   "agents:doc-writer-checklist.md"
   "agents:doc-writer-review.md"
   "agents:doc-reviewer.md"
+  "agents:doc-reviewer-execution.md"
+  "agents:doc-polisher.md"
+  "commands:polish-doc.md"
   "skills:diagram-architect"
   "agents:diagram-writer.md"
 )
@@ -64,6 +73,7 @@ BUNDLE_CAREER=(
   "skills:career-docs"
   "agents:career-docs-writer.md"
   "agents:career-docs-reviewer.md"
+  "agents:career-docs-reviser.md"
 )
 
 BUNDLE_DL=(
@@ -92,6 +102,7 @@ BUNDLE_COLLAB=(
   "agents:ci-audit-agent.md"
   "agents:issue-creator.md"
   "agents:work-reviser.md"
+  "agents:pr-reviewer.md"
   "templates:branch-map"
   "templates:work-item"
   "workflow:branch-auto-sync.yml"
@@ -116,7 +127,7 @@ BUNDLE_PRESENTATION=(
 
 BUNDLE_NAMES=("core" "docs" "data-pipeline" "career" "dl" "collab" "presentation")
 BUNDLE_DESCRIPTIONS=(
-  "Core utilities (smart-git-commit-push, optimize-tokens)"
+  "Core utilities (smart-git-commit-push, optimize-tokens, debug-guide)"
   "Documentation & diagrams (diataxis framework, doc agents, diagram-architect)"
   "Data pipeline architect"
   "Career document tools (cover letters, Korean)"
