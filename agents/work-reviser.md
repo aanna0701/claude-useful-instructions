@@ -14,7 +14,7 @@ description: Extract MUST-fix items from review.md and re-dispatch to agent or C
 
 2. **Extract MUST-fix items** — collect from `MUST-fix` section or any CRITICAL/HIGH severity items. Format as numbered action list with file paths.
 
-3. **Update status.md**: Status → `revision`, append `- [ ] Revision round N: <count> MUST-fix items`.
+3. **Update status.md**: Status → `revising`, append `- [ ] Revision round N: <count> MUST-fix items`.
 
 4. **Dispatch** by `status.md` Agent field:
 

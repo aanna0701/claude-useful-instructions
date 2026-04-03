@@ -20,14 +20,26 @@ For each work item, resolve the **authoritative** status.md:
 
 **Why**: Codex updates status.md in the worktree. The main repo copy is a stale seed.
 
+## Canonical States
+
+Report only these states:
+- `planned`
+- `implementing`
+- `blocked`
+- `ready-for-review`
+- `reviewing`
+- `revising`
+- `merged`
+- `rejected`
+
 ## Mode A: All Items (no argument)
 
 Glob `work/items/*/` for slugs, then apply worktree-first resolution to each. Extract key fields and print:
 
 | ID | Title | Type | Status | Agent | Branch | Merge Target | PR | Freshness |
 |----|-------|------|--------|-------|--------|--------------|-----|-----------|
-| FEAT-001 | User Auth | feat | in-progress | Codex | feat/FEAT-001-user-auth | research | #51 (draft) | fresh |
-| CHORE-002 | Dep Upgrade | chore | open | TBD | — | main | — | — |
+| FEAT-001 | User Auth | feat | implementing | Codex | feat/FEAT-001-user-auth | research | #51 (draft) | fresh |
+| CHORE-002 | Dep Upgrade | chore | planned | TBD | — | main | — | — |
 
 If `.claude/branch-map.yaml` exists, populate Merge Target and check freshness per `rules/branch-map-policy.md`. If no items: "No work items found. Use `/work-plan` to create one."
 
@@ -38,7 +50,7 @@ Apply worktree-first resolution, then read status.md and checklist.md (parallel;
 ```
 {ID}: [Title]
 Type:       feat | fix | docs | chore | refactor | test | perf
-Status:     in-progress | blocked
+Status:     planned | implementing | blocked | ready-for-review | reviewing | revising | merged | rejected
 Agent:      Codex
 Branch:     feat/FEAT-NNN-slug
 PR:         #51 (draft)
@@ -59,17 +71,17 @@ Print actionable commands based on each item's status. Only print sections with 
 ```
 Next Actions
 ──────────────────────────────────────────────
-# open → dispatch
+# planned → dispatch
   bash codex-run.sh {ID}
   /work-impl {ID}
 
-# done → review
+# ready-for-review → review
   /work-review {ID}
 
-# revision → re-dispatch
+# revising → re-dispatch
   /work-revise {ID}
 
-# in-progress → check logs
+# implementing → check logs
   tail -f work/.dispatch-logs/{SLUG}.log
 
 # blocked + needs-sync → sync and rerun

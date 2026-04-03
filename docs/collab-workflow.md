@@ -32,6 +32,43 @@ TOUCH 2 — Human: /work-review FEAT-001 FEAT-002 FEAT-003
   → REVISE: writes `review.md` MUST-fix items + re-runs `codex-run.sh`, which injects `review.md` into the next Codex prompt
 ```
 
+## Operating Model
+
+The workflow is only stable if ownership is explicit:
+
+- `working_parent` is orchestration-only
+- feature worktrees are implementation-only
+- the active worktree `status.md` is authoritative during implementation
+- planning and merge operations mutate global state and must be serialized
+
+If you treat the `working_parent` branch as a normal coding branch, the system will drift.
+
+## State Machine
+
+Use one overall state per work item:
+
+| State | Meaning | Primary owner |
+|------|---------|---------------|
+| `planned` | Contract signed, not yet dispatched | Claude |
+| `implementing` | Codex actively working | Codex |
+| `blocked` | Preconditions or verification failed | Codex or Claude |
+| `ready-for-review` | Implementation finished and verified | Codex |
+| `reviewing` | Claude review in progress | Claude |
+| `revising` | Review requested changes | Claude then Codex |
+| `merged` | PR merged and branch cleaned up | Claude |
+| `rejected` | Item closed without merge | Claude |
+
+Keep the transition graph simple:
+
+```
+planned -> implementing -> ready-for-review -> reviewing -> merged
+                             |                    |
+                             v                    v
+                           blocked             revising -> implementing
+```
+
+`unknown` is not a valid business state. If tooling cannot determine a final outcome, it should write `blocked`.
+
 ## Architecture
 
 ```mermaid
@@ -111,6 +148,15 @@ workspace/
 - On MERGE, `/work-review` runs `git worktree remove` + `git branch -d`
 - Each worktree is temporary — exists only for the FEAT's lifetime
 - Feature branch is deleted after merge, so the seed commit does not pollute history
+- Runner monitoring depends on a single overall status in `status.md`. Keep frontmatter `status:` and body status aligned, and prefer the table fields from the template (`Status`, `Agent`, `Worktree Path`).
+- If Codex exits without writing a final status, `codex-run.sh` now marks the item `blocked` with `runner-missing-status` instead of polling `unknown` indefinitely.
+
+### Control Plane vs Data Plane
+
+- Control plane: `working_parent`, batch manifests, locks, work-item planning files
+- Data plane: feature worktrees, implementation commits, PR branches
+
+Do not mix them. The most common source of breakage is editing production code directly on `working_parent` while the collab workflow is active.
 
 ### Preflight before implementation
 
@@ -119,6 +165,7 @@ A worktree existing on disk does not guarantee it is synced to the right base.
 - `codex-run.sh` should first auto-sync the feature branch from the contract's `Parent Branch`.
 - If upstream FEATs changed the expected file layout, verify those dependency outputs are already present in the worktree.
 - If runner auto-sync fails or dependency outputs are still missing, do not start implementation. Resolve the branch state, then rerun `codex-run.sh`.
+- For environment-dependent verification, prefer preinstalled dependencies and cached environments. If a network/package failure blocks completion, Codex should record `blocked` with the failing command rather than exiting silently.
 - This prevents false-starts where Codex correctly blocks on missing invariant prerequisites such as moved files, split docs, or renamed paths.
 
 ---
@@ -132,7 +179,8 @@ A worktree existing on disk does not guarantee it is synced to the right base.
 1. **Batch planning**: Pass multiple topics to `/work-plan` → each gets its own FEAT item, generated in parallel
 2. **Boundary check**: After contracts are generated, the system checks that "Allowed Modifications" paths don't overlap between any pair of items
 3. **Dispatch grouping**: Items with no boundary overlap are grouped for parallel execution; conflicting items are placed in sequential groups
-4. **Dispatch manifest**: `work/dispatch.json` records parallel groups, dependencies, and conflicts
+4. **Batch manifest**: `work/batches/{batch_id}.json` records items, parallel groups, dependencies, and conflicts
+5. **Latest pointer**: `work/dispatch.json` may mirror the current batch for convenience, but it is not the only source of truth
 
 ### Boundary matrix example
 
@@ -164,6 +212,24 @@ bash codex-run.sh FEAT-002
 bash codex-run.sh FEAT-003
 ```
 
+## Locks and Serialization
+
+Not everything should run in parallel.
+
+- Planning is serialized with `work/locks/planning.lock`
+- A single work item is serialized with `work/locks/{ID}.lock`
+- Merge and cleanup are serialized with `work/locks/merge.lock`
+
+Recommended safe concurrency:
+- parallel planning agents inside one `/work-plan` call
+- parallel Codex implementation on disjoint items
+- parallel review analysis across items
+
+Recommended serialization:
+- multiple `/work-plan` invocations
+- merge execution on `working_parent`
+- doc sync or cleanup that mutates shared manifests
+
 ---
 
 ## Walkthrough: JWT Authentication Middleware
@@ -178,7 +244,7 @@ bash codex-run.sh FEAT-003
 Claude: reviews scope → generates contract → signs (status: draft → signed)
 
 Created work/items/FEAT-001-jwt-auth-middleware/
-  brief.md, contract.md (signed), checklist.md, status.md (open)
+  brief.md, contract.md (signed), checklist.md, status.md (planned)
 
 Codex Command: bash codex-run.sh FEAT-001
 ```
@@ -188,10 +254,10 @@ Codex Command: bash codex-run.sh FEAT-001
 ```
 [Codex] bash codex-run.sh FEAT-001
   → Reads brief → contract → checklist
-  → Updates status.md (in-progress)
+  → Updates status.md (implementing)
   → Implements within contract boundaries (src/middleware/, tests/middleware/)
   → Commits: feat(FEAT-001): add JWT validation middleware
-  → Updates status.md → done (5/5 checklist items)
+  → Updates status.md → ready-for-review (5/5 checklist items)
 ```
 
 ### Phase 3 — Review + Merge (Claude)
@@ -206,9 +272,31 @@ Claude:
 ```
 
 Decision flow:
-- **MERGE** → ask user → `git merge feat/FEAT-NNN-*` → `git branch -d feat/FEAT-NNN-*` → apply doc changes → done
+- **MERGE** → ask user → `git merge feat/FEAT-NNN-*` → `git branch -d feat/FEAT-NNN-*` → apply doc changes → merged
 - **REVISE** → write concrete `MUST-fix` items to `review.md` + `bash codex-run.sh FEAT-NNN` → `codex-run.sh` injects `review.md` into the prompt → Codex fixes those items first → re-review
 - **REJECT** → close work item with reason
+
+## Safety Checklist
+
+Before `/work-plan`:
+- `working_parent` is clean or only has deliberate planning-file changes
+- no existing planning lock
+
+Before `codex-run.sh`:
+- target worktrees exist
+- no item lock conflict
+- dependency FEAT outputs are already present if required
+- if the project uses uv, `uv sync --frozen` succeeds before Codex starts
+
+Before `/work-review`:
+- item is `ready-for-review`
+- `working_parent` is clean
+- no merge lock
+
+Before merge:
+- parent freshness passes
+- PR exists and matches the feature branch
+- cleanup targets only the reviewed item
 
 ---
 

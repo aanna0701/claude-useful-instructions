@@ -6,10 +6,35 @@
 /work-plan → codex-run.sh (TOUCH 1: impl + push + draft PR) → /work-review (TOUCH 2: review existing PR)
 ```
 
+## State Machine
+
+Every work item must be in exactly one overall state:
+
+- `planned`
+- `implementing`
+- `blocked`
+- `ready-for-review`
+- `reviewing`
+- `revising`
+- `merged`
+- `rejected`
+
+Illegal shortcuts are not allowed. In particular:
+- `planned -> reviewing` is invalid
+- `implementing -> merged` is invalid
+- `reviewing -> implementing` is invalid unless the review decision is `REVISE`
+
 ## Roles
 
 - **Claude**: spec owner, integrator — designs work items, reviews, merges, handles doc changes
 - **Codex**: implementer — per contract only, never modifies docs (records in `status.md`)
+
+## Ownership
+
+- `working_parent` is orchestration-only. Do not implement there.
+- Feature worktrees are the only place where implementation edits happen.
+- `status.md` in the active worktree is authoritative while a work item is in progress.
+- The main repo copy of `work/items/...` is planning metadata and fallback only.
 
 ## Commands
 
@@ -30,6 +55,7 @@
 - `/work-plan` auto-splits topics into parallelizable FEATs with disjoint boundaries
 - Boundary overlap check runs before dispatch — overlapping items grouped sequentially
 - `codex-run.sh` handles: boundary check → seed artifacts → parallel `codex exec` → monitor → verify commits → push + draft PR → output `/work-review`
+- Monitoring assumes `status.md` exposes one overall status. Prefer the template table fields and keep frontmatter `status:` synchronized.
 
 ## Worktree Convention
 
@@ -47,11 +73,29 @@ Work item files (`status.md`, `brief.md`, `contract.md`, etc.) may exist in **bo
 2. Read `Worktree Path` from `status.md` — try **worktree path first**: `../${PROJECT}-${SLUG}/work/items/${SLUG}/status.md`; fall back to cwd only if worktree does not exist
 3. ALL subsequent file reads (brief, contract, checklist, changed files, tests) MUST use the resolved worktree path, never cwd
 
-**Why:** The main repo's `work/items/` may contain stale copies (e.g. `status: open`) while the worktree has the updated version (`status: done`). Reading cwd first causes false "not ready for review" errors.
+**Why:** The main repo's `work/items/` may contain stale copies (e.g. `status: planned`) while the worktree has the updated version (`status: ready-for-review`). Reading cwd first causes false "not ready for review" errors.
 - A newly created worktree is not assumed to be implementation-ready.
 - `codex-run.sh` should auto-sync the feature branch from its contract parent branch before spawning Codex.
 - If the runner cannot sync cleanly, it marks the item `blocked` with `needs-sync`.
+- If Codex exits before writing a final status, the runner marks the item `blocked` with `runner-missing-status` instead of leaving it in `unknown`.
 - Even after auto-sync, dependency FEAT outputs must still exist in the worktree; otherwise Codex blocks rather than recreating moved files or violating boundaries.
+
+## Locks
+
+Use lightweight locks to prevent orchestration races:
+
+- `work/locks/planning.lock`
+  Prevents concurrent `/work-plan` runs from rewriting IDs, worktrees, or manifests.
+- `work/locks/{ID}.lock`
+  Prevents concurrent implementation and review on the same item.
+- `work/locks/merge.lock`
+  Allows only one merge-and-cleanup sequence at a time on `working_parent`.
+
+## Batch Manifests
+
+- `work/batches/{batch_id}.json` is the canonical manifest for one planning batch.
+- `work/dispatch.json` is optional and should be treated as a pointer or latest-batch cache, not the only source of truth.
+- Commands should prefer the batch manifest referenced by the work item, then fall back to `work/dispatch.json`.
 
 ## Worktree Routing
 
@@ -77,11 +121,12 @@ Work item files (`status.md`, `brief.md`, `contract.md`, etc.) may exist in **bo
 - Contract = single source of truth for boundaries
 - Claude signs contracts; Codex implements
 - Codex: code + `status.md` only — **never docs**; records doc needs in "Doc Changes Needed"
+- `research` or any `working_parent` branch is not a scratchpad. Keep it clean before planning, review, and merge.
 - Ambiguities recorded in `status.md`, never resolved by implementer
 - `review.md` required before merge
 - On `REVISE`, the latest `review.md` becomes the mandatory delta for the next Codex run; every `MUST-fix` item must be injected into the re-dispatch prompt and resolved before optional work
 - Draft PR creation happens at implementation stage (`/work-impl` or `codex-run.sh`), not at review stage
-- MERGE decision: review existing draft PR → `gh pr merge` → auto doc sync (`/sync-docs` + commit + push) → cleanup worktree + work item dir
+- MERGE decision: review existing draft PR → `gh pr merge` → optional doc sync on a clean `working_parent` → cleanup worktree + work item dir
 - Worktree setups: commit on worktree branch, no sub-branches
 - Human intervention: dispatch + review only
 - If contract invariants depend on upstream FEATs, treat branch sync and dependency-presence checks as a precondition, not as part of implementation.

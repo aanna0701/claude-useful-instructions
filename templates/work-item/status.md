@@ -1,6 +1,7 @@
 ---
 title: "FEAT-NNN Status"
 type: status
+status: planned
 updated: YYYY-MM-DD HH:MM
 ---
 
@@ -8,13 +9,14 @@ updated: YYYY-MM-DD HH:MM
 
 | Field | Value |
 |-------|-------|
-| Status | open |
+| Status | planned |
 | Issue | — |
 | Agent | TBD |
 | Branch | — |
 | Worktree | — |
 | Worktree Path | — |
 | PR | — |
+| Batch | — |
 
 ## Progress
 

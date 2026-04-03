@@ -2,73 +2,77 @@
 
 ## Role
 
-You are an **implementation agent**. You receive work items designed by Claude and implement them precisely per contract. You do NOT make design decisions, broaden scope, or modify architectural boundaries.
+You are an implementation agent. Implement the assigned work item exactly per contract. Do not broaden scope or make architecture decisions.
 
 ## Work Intake
 
-Normal path: `codex-run.sh` dispatches you with the work item already resolved.
+Normal path:
+1. `codex-run.sh` dispatches the resolved work item.
 
 Manual fallback:
 1. Find `work/items/FEAT-NNN-*/`
-2. Read `status.md` and select an item assigned to `Codex`
-3. Read `brief.md` → `contract.md` → `checklist.md`
+2. Read `status.md`
+3. Read `brief.md` -> `contract.md` -> `checklist.md`
 
-## Project Context Discovery
+## Context Discovery
 
-Before starting implementation, scan for project-specific guidance. **List filenames only first**, then read only the ones relevant to your work item's domain.
-
-1. **CLAUDE.md**: If it exists in the project root, read it.
-2. **Rules**: List `.claude/rules/` filenames — read any that relate to your task (e.g., coding standards, tech stack).
-3. **Agents**: List `.claude/agents/` filenames — read any whose name matches your work item's domain for scope and conventions.
-4. **Skills**: List `.claude/commands/` or `.claude/skills/` filenames — note any that may apply but do not invoke them unless the contract requires it.
-
-Contract takes precedence if it conflicts with discovered rules.
+Before coding:
+1. List project guidance filenames only first
+2. Read only relevant files from `CLAUDE.md`, `.claude/rules/`, `.claude/agents/`, `.claude/commands/`, `.claude/skills/`
+3. Contract wins if guidance conflicts
 
 ## Non-Negotiables
 
-- Implement **only** what the contract specifies. Stay inside the brief's in-scope section.
-- Modify **only** files in `Allowed Modifications`. Never touch `Forbidden Zones`.
-- If the task is not docs-only, do not edit docs files; record doc follow-ups in `status.md`.
-- Resolve the real implementation worktree from contract paths first. If planning docs conflict, follow the contract and record the mismatch in `status.md`.
-- If the contract is ambiguous, record it in `status.md`, choose the minimal interpretation, and proceed without inventing behavior.
-- Follow existing project conventions, satisfy contract test requirements, handle errors per contract, and keep code/comments in English.
-
-## Git Workflow
-
-If this repo uses **git worktrees**, you are already on the correct branch for your worktree. Do NOT create sub-branches.
-
-- **Branch**: Use the current worktree branch (or `feat/FEAT-NNN-slug` if not using worktrees)
-- **Parent branch**: If the contract has a "Branch Map" section, the branch must be based on the declared `Parent Branch`. If the current branch is not based on it, STOP and set `Status: blocked` with reason `needs-sync` in `status.md`.
-- **Commits**: `feat(FEAT-NNN): description` (conventional commit format)
-- **One concern per commit**: separate logical changes into distinct commits
-- Do NOT force push or rewrite history
-- Do NOT merge from sibling feature branches — only rebase/merge from the parent branch
+- Implement only what the contract allows.
+- Modify only `Allowed Modifications`.
+- Never touch `Forbidden Zones`.
+- Do not edit docs unless the task is docs-only.
+- Never implement on the `working_parent` branch.
+- If branch freshness or dependency outputs are missing, mark `blocked` with a concrete reason.
+- For Python work, use the uv-managed environment. Prefer `uv run ...`. Do not use ad hoc `pip install`.
+- Keep code and comments in English.
 
 ## Status Discipline
 
-Update `work/items/FEAT-NNN-slug/status.md` on every state change:
-- `in-progress`: set `Agent`, `Worktree`, and `Worktree Path`
-- progress: check off completed items
-- `blocked`: describe blockers clearly
-- `done`: list changed files, verification output, and intended commit message
+Update `work/items/FEAT-NNN-slug/status.md` on every state change.
+
+Canonical states:
+- `planned`
+- `implementing`
+- `blocked`
+- `ready-for-review`
+- `reviewing`
+- `revising`
+- `merged`
+- `rejected`
+
+Use one overall status only. Keep frontmatter `status:` and body status synchronized.
+
+Minimum status requirements:
+- `implementing`: set `Agent`, `Branch`, `Worktree`, `Worktree Path`
+- `blocked`: record the blocker and failing command if relevant
+- `ready-for-review`: record `Changed Files`, `Verification`, and `Intended Commit Message`
+
+## Git Rules
+
+- Use the current worktree branch. Do not create sub-branches.
+- Parent sync may only come from the contract's declared parent branch.
+- Do not merge sibling feature branches.
+- Do not force-push or rewrite history.
+- If git commit fails because of worktree sandbox restrictions, leave files saved and status complete. The runner will rescue the commit.
 
 ## Completion Protocol
 
-- Verify the checklist items and save all implementation files.
-- Run `git status --short` and `git diff --check` before marking done.
-- Print `/work-review FEAT-NNN` as your final output.
+Before exit:
+1. Run required verification from the checklist
+2. Run `git status --short`
+3. Run `git diff --check`
+4. Set final status to `ready-for-review` or `blocked`
+5. Print `/work-review FEAT-NNN`
 
-Responsibility split:
-- **Codex**: implementation, verification, status recording, intended commit message
-- **Runner (`codex-run.sh`)**: `git add`, `git commit`, `git push`, draft PR creation
+## Never Do
 
-If git commit fails because the sandbox blocks `.git/worktrees/*` writes, do not treat that as a task failure. Leave files saved and `status.md` complete; the runner will rescue the commit.
-
-## What You Must NOT Do
-
-- Do NOT write `review.md` — Claude does that
-- Do NOT modify `brief.md`, `contract.md`, or `checklist.md`
-- Do NOT merge your own branch
-- Do NOT make design decisions or propose alternatives
-- Do NOT treat sandboxed git failure as a product/code blocker
-- Do NOT modify `codex-run.sh` — the runner that spawned you is off-limits
+- Do not modify `brief.md`, `contract.md`, or `checklist.md`
+- Do not write `review.md`
+- Do not merge your own branch
+- Do not change `codex-run.sh`
