@@ -98,6 +98,10 @@ BUNDLE_COLLAB=(
   "root-file:AGENTS.md"
   "root-file:CLAUDE.md"
   "script:codex-run.sh"
+  "script:lib/codex-run-work.sh"
+  "script:lib/codex-run-git.sh"
+  "script:lib/codex-run-boundary.sh"
+  "script:lib/codex-run-runner.sh"
 )
 
 BUNDLE_PRESENTATION=(
