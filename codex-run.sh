@@ -7,6 +7,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 LOG_DIR="work/.dispatch-logs"
 SLACK_HOOKS_DIR="$HOME/.claude/hooks"
+CODEX_RUN_UV_GROUPS="${CODEX_RUN_UV_GROUPS:-host dev}"
 
 # ─── Slack notification ───────────────────────────────────────────────────────
 
@@ -73,6 +74,41 @@ resolve_work_dir() {
   return 1
 }
 
+ensure_uv_environment() {
+  local feat_id="$1"
+  local wdir="$2"
+  local git_dir="$3"
+  local slug
+  slug=$(basename "$wdir")
+
+  [ -f "$git_dir/pyproject.toml" ] || return 0
+  [ -f "$git_dir/uv.lock" ] || return 0
+
+  if ! command -v uv >/dev/null 2>&1; then
+    mark_status_blocked_everywhere "$feat_id" "$wdir" "env-tooling" "uv is required for this project but is not installed. Install uv, then rerun codex-run.sh."
+    echo "    [env] uv missing; status marked blocked"
+    return 1
+  fi
+
+  local -a uv_args=("--frozen")
+  local group=""
+  for group in $CODEX_RUN_UV_GROUPS; do
+    uv_args+=("--group" "$group")
+  done
+
+  local env_log="$LOG_DIR/${slug}.env.log"
+  echo "    [env] syncing uv environment (${CODEX_RUN_UV_GROUPS})"
+  if uv -q sync "${uv_args[@]}" --project "$git_dir" >"$env_log" 2>&1; then
+    echo "    [env] uv sync complete"
+    return 0
+  fi
+
+  local blocker="uv sync failed in $git_dir. Inspect $env_log, fix the project environment or network/cache issue, then rerun codex-run.sh."
+  mark_status_blocked_everywhere "$feat_id" "$wdir" "env-setup" "$blocker"
+  echo "    [env] uv sync failed; status marked blocked"
+  return 1
+}
+
 extract_contract_field() {
   local contract="$1"
   local field="$2"
@@ -109,7 +145,46 @@ resolve_target_dir() {
   local target_dir=""
 
   if [ -f "$wdir/status.md" ]; then
-    target_dir=$(grep -oP '^\| Worktree Path \| \K[^\s|]+' "$wdir/status.md" || true)
+    target_dir=$(
+      python3 - "$wdir/status.md" <<'PY' 2>/dev/null || true
+import re
+import sys
+from pathlib import Path
+
+text = Path(sys.argv[1]).read_text(encoding="utf-8")
+
+patterns = [
+    r'^\|\s*Worktree Path\s*\|\s*([^|]+?)\s*\|$',
+    r'^- \*\*Worktree Path\*\*:\s*(.+?)\s*$',
+    r'^\*\*Worktree Path\*\*:\s*(.+?)\s*$',
+]
+
+for line in text.splitlines():
+    for pattern in patterns:
+        match = re.match(pattern, line)
+        if not match:
+            continue
+        value = match.group(1).strip().strip("`")
+        if value and value != "—":
+            print(value)
+            raise SystemExit(0)
+
+lines = text.splitlines()
+for index, line in enumerate(lines):
+    if re.match(r'^##\s*Worktree Path\s*$', line.strip()):
+        for follow in lines[index + 1:]:
+            stripped = follow.strip()
+            if not stripped:
+                continue
+            if stripped.startswith("## "):
+                break
+            value = stripped.strip("`")
+            if value and value != "—":
+                print(value)
+                raise SystemExit(0)
+            break
+PY
+    )
     [ "$target_dir" = "—" ] && target_dir=""
   fi
   if [ -z "$target_dir" ] && [ -f "work/dispatch.json" ] && command -v jq &>/dev/null; then
@@ -158,10 +233,21 @@ agent_value = sys.argv[3]
 text = path.read_text(encoding="utf-8")
 
 text = re.sub(r'^updated: .*$', f'updated: {datetime.now():%Y-%m-%d %H:%M}', text, flags=re.MULTILINE)
+text = re.sub(r'^status: .*$', f'status: {status_value}', text, flags=re.MULTILINE)
 text = re.sub(r'^\|\s*Status\s*\|\s*[^|]+?\s*\|$', f'| Status | {status_value} |', text, flags=re.MULTILINE)
 text = re.sub(r'^\|\s*Agent\s*\|\s*[^|]+?\s*\|$', f'| Agent | {agent_value} |', text, flags=re.MULTILINE)
+text = re.sub(r'^##\s*Status:\s*\S+.*$', f'## Status: {status_value}', text, flags=re.MULTILINE)
+text = re.sub(r'^\*\*Current\*\*:\s*\S+.*$', f'**Current**: {status_value}', text, flags=re.MULTILINE)
+text = re.sub(r'^- \*\*Assignee\*\*:\s*.*$', f'- **Assignee**: {agent_value}', text, flags=re.MULTILINE)
+text = re.sub(r'^- \*\*Agent\*\*:\s*.*$', f'- **Agent**: {agent_value}', text, flags=re.MULTILINE)
 text = re.sub(r'^##\s*Current\s+Status:\s*\S+.*$', f'## Current Status: {status_value}', text, flags=re.MULTILINE)
 text = re.sub(r'^##\s*Agent:\s*.*$', f'## Agent: {agent_value}', text, flags=re.MULTILINE)
+text = re.sub(
+    r'^(\|\s*Implementation\s*\|\s*)([^|]+?)(\s*\|)$',
+    rf'\1{status_value}\3',
+    text,
+    flags=re.MULTILINE,
+)
 
 path.write_text(text, encoding="utf-8")
 PY
@@ -197,8 +283,17 @@ blocker_text = sys.argv[3]
 text = path.read_text(encoding="utf-8")
 
 text = re.sub(r'^updated: .*$', f'updated: {datetime.now():%Y-%m-%d %H:%M}', text, flags=re.MULTILINE)
+text = re.sub(r'^status: .*$', 'status: blocked', text, flags=re.MULTILINE)
 text = re.sub(r'^\|\s*Status\s*\|\s*[^|]+?\s*\|$', '| Status | blocked |', text, flags=re.MULTILINE)
 text = re.sub(r'^\|\s*Issue\s*\|\s*[^|]+?\s*\|$', f'| Issue | {issue_value} |', text, flags=re.MULTILINE)
+text = re.sub(r'^##\s*Status:\s*\S+.*$', '## Status: blocked', text, flags=re.MULTILINE)
+text = re.sub(r'^\*\*Current\*\*:\s*\S+.*$', '**Current**: blocked', text, flags=re.MULTILINE)
+text = re.sub(
+    r'^(\|\s*Implementation\s*\|\s*)([^|]+?)(\s*\|)$',
+    r'\1blocked\3',
+    text,
+    flags=re.MULTILINE,
+)
 
 pattern = re.compile(r'(^## Blockers\n)(.*?)(?=\n## |\Z)', re.MULTILINE | re.DOTALL)
 match = pattern.search(text)
@@ -599,13 +694,49 @@ path = Path(sys.argv[1])
 text = path.read_text(encoding="utf-8")
 
 for line in text.splitlines():
+    # YAML frontmatter: status: value
+    match = re.match(r'^status:\s*(\S+)\s*$', line)
+    if match:
+        print(match.group(1).strip())
+        raise SystemExit(0)
     # Table format: | Status | value |
     match = re.match(r'^\|\s*Status\s*\|\s*([^|]+?)\s*\|$', line)
     if match:
         print(match.group(1).strip())
         raise SystemExit(0)
+    # Heading format: ## Status: value
+    match = re.match(r'^##\s*Status:\s*(\S+)', line)
+    if match:
+        print(match.group(1).strip())
+        raise SystemExit(0)
     # Heading format: ## Current Status: value
     match = re.match(r'^##\s*Current\s+Status:\s*(\S+)', line)
+    if match:
+        print(match.group(1).strip())
+        raise SystemExit(0)
+    # Paragraph format: **Current**: value
+    match = re.match(r'^\*\*Current\*\*:\s*(\S+)', line)
+    if match:
+        print(match.group(1).strip())
+        raise SystemExit(0)
+
+lines = text.splitlines()
+for index, line in enumerate(lines):
+    if re.match(r'^##\s*Status\s*$', line.strip()):
+        for follow in lines[index + 1:]:
+            stripped = follow.strip()
+            if not stripped:
+                continue
+            if stripped.startswith("## "):
+                break
+            match = re.match(r'^\*\*Current\*\*:\s*(\S+)', stripped)
+            if match:
+                print(match.group(1).strip())
+                raise SystemExit(0)
+            break
+
+for line in lines:
+    match = re.match(r'^\|\s*Implementation\s*\|\s*([^|]+?)\s*\|$', line)
     if match:
         print(match.group(1).strip())
         raise SystemExit(0)
@@ -763,6 +894,7 @@ Follow AGENTS.md for the full workflow.
 
 Non-negotiables:
 - Assume codex-run.sh already attempted parent-branch auto-sync before spawning you.
+- Use the project uv environment for Python commands: prefer \`uv run ...\` and never \`pip install\` ad hoc.
 - Stay inside contract boundaries only.
 - Update $wdir/status.md on every state change.
 - Run the checklist verification commands before marking done.
@@ -818,6 +950,8 @@ dispatch_group() {
   local -A last_log_mtime=()
   local -A last_status=()
   local -A last_progress_epoch=()
+  local -A exit_codes=()
+  local -A waited_pids=()
   local stall_timeout="${CODEX_RUN_STALL_TIMEOUT_SECS:-1800}"
 
   mkdir -p "$LOG_DIR"
@@ -840,6 +974,10 @@ dispatch_group() {
         sync_worktree_artifacts "$fid" "$target_dir"
         if ! sync_branch_from_parent "$fid" "$wdir" "$target_dir"; then
           echo "  Blocked: $slug → auto-sync failed; skipping Codex spawn"
+          continue
+        fi
+        if ! ensure_uv_environment "$fid" "$wdir" "$target_dir"; then
+          echo "  Blocked: $slug → uv environment preflight failed; skipping Codex spawn"
           continue
         fi
       fi
@@ -916,6 +1054,15 @@ dispatch_group() {
         all_done=false
         printf "  %-40s %s (pid %s)\n" "$slug" "$status" "$pid"
       else
+        if [ -n "$pid" ] && [ -z "${waited_pids[$fid]:-}" ]; then
+          if wait "$pid"; then
+            exit_codes["$fid"]=0
+          else
+            exit_codes["$fid"]=$?
+          fi
+          waited_pids["$fid"]=1
+        fi
+        local exit_code="${exit_codes[$fid]:-?}"
         if [[ "$status" == "done" ]]; then
           ((done_count++)) || true
           printf "  %-40s ✓ done\n" "$slug"
@@ -924,11 +1071,16 @@ dispatch_group() {
             notify_slack "✅ *$slug* done ($done_count/${#group_ids[@]})"
           fi
         else
-          printf "  %-40s ✗ exited (status: %s)\n" "$slug" "$status"
+          if [ "$status" = "unknown" ]; then
+            mark_status_blocked_everywhere "$fid" "$wdir" "runner-missing-status" "Codex process exited with code $exit_code before recording a final status. Inspect $log_file and update status.md before rerunning."
+            status="blocked"
+            last_status["$fid"]="$status"
+          fi
+          printf "  %-40s ✗ exited (status: %s, code: %s)\n" "$slug" "$status" "$exit_code"
           ((done_count++)) || true
           if [ -z "${notified_done[$fid]:-}" ]; then
             notified_done["$fid"]=1
-            notify_slack "⚠️ *$slug* exited (status: $status)"
+            notify_slack "⚠️ *$slug* exited (status: $status, code: $exit_code)"
           fi
         fi
       fi
