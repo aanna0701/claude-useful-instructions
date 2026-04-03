@@ -5,7 +5,7 @@
 # Claude reads this before creating branches, merging, or routing work items.
 # GitHub Actions reads this for auto-sync (hub-and-spoke merge flow).
 
-version: 1
+version: 2
 
 # Branch hierarchy: ordered from trunk to working parent
 # Claude derives merge targets from this chain.
@@ -16,13 +16,29 @@ trunk_chain:
 
 # The branch that feature branches are based on.
 # Must be the last entry in trunk_chain.
-# Acts as the "hub" — all features merge UP here, then cascade DOWN.
+# Acts as the orchestration hub.
 working_parent: main
 
-# Branch naming
-branch_rules:
-  feature_prefix: feat    # feat/FEAT-001-slug
-  default_merge_target: main  # must match working_parent
+# Default merge target for normal feature branches.
+# Usually this matches working_parent.
+default_merge_target: main
+
+# Branch naming by work item type.
+branch_prefixes:
+  feat: feat/
+  fix: fix/
+  docs: docs/
+  chore: chore/
+  refactor: refactor/
+  test: test/
+  perf: perf/
+
+# Optional role routing for review and planning.
+# roles:
+#   backend:
+#     paths: [src/**, data/**, tests/**]
+#   docs:
+#     paths: [docs/**, README.md]
 
 # Feature branches (OPTIONAL — without this, all remote feature branches
 # auto-sync through working_parent). Add entries to override defaults.

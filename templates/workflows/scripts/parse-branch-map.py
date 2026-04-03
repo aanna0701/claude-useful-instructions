@@ -33,7 +33,8 @@ def merge_target(data: dict, trigger: str) -> str:
 def children(data: dict, trigger: str, sync_source: str) -> str:
     """Return space-separated child branches (explicit + auto-detected)."""
     branches = data.get("branches", {}) or {}
-    feature_prefix = data.get("branch_rules", {}).get("feature_prefix", "feat")
+    branch_prefixes = data.get("branch_prefixes", {}) or {}
+    feature_prefix = branch_prefixes.get("feat", "feat/").rstrip("/")
 
     explicit = set()
     explicit_parents: dict[str, str] = {}
