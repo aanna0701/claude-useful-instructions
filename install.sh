@@ -11,7 +11,6 @@
 #   --career        Career document tools (career-docs skill, career agents)
 #   --dl            PyTorch DL standards + agents (capture, data, model, train, eval, infra)
 #   --collab        Claude-Codex collaboration (work items, branch-map, AGENTS.md, CLAUDE.md)
-#   --slack         Slack notifications (session summary, confirmation alerts)
 #   --exclude NAME  Exclude a bundle (repeatable, e.g. --exclude dl --exclude career)
 #   --interactive   Interactive mode: choose bundles from a menu
 #   --list          List available bundles and exit
@@ -101,10 +100,6 @@ BUNDLE_COLLAB=(
   "script:codex-run.sh"
 )
 
-BUNDLE_SLACK=(
-  "claude-hook:slack"
-)
-
 BUNDLE_PRESENTATION=(
   "skills:html-presentation"
   "commands:create-presentation.md"
@@ -114,7 +109,7 @@ BUNDLE_PRESENTATION=(
   "script:scripts/html_to_pdf.py"
 )
 
-BUNDLE_NAMES=("core" "docs" "data-pipeline" "career" "dl" "collab" "slack" "presentation")
+BUNDLE_NAMES=("core" "docs" "data-pipeline" "career" "dl" "collab" "presentation")
 BUNDLE_DESCRIPTIONS=(
   "Core utilities (smart-git-commit-push, optimize-tokens)"
   "Documentation & diagrams (diataxis framework, doc agents, diagram-architect)"
@@ -122,7 +117,6 @@ BUNDLE_DESCRIPTIONS=(
   "Career document tools (cover letters, Korean)"
   "PyTorch DL standards + agents (capture, data, model, train, eval, infra)"
   "Claude-Codex collaboration (work items, branch-map, AGENTS.md, CLAUDE.md)"
-  "Slack notifications (session summary, confirmation alerts)"
   "HTML presentation generator (16:9 dark theme slides + PDF export)"
 )
 
@@ -145,7 +139,6 @@ while [[ $# -gt 0 ]]; do
     --career)        SELECTED_BUNDLES+=("career"); shift ;;
     --dl)            SELECTED_BUNDLES+=("dl"); shift ;;
     --collab)        SELECTED_BUNDLES+=("collab"); shift ;;
-    --slack)         SELECTED_BUNDLES+=("slack"); shift ;;
     --presentation)  SELECTED_BUNDLES+=("presentation"); shift ;;
     --exclude)       shift; EXCLUDED_BUNDLES+=("$1"); shift ;;
     --interactive)   INTERACTIVE=true; shift ;;
@@ -264,7 +257,6 @@ get_bundle_items() {
     career)        printf '%s\n' "${BUNDLE_CAREER[@]}" ;;
     dl)            printf '%s\n' "${BUNDLE_DL[@]}" ;;
     collab)        printf '%s\n' "${BUNDLE_COLLAB[@]}" ;;
-    slack)         printf '%s\n' "${BUNDLE_SLACK[@]}" ;;
     presentation)  printf '%s\n' "${BUNDLE_PRESENTATION[@]}" ;;
   esac
 }
@@ -410,47 +402,23 @@ install_claude_hook() {
 
   mkdir -p "$dst_dir"
 
-  # Copy Python hook files (skip example config)
+  local copied_files=()
   for f in "$src"/*.py; do
     [ -f "$f" ] || continue
-    local basename
-    basename="$(basename "$f")"
-    cp -v "$f" "$dst_dir/$basename"
-    chmod +x "$dst_dir/$basename"
+    local filename
+    filename="$(basename "$f")"
+    cp -v "$f" "$dst_dir/$filename"
+    chmod +x "$dst_dir/$filename"
+    copied_files+=("$filename")
   done
 
-  # Copy example config if actual config doesn't exist
-  if [ -f "$src/slack_config.json.example" ] && [ ! -f "$dst_dir/slack_config.json" ]; then
-    cp -v "$src/slack_config.json.example" "$dst_dir/slack_config.json.example"
+  for f in "$src"/*.json.example; do
+    [ -f "$f" ] || continue
+    local filename
+    filename="$(basename "$f")"
+    cp -v "$f" "$dst_dir/$filename"
+  done
 
-    # Interactive config setup
-    if [ -t 0 ]; then
-      echo ""
-      echo "  ━━━ Slack notification config ━━━"
-      echo ""
-      echo "  Slack Bot Token (xoxb-...):"
-      read -rp "    > " BOT_TOKEN
-      echo "  Slack Channel ID (C...):"
-      read -rp "    > " CHANNEL_ID
-      echo ""
-
-      if [ -n "$BOT_TOKEN" ] && [ -n "$CHANNEL_ID" ]; then
-        cat > "$dst_dir/slack_config.json" <<SLACKEOF
-{
-  "bot_token": "$BOT_TOKEN",
-  "channel_id": "$CHANNEL_ID"
-}
-SLACKEOF
-        echo "  Config saved: $dst_dir/slack_config.json"
-      else
-        echo "  Skipped config — edit $dst_dir/slack_config.json.example manually"
-      fi
-    else
-      echo "  Non-interactive: edit $dst_dir/slack_config.json.example → slack_config.json"
-    fi
-  fi
-
-  # Patch ~/.claude/settings.json via external script
   python3 "$REPO_DIR/scripts/patch-hook-settings.py" "$hook_name"
 }
 
@@ -549,48 +517,56 @@ remove_hook() {
 remove_claude_hook() {
   local hook_name="$1"
   local dst_dir="$HOME/.claude/hooks"
+  local src="$REPO_DIR/hooks/$hook_name"
+  [ -d "$src" ] || return 0
 
-  # Remove Python hook files
-  for f in slack_common.py slack_buffer.py slack_stop.py slack_notify.py; do
-    if [ -f "$dst_dir/$f" ]; then
-      rm -v "$dst_dir/$f"
+  for f in "$src"/*.py "$src"/*.json.example; do
+    [ -f "$f" ] || continue
+    local filename
+    filename="$(basename "$f")"
+    if [ -f "$dst_dir/$filename" ]; then
+      rm -v "$dst_dir/$filename"
     fi
   done
 
-  # Remove config files
-  for f in slack_config.json slack_config.json.example; do
-    if [ -f "$dst_dir/$f" ]; then
-      rm -v "$dst_dir/$f"
-    fi
-  done
-
-  # Remove slack hooks from settings.json
   local settings_file="$HOME/.claude/settings.json"
   if [ -f "$settings_file" ]; then
-    python3 - <<'PYEOF'
-import json, os
+    python3 - "$hook_name" "$REPO_DIR/scripts/patch-hook-settings.py" <<'PYEOF'
+import importlib.util
+import json
+import os
+import sys
 
 settings_path = os.path.expanduser("~/.claude/settings.json")
+hook_name = sys.argv[1]
+script_path = sys.argv[2]
+
+spec = importlib.util.spec_from_file_location("patch_hook_settings", script_path)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+
+config = module.HOOK_REGISTRY.get(hook_name, {})
+managed = config.get("managed", set())
 
 with open(settings_path) as f:
     settings = json.load(f)
 
 hooks = settings.get("hooks", {})
 
-def remove_slack_hooks(entries: list) -> list:
+def is_managed(command: str) -> bool:
+    return any(name in command for name in managed)
+
+def remove_managed_hooks(entries: list) -> list:
     result = []
     for entry in entries:
-        filtered = [
-            h for h in entry.get("hooks", [])
-            if "slack_" not in h.get("command", "")
-        ]
+        filtered = [h for h in entry.get("hooks", []) if not is_managed(h.get("command", ""))]
         if filtered:
             result.append({**entry, "hooks": filtered})
     return result
 
 changed = False
 for event in list(hooks.keys()):
-    cleaned = remove_slack_hooks(hooks[event])
+    cleaned = remove_managed_hooks(hooks[event])
     if cleaned != hooks[event]:
         hooks[event] = cleaned
         changed = True
@@ -603,7 +579,7 @@ if changed:
     with open(settings_path, "w") as f:
         json.dump(settings, f, indent=2, ensure_ascii=False)
         f.write("\n")
-    print("  Removed slack hooks from settings.json")
+    print(f"  Removed {hook_name} hooks from settings.json")
 PYEOF
   fi
 }

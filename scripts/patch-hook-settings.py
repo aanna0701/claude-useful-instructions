@@ -3,7 +3,7 @@
 
 Usage: patch-hook-settings.py <hook_name>
 
-Supported hooks: slack, git-auto-pull
+Supported hooks: git-auto-pull
 """
 from __future__ import annotations
 
@@ -15,21 +15,6 @@ SETTINGS_PATH = os.path.expanduser("~/.claude/settings.json")
 HOOKS_DIR = os.path.expanduser("~/.claude/hooks")
 
 HOOK_REGISTRY: dict[str, dict] = {
-    "slack": {
-        "managed": {"slack_buffer.py", "slack_notify.py", "slack_stop.py", "slack_common.py"},
-        "events": {
-            "PostToolUse": [{
-                "matcher": "Edit|Write|NotebookEdit|Bash",
-                "hooks": [{"type": "command", "command": f"python3 {HOOKS_DIR}/slack_buffer.py"}],
-            }],
-            "Notification": [{
-                "hooks": [{"type": "command", "command": f"python3 {HOOKS_DIR}/slack_notify.py"}],
-            }],
-            "Stop": [{
-                "hooks": [{"type": "command", "command": f"python3 {HOOKS_DIR}/slack_stop.py"}],
-            }],
-        },
-    },
     "git-auto-pull": {
         "managed": {"auto_pull.py"},
         "events": {
