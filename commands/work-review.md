@@ -16,21 +16,15 @@ No arguments: auto-glob `work/items/*/status.md` for all item slugs, then apply 
 
 ## Execution Steps
 
-### Step 1: Locate & Resolve Worktree (CRITICAL — worktree-first)
+### Step 1: Locate & Resolve Worktree
 
 Per `rules/collab-workflow.md` § Worktree-First File Resolution:
 
-1. Resolve `$ARGUMENTS` to slug via `work/items/FEAT-NNN-*/` glob (cwd is fine here — just need the slug and worktree pointer)
-2. **Discover worktree path** (resolution order — stop at first hit):
-   a. batch manifest or `work/dispatch.json` → `.items[] | select(.id == $ID) | .worktree_path`
-   b. cwd `status.md` → `Worktree Path` field (may be stale — only use as pointer)
-   c. Convention: `../${PROJECT_DIR_NAME}-${SLUG}/`
-3. **If worktree path found and exists**: read `status.md` from **worktree** (`${WORKTREE}/work/items/${SLUG}/status.md`). This is the authoritative copy.
-4. **Fallback**: if no worktree exists (already merged or local-only), use cwd copy.
+1. Resolve `$ARGUMENTS` to slug via `work/items/FEAT-NNN-*/` glob
+2. Discover worktree path: `dispatch.json` → cwd `status.md` pointer → convention `../${PROJECT}-${SLUG}/`
+3. Read `status.md` from worktree (authoritative). Fallback to cwd if worktree absent.
 
-**Why**: Codex updates status.md in the worktree. The main repo copy is a stale seed — it may still say `planned` even after Codex marks `ready-for-review`. Always read from worktree first.
-
-Set `$WORK_ROOT` = resolved worktree path (or cwd as fallback). ALL subsequent file reads use `$WORK_ROOT`.
+Set `$WORK_ROOT` = resolved worktree path. ALL subsequent file reads use `$WORK_ROOT`.
 
 ### Step 2: Pre-flight & Read Work Item (parallel)
 

@@ -3,7 +3,7 @@
 
 Usage: patch-hook-settings.py <hook_name>
 
-Supported hooks: git-auto-pull
+Supported hooks: git-auto-pull, guard-trunk
 """
 from __future__ import annotations
 
@@ -21,6 +21,15 @@ HOOK_REGISTRY: dict[str, dict] = {
             "PreToolUse": [{
                 "matcher": "Edit|Write|NotebookEdit",
                 "hooks": [{"type": "command", "command": f"python3 {HOOKS_DIR}/auto_pull.py"}],
+            }],
+        },
+    },
+    "guard-trunk": {
+        "managed": {"guard_trunk.py"},
+        "events": {
+            "PreToolUse": [{
+                "matcher": "Edit|Write|NotebookEdit",
+                "hooks": [{"type": "command", "command": f"python3 {HOOKS_DIR}/guard_trunk.py"}],
             }],
         },
     },

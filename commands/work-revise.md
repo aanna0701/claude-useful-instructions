@@ -12,7 +12,7 @@ No arguments: auto-glob items with REVISE decision in review.md. If none: "No it
 
 ## Execution
 
-Apply worktree-first resolution per `rules/collab-workflow.md` § Worktree-First File Resolution: discover worktree path (`dispatch.json` → cwd status.md pointer → convention), read review.md and status.md from **worktree** (authoritative), fall back to cwd only if worktree does not exist.
+Per `rules/collab-workflow.md` § Worktree-First File Resolution, read review.md and status.md from worktree (authoritative).
 
 Resolve IDs to items with REVISE decision. Spawn `work-reviser` agent per item (parallel). Each agent extracts MUST-fix items, updates status to `revising`, and re-dispatches.
 

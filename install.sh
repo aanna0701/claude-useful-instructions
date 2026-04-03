@@ -102,6 +102,7 @@ BUNDLE_COLLAB=(
   "script:lib/codex-run-git.sh"
   "script:lib/codex-run-boundary.sh"
   "script:lib/codex-run-runner.sh"
+  "claude-hook:guard-trunk"
 )
 
 BUNDLE_PRESENTATION=(

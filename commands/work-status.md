@@ -8,17 +8,9 @@
 
 ---
 
-## Worktree-First Resolution (applies to ALL modes)
+## Worktree-First Resolution
 
-Per `rules/collab-workflow.md` § Worktree-First File Resolution:
-
-For each work item, resolve the **authoritative** status.md:
-1. Glob `work/items/FEAT-NNN-*/` to get slug
-2. Discover worktree path: `work/dispatch.json` → cwd `status.md` Worktree Path field → convention `../${PROJECT}-${SLUG}/`
-3. If worktree exists: read `${WORKTREE}/work/items/${SLUG}/status.md` (authoritative)
-4. Fallback to cwd copy only if worktree does not exist
-
-**Why**: Codex updates status.md in the worktree. The main repo copy is a stale seed.
+Per `rules/collab-workflow.md` § Worktree-First File Resolution. All reads use worktree path (authoritative), cwd only as fallback.
 
 ## Canonical States
 
