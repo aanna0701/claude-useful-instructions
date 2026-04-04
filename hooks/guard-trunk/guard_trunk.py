@@ -94,9 +94,10 @@ def _ensure_worktree(main_root: Path, branch: str) -> Path:
             return wt_path
 
     project = main_root.name
+    ppid = os.getppid()
     stamp = datetime.now().strftime("%m%d-%H%M")
-    wt_branch = f"tmp/guard-{stamp}"
-    wt_dir = main_root.parent / f"{project}-tmp-guard"
+    wt_branch = f"tmp/guard-{ppid}-{stamp}"
+    wt_dir = main_root.parent / f"{project}-tmp-guard-{ppid}"
 
     # If directory exists but isn't a worktree, remove it
     if wt_dir.exists():
