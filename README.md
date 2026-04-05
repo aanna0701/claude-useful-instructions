@@ -52,10 +52,10 @@ cui-install --collab /path/to/my-project
 
 | Bundle | Contents | Recommended Scope |
 |--------|----------|-------------------|
-| `core` | smart-git-commit-push, optimize-tokens, debug-guide, what-to-do, branch-map | Global (`~/.claude/`) |
+| `core` | smart-git-commit-push, optimize-tokens, debug-guide, what-to-do, token analyzers, git-auto-pull hook | Global (`~/.claude/`) |
 | `docs` | diataxis-doc-system, diagram-architect, doc/diagram agents, write-doc, init-docs, sync-docs | Global |
 | `data-pipeline` | data-pipeline-architect skill | Global |
-| `collab` | Claude-Codex collaboration, work items, CI audit, AGENTS.md, CLAUDE.md | Per-project |
+| `collab` | Claude-Codex collaboration, work items, CI audit, guard-trunk hook, codex-run, AGENTS.md, CLAUDE.md | Per-project |
 | `career` | career-docs skill, career agents | Either |
 | `presentation` | html-presentation skill, create/format/edit/export-pdf commands | Global |
 | `worknote` | Work journal with Notion sync (daily log, review, planning) | Global |
@@ -170,6 +170,7 @@ Subagents delegated by Claude for specific tasks.
 | Work Journal | `worknote-sync`, `-review`, `-plan` | 3 |
 | Token Analysis | `token-duplication-detector`, `-load-measurer`, `-mcp-analyzer`, `-split-detector` | 4 |
 | Career Docs | `career-docs-writer`, `-reviewer`, `-reviser` | 3 |
+| Collab Workflow | `issue-creator`, `pr-reviewer`, `work-reviser` | 3 |
 | CI Audit | `ci-audit-agent` | 1 |
 | DL Pipeline | `dl-capture`, `-data`, `-model`, `-train`, `-eval`, `-infra` | 6 |
 
@@ -183,7 +184,9 @@ Subagents delegated by Claude for specific tasks.
 | `/branch-status` | Show branch map, freshness, and work item mapping |
 | `/work-plan` | Create work item for Codex delegation |
 | `/work-status` | Check work item progress |
+| `/work-impl` | Implement a work item in its worktree per contract |
 | `/work-review` | Review Codex implementation against contract |
+| `/work-revise` | Re-dispatch REVISE items from review to agent or Codex |
 | `/gha-branch-sync` | Audit GitHub Actions against branch map |
 | `/write-doc` | Diataxis-based document writing |
 | `/polish-doc` | Apply writing-style and structural fixes to existing docs |
@@ -204,13 +207,12 @@ Subagents delegated by Claude for specific tasks.
 
 Shared code standards installed to `.claude/rules/`.
 
-| File | Content |
-|------|---------|
-| `coding-style.md` | English-only, immutability, file size limits, error handling |
-| `branch-map-policy.md` | Branch hierarchy selection, safety rules, worktree routing |
-| `collab-workflow.md` | Claude-Codex role separation, work item protocol |
-| `review-merge-policy.md` | Merge gating: freshness, CI checks, MUST-fix resolution |
-| `pytorch-dl-standards.md` | PyTorch DL standards: config/DTO, frozen patterns, kornia, tech stack |
+| File | Bundle | Content |
+|------|--------|---------|
+| `branch-map-policy.md` | collab | Branch hierarchy selection, safety rules, worktree routing |
+| `collab-workflow.md` | collab | Claude-Codex role separation, work item protocol |
+| `review-merge-policy.md` | collab | Merge gating: freshness, CI checks, MUST-fix resolution |
+| `pytorch-dl-standards.md` | dl | PyTorch DL standards: config/DTO, frozen patterns, kornia, tech stack |
 
 > Subagents do NOT auto-read rules. Agent definitions must include explicit Read instructions.
 
@@ -226,9 +228,8 @@ claude-useful-instructions/
 │   ├── data-pipeline-architect/     # Data pipeline design + subagent generation
 │   ├── collab-workflow/             # Claude-Codex collaboration workflow
 │   ├── html-presentation/           # 16:9 dark-theme slide deck formatter + PDF export
-│   └── career-docs/                 # Cover letter & career documents (Korean)
-├── scripts/                         # Standalone utility scripts
-│   └── html_to_pdf.py               # Playwright-based HTML→PDF slide converter
+│   ├── career-docs/                 # Cover letter & career documents (Korean)
+│   └── worknote/                    # Work journal with Notion sync
 ├── agents/                          # Subagents delegated by Claude
 │   ├── doc-writer-*.md              # Diataxis doc writers (4 types + delivery agents)
 │   ├── diagram-writer.md            # Mermaid diagram generation
@@ -238,14 +239,32 @@ claude-useful-instructions/
 │   ├── doc-reviewer.md              # Diataxis doc quality review
 │   ├── doc-reviewer-execution.md    # Execution artifact review
 │   ├── token-*.md                   # Token optimization analysis (4 agents)
-│   ├── ci-audit-agent.md             # GitHub Actions topology audit
+│   ├── worknote-*.md                # Work journal agents (sync, review, plan)
+│   ├── issue-creator.md             # GitHub Issue creation from work items
+│   ├── pr-reviewer.md               # PR review against work item contract
+│   ├── work-reviser.md              # Re-dispatch REVISE items from review
+│   ├── ci-audit-agent.md            # GitHub Actions topology audit
 │   ├── career-docs-*.md             # Career document writer & reviewer
 │   └── dl-*.md                      # DL pipeline agents (6 domains)
 ├── commands/                        # User-invocable slash commands
 ├── rules/                           # Shared code standards
+├── docs/                            # Detailed reference guides
+│   ├── collab-workflow.md           # Claude-Codex architecture & walkthrough
+│   ├── skills.md                    # Full skill documentation
+│   ├── agents.md                    # Full agent documentation
+│   └── commands.md                  # Full command documentation
+├── scripts/                         # Standalone utility scripts
+│   ├── html_to_pdf.py               # Playwright-based HTML→PDF slide converter
+│   └── patch-hook-settings.py       # Hook settings patcher for installer
+├── lib/                             # Codex runner modules (sourced by codex-run.sh)
+│   ├── codex-run-work.sh            # Work item dispatch logic
+│   ├── codex-run-git.sh             # Git/worktree operations
+│   ├── codex-run-boundary.sh        # Boundary check (changed-files audit)
+│   └── codex-run-runner.sh          # Codex execution with stall detection
 ├── templates/                       # Installable templates
 │   ├── branch-map/                  # branch-map.yaml bootstrap config
 │   ├── work-item/                   # brief, contract, checklist, status, review
+│   ├── workflows/                   # GitHub Actions workflow templates
 │   ├── codex/AGENTS.md
 │   └── claude/CLAUDE.md
 ├── hooks/                           # Claude Code hooks
