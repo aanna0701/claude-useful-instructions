@@ -17,10 +17,12 @@ Query Notion Work Journal DB and produce a contextual work summary.
 ## Steps
 
 1. Read `skills/worknote/references/notion-schema.md` for DB ID
-2. Parse period → start/end dates
-3. Query Notion DB (Date range + Project scope)
-4. For each page: read body via `mcp__notion__API-get-block-children`
-5. Generate per-project summary (format below)
+2. Read `skills/worknote/references/worknote-format.md` for local file structure
+3. Parse period → start/end dates
+4. Query Notion DB (Date range + Project scope)
+5. For each page: read body via `mcp__notion__API-get-block-children`
+6. If Notion unavailable, fall back to local files: glob `~/.claude/worknote/<dates>/*.md`
+7. Generate per-project summary (format below)
 
 ## Output Format
 

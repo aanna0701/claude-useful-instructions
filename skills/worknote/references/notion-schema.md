@@ -11,7 +11,7 @@
 | 이름     | title  | Work summary (one-line)    |
 | Date     | date   | Filter/sort key            |
 | Project  | select | Single repo/project name   |
-| Status   | select | `draft` / `done`           |
+| Status   | select | `draft` / `done` / `archived` |
 
 One page per project per day. Upsert key: `Date` + `Project`.
 

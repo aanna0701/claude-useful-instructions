@@ -1,17 +1,17 @@
 #!/bin/bash
-# worknote-stop — append git activity to daily worknote on session end
+# worknote-stop — write git activity to per-repo daily worknote on session end
 # Cost: 0 tokens (shell only, no Claude invocation)
-# Output: ~/.claude/worknote/YYYY-MM-DD.md
+# Output: ~/.claude/worknote/YYYY-MM-DD/<repo>.md (one file per repo per day)
 
 set -euo pipefail
 
 DATE=$(date +%Y-%m-%d)
 TIME=$(date +%H:%M)
-WORKNOTE_DIR="${HOME}/.claude/worknote"
-WORKNOTE="${WORKNOTE_DIR}/${DATE}.md"
+WORKNOTE_DIR="${HOME}/.claude/worknote/${DATE}"
 
 # Detect repo name (fallback to cwd basename)
 REPO=$(basename "$(git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null || basename "$PWD")
+WORKNOTE="${WORKNOTE_DIR}/${REPO}.md"
 
 # Collect today's commits (since 6 AM local)
 COMMITS=$(git log --since="06:00" --format="- %h %s" 2>/dev/null || true)
@@ -27,10 +27,11 @@ fi
 
 mkdir -p "${WORKNOTE_DIR}"
 
-# Append repo section
+# Overwrite per-repo file (always latest snapshot, no duplicates)
 {
+    echo "## ${REPO}"
     echo ""
-    echo "## ${REPO} (${TIME})"
+    echo "_Last updated: ${TIME}_"
 
     if [[ -n "${COMMITS}" ]]; then
         echo ""
@@ -49,4 +50,9 @@ mkdir -p "${WORKNOTE_DIR}"
         echo "### Changed"
         echo "${UNSTAGED}"
     fi
-} >> "${WORKNOTE}"
+} > "${WORKNOTE}"
+
+# ── Retention: delete local worknotes older than 30 days ──────────────────
+RETENTION_DAYS=30
+find "${HOME}/.claude/worknote" -maxdepth 1 -type d -name "20*" -mtime +${RETENTION_DAYS} \
+    -exec rm -rf {} + 2>/dev/null || true

@@ -16,7 +16,7 @@ Parse `$ARGUMENTS`:
 
 | Input | Action |
 |-------|--------|
-| (empty) / `today` | Read `~/.claude/worknote/YYYY-MM-DD.md` and display. If missing, say so. |
+| (empty) / `today` | Read `~/.claude/worknote/YYYY-MM-DD/*.md` and display all repos. If missing, say so. |
 | `sync [date]` | Delegate to **worknote-sync** agent |
 | `review <period> [flags]` | Delegate to **worknote-review** agent |
 | `plan [period] [flags]` | Delegate to **worknote-plan** agent |

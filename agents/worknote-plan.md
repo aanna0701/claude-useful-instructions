@@ -17,12 +17,13 @@ Create a prioritized work plan from recent journal entries and git state.
 ## Steps
 
 1. Read `skills/worknote/references/notion-schema.md` for DB ID
-2. Gather (parallel):
+2. Read `skills/worknote/references/worknote-format.md` for local file structure
+3. Gather (parallel):
    a. Recent Notion entries (last 3–7 days), filtered by scope
    b. `git branch --list` + `git stash list`
-   c. Latest `~/.claude/worknote/` files
-3. Extract: unfinished "Next" items, stale branches (>3d), blockers
-4. Generate plan (format below)
+   c. Latest `~/.claude/worknote/` files (glob `~/.claude/worknote/<dates>/*.md`)
+4. Extract: unfinished "Next" items, stale branches (>3d), blockers
+5. Generate plan (format below)
 
 ## Output Format
 
