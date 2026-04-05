@@ -58,12 +58,46 @@ cui-install --collab /path/to/my-project
 | `collab` | Claude-Codex collaboration, work items, CI audit, AGENTS.md, CLAUDE.md | Per-project |
 | `career` | career-docs skill, career agents | Either |
 | `presentation` | html-presentation skill, create/format/edit/export-pdf commands | Global |
+| `worknote` | Work journal with Notion sync (daily log, review, planning) | Global |
 | `dl` | pytorch-dl-standards + dl agents (capture, data, model, train, eval, infra) | Either |
 
 > **Global** (`~/.claude/`): language-agnostic tools usable everywhere.
 > **Per-project** (`project/.claude/`): CLAUDE.md, AGENTS.md, work items, MCP are project-specific.
 
 ### Prerequisites
+
+#### Notion MCP (optional — for `worknote` bundle)
+
+The `worknote` skill uses Notion as a work journal backend via MCP.
+
+1. Create a Notion Integration at https://www.notion.so/profile/integrations
+   - Name: `claude-journal` (or any name)
+   - Capabilities: **Read**, **Update**, **Insert** content
+   - Copy the **Internal Integration Secret** (`ntn_...`)
+
+2. Add MCP server (global scope — available in all projects):
+   ```bash
+   claude mcp add --scope user notion \
+     -e NOTION_TOKEN=ntn_YOUR_TOKEN \
+     -- npx @notionhq/notion-mcp-server
+   ```
+
+3. Set up Notion workspace:
+   - Create a page (e.g., "업무일지") to hold the journal database
+   - Open that page → **⋯ → Connections → Add your integration**
+   - The `worknote` skill will create a "Daily Worknote" inline DB inside this page
+   - Update the DB ID in `skills/worknote/references/notion-schema.md`
+
+4. Verify:
+   ```bash
+   claude mcp list
+   # notion: npx @notionhq/notion-mcp-server - ✓ Connected
+   ```
+
+> **Note**: This is separate from any Notion SDK usage in your application code.
+> MCP is for Claude Code to interact with Notion during conversations.
+
+#### GitHub CLI (`gh`)
 
 The `collab` bundle requires **GitHub CLI (`gh`)** for full functionality:
 
@@ -118,6 +152,7 @@ Auto-triggered by Claude Code based on conversation context.
 | `html-presentation` | "PPT format", "Slide conversion", "format-presentation" |
 | `career-docs` | "자소서 써줘", "Cover letter", "경력기술서" |
 | `collab-workflow` | "Work item", "Codex", "Hand off", "Delegate" |
+| `worknote` | "업무일지", "업무 기록", "오늘 뭐했", "work note" |
 
 > Full reference: [docs/skills.md](docs/skills.md)
 
@@ -132,6 +167,7 @@ Subagents delegated by Claude for specific tasks.
 | Doc Quality | `doc-polisher`, `doc-reviewer`, `doc-reviewer-execution` | 3 |
 | Diagram | `diagram-writer` | 1 |
 | Debug / Planning | `debug-guide`, `what-to-do` | 2 |
+| Work Journal | `worknote-sync`, `-review`, `-plan` | 3 |
 | Token Analysis | `token-duplication-detector`, `-load-measurer`, `-mcp-analyzer`, `-split-detector` | 4 |
 | Career Docs | `career-docs-writer`, `-reviewer`, `-reviser` | 3 |
 | CI Audit | `ci-audit-agent` | 1 |
@@ -213,7 +249,9 @@ claude-useful-instructions/
 │   ├── codex/AGENTS.md
 │   └── claude/CLAUDE.md
 ├── hooks/                           # Claude Code hooks
-│   └── git-auto-pull/               # Pre-edit auto-pull hook
+│   ├── git-auto-pull/               # Pre-edit auto-pull hook
+│   ├── guard-trunk/                 # Trunk protection worktree redirect
+│   └── worknote-stop/               # Session-end work journal capture
 ├── install.sh                       # Bundle-based installer (+ --uninstall)
 └── codex-run.sh                     # Codex runner (single + parallel + boundary check)
 ```

@@ -193,6 +193,54 @@ HTML presentation formatting skill. Converts existing HTML slides into a standar
 
 ---
 
+## worknote
+
+Daily work journal backed by local markdown + Notion sync. Records git activity per session via Stop hook, then supports syncing to Notion, reviewing by period, and generating work plans.
+
+**Triggers**: "worknote", "업무일지", "업무 기록", "오늘 뭐했", "작업 기록", "work note", "work log", "daily log", "what did I do"
+
+### Subcommands
+
+| Command | Action | Notion Required |
+|---------|--------|:---:|
+| `/worknote` | View today's local worknote | No |
+| `/worknote sync` | Push local md → Notion DB | Yes |
+| `/worknote review <period>` | Query Notion + contextual summary | Yes |
+| `/worknote plan [period]` | Generate prioritized work plan | Yes |
+
+### Scope Flags
+
+| Flag | Behavior |
+|------|----------|
+| (default) | Current repo only |
+| `--project <name>` | Specific project |
+| `--all` | All projects, grouped |
+
+### Review Output Format
+
+Per-project 3-section narrative: **작업 내용** (what/why) → **결과** (outcomes) → **추가 고려사항** (follow-ups, risks).
+
+### Architecture
+
+```
+Stop hook (shell, 0 tokens) → ~/.claude/worknote/YYYY-MM-DD.md
+  ↓ /worknote sync
+worknote-sync agent → Notion DB (one page per project per day)
+  ↓ /worknote review
+worknote-review agent → contextual summary
+  ↓ /worknote plan
+worknote-plan agent → prioritized work plan
+```
+
+### Related
+
+- **`worknote-sync`** agent: Local → Notion push
+- **`worknote-review`** agent: Period-based contextual summary
+- **`worknote-plan`** agent: Work plan generation
+- **Notion MCP**: Required for sync/review/plan (see README Prerequisites)
+
+---
+
 ## career-docs
 
 Korean career document generation & refinement skill. NotebookLM drafts; AI refines through a 6-step checklist and iterative Writer-Reviewer loop.

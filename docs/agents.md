@@ -83,6 +83,39 @@ Used by the `/optimize-tokens` command. Parallel analysis agents for instruction
 
 ---
 
+## Work Journal Agents
+
+Used by the `worknote` skill. Daily work journal management with Notion sync.
+
+| Agent | Role |
+|-------|------|
+| `worknote-sync` | Push local `~/.claude/worknote/*.md` to Notion DB (one page per project per day) |
+| `worknote-review` | Query Notion by date range, generate 3-section narrative summary per project |
+| `worknote-plan` | Generate prioritized work plan from recent entries + git state |
+
+### Data Flow
+
+```
+Stop hook → local md → worknote-sync → Notion DB
+                                         ↓
+                        worknote-review ← query by period
+                        worknote-plan  ← query + git branches
+```
+
+---
+
+## Collaboration Agents
+
+Used by the `collab-workflow` skill and `/work-*` commands.
+
+| Agent | Role |
+|-------|------|
+| `issue-creator` | Create GitHub Issues from work item briefs |
+| `pr-reviewer` | Review PRs against work item contracts |
+| `work-reviser` | Re-dispatch failed review items with targeted fixes |
+
+---
+
 ## CI Audit Agent
 
 Used by the `/gha-branch-sync` command. Audits GitHub Actions workflows against the project's branch-map configuration.

@@ -73,6 +73,63 @@ Delegates analysis to the `ci-audit-agent` subagent.
 
 ---
 
+## /work-plan
+
+Create a work item for delegation (Codex or branch-based). Generates brief, contract, checklist, and optionally a GitHub Issue.
+
+**Usage**:
+```
+/work-plan <description>
+```
+
+---
+
+## /work-status
+
+Check the progress of active work items.
+
+**Usage**:
+```
+/work-status              # All active items
+/work-status FEAT-001     # Specific item
+```
+
+---
+
+## /work-review
+
+Review a completed work item against its contract. Decides merge/revise/reject.
+
+**Usage**:
+```
+/work-review FEAT-001
+```
+
+---
+
+## /work-impl
+
+Implement a work item in a worktree.
+
+**Usage**:
+```
+/work-impl #123           # By GitHub Issue number
+/work-impl FEAT-001       # By work item ID
+```
+
+---
+
+## /work-revise
+
+Re-dispatch a work item that failed review with targeted fix instructions.
+
+**Usage**:
+```
+/work-revise FEAT-001
+```
+
+---
+
 ## /write-doc
 
 Diátaxis Framework-based technical document writing command.
@@ -221,6 +278,34 @@ Analyze and reduce token waste in Claude Code instruction files (commands, agent
 | 5 | Prioritized report (critical / moderate / low) |
 | 6 | Apply fixes with user confirmation |
 | 7 | Summary with before/after metrics |
+
+---
+
+## /debug-guide
+
+Analyze recent git commits and generate a prioritized verification/debug checklist.
+
+**Usage**:
+```
+/debug-guide              # Analyze recent commits
+/debug-guide 5            # Last 5 commits only
+```
+
+Reads diffs, detects risk patterns (error handling, concurrency, config changes), and produces a checklist sorted by risk level.
+
+---
+
+## /what-to-do
+
+Review recent commits and generate an action plan: what to verify, debug, and implement next.
+
+**Usage**:
+```
+/what-to-do               # Today's commits + previous session
+/what-to-do 2026-04-01    # Since specific date
+```
+
+Categorizes next steps into: **Verify** (test what was built), **Debug** (investigate issues), **Implement** (continue work).
 
 ---
 
