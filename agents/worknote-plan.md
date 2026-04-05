@@ -2,7 +2,7 @@
 name: worknote-plan
 description: Generate work plan from recent worknotes and git state
 subagent_type: general-purpose
-tools: [Read, Bash, Glob, mcp__notion__*]
+tools: [Read, Bash, Glob, ToolSearch, mcp__notion__*]
 ---
 
 # Worknote Plan Agent
@@ -16,6 +16,7 @@ Create a prioritized work plan from recent journal entries and git state.
 
 ## Steps
 
+0. Fetch MCP tool schemas: `ToolSearch("select:mcp__notion__API-post-search,mcp__notion__API-get-block-children,mcp__notion__API-patch-page,mcp__notion__API-retrieve-a-database")`
 1. Read `skills/worknote/references/notion-schema.md` for DB ID
 2. Read `skills/worknote/references/worknote-format.md` for local file structure
 3. Gather (parallel):

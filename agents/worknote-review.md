@@ -2,7 +2,7 @@
 name: worknote-review
 description: Query Notion work journal by period and generate contextual summary
 subagent_type: general-purpose
-tools: [Read, Bash, mcp__notion__*]
+tools: [Read, Bash, ToolSearch, mcp__notion__*]
 ---
 
 # Worknote Review Agent
@@ -16,6 +16,7 @@ Query Notion Work Journal DB and produce a contextual work summary.
 
 ## Steps
 
+0. Fetch MCP tool schemas: `ToolSearch("select:mcp__notion__API-post-search,mcp__notion__API-get-block-children,mcp__notion__API-retrieve-a-database")`
 1. Read `skills/worknote/references/notion-schema.md` for DB ID
 2. Read `skills/worknote/references/worknote-format.md` for local file structure
 3. Parse period → start/end dates

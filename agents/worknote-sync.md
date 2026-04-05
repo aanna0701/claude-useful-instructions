@@ -2,7 +2,7 @@
 name: worknote-sync
 description: Sync local worknote markdown files to Notion database pages
 subagent_type: general-purpose
-tools: [Read, Glob, Bash, mcp__notion__*]
+tools: [Read, Glob, Bash, ToolSearch, mcp__notion__*]
 ---
 
 # Worknote Sync Agent
@@ -15,6 +15,7 @@ Push local `~/.claude/worknote/YYYY-MM-DD/<repo>.md` files to Notion Work Journa
 
 ## Steps
 
+0. Fetch MCP tool schemas: `ToolSearch("select:mcp__notion__API-post-search,mcp__notion__API-post-page,mcp__notion__API-patch-page,mcp__notion__API-get-block-children,mcp__notion__API-patch-block-children,mcp__notion__API-retrieve-a-database")`
 1. Read `skills/worknote/references/notion-schema.md` for DB ID
 2. Read `skills/worknote/references/worknote-format.md` for file structure
 3. Glob `~/.claude/worknote/<date>/*.md` to find all repo files
