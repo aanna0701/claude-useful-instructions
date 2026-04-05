@@ -127,7 +127,15 @@ BUNDLE_PRESENTATION=(
   "script:scripts/html_to_pdf.py"
 )
 
-BUNDLE_NAMES=("core" "docs" "data-pipeline" "career" "dl" "collab" "presentation")
+BUNDLE_WORKNOTE=(
+  "skills:worknote"
+  "agents:worknote-sync.md"
+  "agents:worknote-review.md"
+  "agents:worknote-plan.md"
+  "claude-hook:worknote-stop"
+)
+
+BUNDLE_NAMES=("core" "docs" "data-pipeline" "career" "dl" "collab" "presentation" "worknote")
 BUNDLE_DESCRIPTIONS=(
   "Core utilities (smart-git-commit-push, optimize-tokens, debug-guide)"
   "Documentation & diagrams (diataxis framework, doc agents, diagram-architect)"
@@ -136,6 +144,7 @@ BUNDLE_DESCRIPTIONS=(
   "PyTorch DL standards + agents (capture, data, model, train, eval, infra)"
   "Claude-Codex collaboration (work items, branch-map, AGENTS.md, CLAUDE.md)"
   "HTML presentation generator (16:9 dark theme slides + PDF export)"
+  "Work journal with Notion sync (daily log, review, planning)"
 )
 
 # ── Parse arguments ─────────────────────────────────────────────────────────
@@ -158,6 +167,7 @@ while [[ $# -gt 0 ]]; do
     --dl)            SELECTED_BUNDLES+=("dl"); shift ;;
     --collab)        SELECTED_BUNDLES+=("collab"); shift ;;
     --presentation)  SELECTED_BUNDLES+=("presentation"); shift ;;
+    --worknote)      SELECTED_BUNDLES+=("worknote"); shift ;;
     --exclude)       shift; EXCLUDED_BUNDLES+=("$1"); shift ;;
     --interactive)   INTERACTIVE=true; shift ;;
     --list)          LIST_ONLY=true; shift ;;
@@ -276,6 +286,7 @@ get_bundle_items() {
     dl)            printf '%s\n' "${BUNDLE_DL[@]}" ;;
     collab)        printf '%s\n' "${BUNDLE_COLLAB[@]}" ;;
     presentation)  printf '%s\n' "${BUNDLE_PRESENTATION[@]}" ;;
+    worknote)      printf '%s\n' "${BUNDLE_WORKNOTE[@]}" ;;
   esac
 }
 
@@ -421,7 +432,7 @@ install_claude_hook() {
   mkdir -p "$dst_dir"
 
   local copied_files=()
-  for f in "$src"/*.py; do
+  for f in "$src"/*.py "$src"/*.sh; do
     [ -f "$f" ] || continue
     local filename
     filename="$(basename "$f")"
@@ -538,7 +549,7 @@ remove_claude_hook() {
   local src="$REPO_DIR/hooks/$hook_name"
   [ -d "$src" ] || return 0
 
-  for f in "$src"/*.py "$src"/*.json.example; do
+  for f in "$src"/*.py "$src"/*.sh "$src"/*.json.example; do
     [ -f "$f" ] || continue
     local filename
     filename="$(basename "$f")"

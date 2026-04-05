@@ -33,6 +33,15 @@ HOOK_REGISTRY: dict[str, dict] = {
             }],
         },
     },
+    "worknote-stop": {
+        "managed": {"worknote_stop.sh"},
+        "events": {
+            "Stop": [{
+                "matcher": "",
+                "hooks": [{"type": "command", "command": f"bash {HOOKS_DIR}/worknote_stop.sh"}],
+            }],
+        },
+    },
 }
 
 
