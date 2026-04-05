@@ -1,6 +1,6 @@
 # Notion Work Journal DB Schema
 
-- **DB ID**: `33963d5a-32cf-816c-82f7-d6a0f20bb488`
+- **DB ID**: `33963d5a-32cf-817d-a75c-000b886605dc`
 - **Parent Page**: 업무일지 (`33963d5a-32cf-8019-95c6-cf0ff0828162`)
 - **Title property**: `이름` (Korean)
 
