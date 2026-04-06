@@ -59,6 +59,7 @@ cui-install --collab /path/to/my-project
 | `career` | career-docs skill, career agents | Either |
 | `presentation` | html-presentation skill, create/format/edit/export-pdf commands | Global |
 | `worknote` | Work journal with Notion sync (daily log, review, planning) | Global |
+| `ppt-generation` | PPT template-based generation (fill content into base PPT without changing design) | Global |
 | `dl` | pytorch-dl-standards + dl agents (capture, data, model, train, eval, infra) | Either |
 
 > **Global** (`~/.claude/`): language-agnostic tools usable everywhere.
@@ -152,6 +153,7 @@ Auto-triggered by Claude Code based on conversation context.
 | `html-presentation` | "PPT format", "Slide conversion", "format-presentation" |
 | `career-docs` | "자소서 써줘", "Cover letter", "경력기술서" |
 | `collab-workflow` | "Work item", "Codex", "Hand off", "Delegate" |
+| `ppt-generation` | "템플릿에 내용 넣어줘", "베이스 PPT에 채워줘", "fill template", ".potx" |
 | `worknote` | "업무일지", "업무 기록", "오늘 뭐했", "work note" |
 
 > Full reference: [docs/skills.md](docs/skills.md)
@@ -172,6 +174,7 @@ Subagents delegated by Claude for specific tasks.
 | Career Docs | `career-docs-writer`, `-reviewer`, `-reviser` | 3 |
 | Collab Workflow | `issue-creator`, `pr-reviewer`, `work-reviser` | 3 |
 | CI Audit | `ci-audit-agent` | 1 |
+| PPT Generation | `ppt-density-checker`, `ppt-format-reviewer` | 2 |
 | DL Pipeline | `dl-capture`, `-data`, `-model`, `-train`, `-eval`, `-infra` | 6 |
 
 > Full reference: [docs/agents.md](docs/agents.md)
@@ -199,6 +202,7 @@ Subagents delegated by Claude for specific tasks.
 | `/format-presentation` | Convert HTML to standard 16:9 dark-theme format |
 | `/edit-presentation` | Modify content in formatted presentations |
 | `/export-pdf` | Convert HTML slides to PDF (1920×1080) |
+| `/generate-ppt` | Fill a base PPT template with source material content |
 | `/optimize-tokens` | Analyze and reduce token waste in instructions |
 
 > Full reference: [docs/commands.md](docs/commands.md)
@@ -229,6 +233,7 @@ claude-useful-instructions/
 │   ├── collab-workflow/             # Claude-Codex collaboration workflow
 │   ├── html-presentation/           # 16:9 dark-theme slide deck formatter + PDF export
 │   ├── career-docs/                 # Cover letter & career documents (Korean)
+│   ├── ppt-generation/              # PPT template-based content injection
 │   └── worknote/                    # Work journal with Notion sync
 ├── agents/                          # Subagents delegated by Claude
 │   ├── doc-writer-*.md              # Diataxis doc writers (4 types + delivery agents)
@@ -240,6 +245,8 @@ claude-useful-instructions/
 │   ├── doc-reviewer-execution.md    # Execution artifact review
 │   ├── token-*.md                   # Token optimization analysis (4 agents)
 │   ├── worknote-*.md                # Work journal agents (sync, review, plan)
+│   ├── ppt-density-checker.md       # Slide density QA
+│   ├── ppt-format-reviewer.md       # Template format compliance review
 │   ├── issue-creator.md             # GitHub Issue creation from work items
 │   ├── pr-reviewer.md               # PR review against work item contract
 │   ├── work-reviser.md              # Re-dispatch REVISE items from review

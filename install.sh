@@ -11,6 +11,7 @@
 #   --career        Career document tools (career-docs skill, career agents)
 #   --dl            PyTorch DL standards + agents (capture, data, model, train, eval, infra)
 #   --collab        Claude-Codex collaboration (work items, branch-map, AGENTS.md, CLAUDE.md)
+#   --ppt-generation PPT template-based generation (fill content into base PPT)
 #   --exclude NAME  Exclude a bundle (repeatable, e.g. --exclude dl --exclude career)
 #   --interactive   Interactive mode: choose bundles from a menu
 #   --list          List available bundles and exit
@@ -136,7 +137,14 @@ BUNDLE_WORKNOTE=(
   "claude-hook:worknote-stop"
 )
 
-BUNDLE_NAMES=("core" "docs" "data-pipeline" "career" "dl" "collab" "presentation" "worknote")
+BUNDLE_PPT_GENERATION=(
+  "skills:ppt-generation"
+  "commands:generate-ppt.md"
+  "agents:ppt-density-checker.md"
+  "agents:ppt-format-reviewer.md"
+)
+
+BUNDLE_NAMES=("core" "docs" "data-pipeline" "career" "dl" "collab" "presentation" "worknote" "ppt-generation")
 BUNDLE_DESCRIPTIONS=(
   "Core utilities (smart-git-commit-push, optimize-tokens, debug-guide, guard-trunk, auto-pr)"
   "Documentation & diagrams (diataxis framework, doc agents, diagram-architect)"
@@ -146,6 +154,7 @@ BUNDLE_DESCRIPTIONS=(
   "Claude-Codex collaboration (work items, branch-map, AGENTS.md, CLAUDE.md)"
   "HTML presentation generator (16:9 dark theme slides + PDF export)"
   "Work journal with Notion sync (daily log, review, planning)"
+  "PPT template-based generation (fill content into base PPT without changing design)"
 )
 
 # ── Parse arguments ─────────────────────────────────────────────────────────
@@ -169,6 +178,7 @@ while [[ $# -gt 0 ]]; do
     --collab)        SELECTED_BUNDLES+=("collab"); shift ;;
     --presentation)  SELECTED_BUNDLES+=("presentation"); shift ;;
     --worknote)      SELECTED_BUNDLES+=("worknote"); shift ;;
+    --ppt-generation) SELECTED_BUNDLES+=("ppt-generation"); shift ;;
     --exclude)       shift; EXCLUDED_BUNDLES+=("$1"); shift ;;
     --interactive)   INTERACTIVE=true; shift ;;
     --list)          LIST_ONLY=true; shift ;;
@@ -287,7 +297,8 @@ get_bundle_items() {
     dl)            printf '%s\n' "${BUNDLE_DL[@]}" ;;
     collab)        printf '%s\n' "${BUNDLE_COLLAB[@]}" ;;
     presentation)  printf '%s\n' "${BUNDLE_PRESENTATION[@]}" ;;
-    worknote)      printf '%s\n' "${BUNDLE_WORKNOTE[@]}" ;;
+    worknote)        printf '%s\n' "${BUNDLE_WORKNOTE[@]}" ;;
+    ppt-generation)  printf '%s\n' "${BUNDLE_PPT_GENERATION[@]}" ;;
   esac
 }
 
