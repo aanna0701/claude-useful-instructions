@@ -89,7 +89,8 @@ def _ensure_worktree(main_root: Path, branch: str) -> Path:
     """Create or reuse a session-scoped tmp worktree. Returns worktree path."""
     marker = _session_marker()
     if marker.exists():
-        wt_path = Path(marker.read_text().strip())
+        lines = marker.read_text().strip().splitlines()
+        wt_path = Path(lines[0])
         if wt_path.exists():
             return wt_path
 
@@ -109,7 +110,13 @@ def _ensure_worktree(main_root: Path, branch: str) -> Path:
         if wt_str not in check.stdout:
             subprocess.run(["rm", "-rf", str(wt_dir)], capture_output=True)
         else:
-            marker.write_text(str(wt_dir))
+            # Get branch name from existing worktree
+            existing_branch = subprocess.run(
+                ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+                capture_output=True, text=True, cwd=str(wt_dir),
+            )
+            eb = existing_branch.stdout.strip() if existing_branch.returncode == 0 else wt_branch
+            marker.write_text(f"{wt_dir}\n{eb}")
             return wt_dir
 
     subprocess.run(
@@ -118,7 +125,7 @@ def _ensure_worktree(main_root: Path, branch: str) -> Path:
         timeout=30,
     )
 
-    marker.write_text(str(wt_dir))
+    marker.write_text(f"{wt_dir}\n{wt_branch}")
     return wt_dir
 
 

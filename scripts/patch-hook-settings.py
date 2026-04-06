@@ -42,6 +42,15 @@ HOOK_REGISTRY: dict[str, dict] = {
             }],
         },
     },
+    "auto-pr": {
+        "managed": {"auto_pr.sh"},
+        "events": {
+            "Stop": [{
+                "matcher": "",
+                "hooks": [{"type": "command", "command": f"bash {HOOKS_DIR}/auto_pr.sh"}],
+            }],
+        },
+    },
 }
 
 

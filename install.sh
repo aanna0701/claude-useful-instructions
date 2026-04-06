@@ -45,6 +45,8 @@ BUNDLE_CORE=(
   "agents:token-mcp-analyzer.md"
   "agents:token-split-detector.md"
   "claude-hook:git-auto-pull"
+  "claude-hook:guard-trunk"
+  "claude-hook:auto-pr"
 )
 
 BUNDLE_DOCS=(
@@ -115,7 +117,6 @@ BUNDLE_COLLAB=(
   "script:lib/codex-run-git.sh"
   "script:lib/codex-run-boundary.sh"
   "script:lib/codex-run-runner.sh"
-  "claude-hook:guard-trunk"
 )
 
 BUNDLE_PRESENTATION=(
@@ -137,7 +138,7 @@ BUNDLE_WORKNOTE=(
 
 BUNDLE_NAMES=("core" "docs" "data-pipeline" "career" "dl" "collab" "presentation" "worknote")
 BUNDLE_DESCRIPTIONS=(
-  "Core utilities (smart-git-commit-push, optimize-tokens, debug-guide)"
+  "Core utilities (smart-git-commit-push, optimize-tokens, debug-guide, guard-trunk, auto-pr)"
   "Documentation & diagrams (diataxis framework, doc agents, diagram-architect)"
   "Data pipeline architect"
   "Career document tools (cover letters, Korean)"
