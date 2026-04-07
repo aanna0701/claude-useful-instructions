@@ -686,7 +686,7 @@ if $UNINSTALL; then
       workflow)     remove_file "$PROJECT_ROOT/.github/workflows/$path" ;;
       root-file)   remove_root_file "$path" ;;
       cursor-rule) remove_file "$PROJECT_ROOT/.cursor/rules/$path" ;;
-      agent-rule)  remove_file "$PROJECT_ROOT/.agents/workflows/$path" ;;
+      agent-rule)  remove_file "$PROJECT_ROOT/.agent/rules/$path" ;;
       script)      remove_file "$PROJECT_ROOT/$path" ;;
       hook)        remove_hook "$path" ;;
       claude-hook) remove_claude_hook "$path" ;;
