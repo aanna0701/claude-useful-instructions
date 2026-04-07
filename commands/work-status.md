@@ -4,21 +4,46 @@
 
 **$ARGUMENTS**: Optional work item ID (e.g., `FEAT-001`).
 
-## Worktree Resolution
+## Worktree Discovery (critical)
 
-Per `rules/collab-workflow.md` § Worktree Rules. All reads from worktree (authoritative).
+Work items live in worktrees, NOT the main repo. Discovery order:
+
+1. Run `git worktree list` from cwd (or `$REPO_ROOT`)
+2. For each worktree path, glob `{WT_PATH}/work/items/*/status.md`
+3. Also glob `work/items/*/status.md` in the main repo (items not yet dispatched)
+4. Deduplicate by item ID (worktree copy wins over main repo copy)
+
+If cwd is not a git repo, scan `$ARGUMENTS` parent directory or ask user for repo path.
+
+### Worktree search fallback
+
+If `git worktree list` returns only the main repo (no worktrees), also scan sibling directories matching the naming convention:
+
+```bash
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+PROJECT="$(basename "$REPO_ROOT")"
+PARENT="$(dirname "$REPO_ROOT")"
+# Scan: ${PARENT}/${PROJECT}-*/work/items/*/status.md
+```
+
+This catches worktrees created by other sessions or tools.
 
 ## Mode A: All Items (no argument)
 
-Glob `work/items/*/`, resolve each worktree. Print table:
+Discover all items per § Worktree Discovery above. For each `status.md`, extract fields. Print table:
 
-| ID | Title | Type | Status | Agent | Branch | Merge Target | PR | Freshness |
+| ID | Title | Type | Status | Agent | Branch | Worktree | PR | Freshness |
+
+Worktree column = absolute path from `status.md` `Worktree Path` field.
 
 If no items: "No work items found. Use `/work-plan` to create one."
 
 ## Mode B: Specific Item
 
-Detailed view: type, status, agent, branch, PR, progress (checklist), review decision, blockers. Surface `needs-sync` explicitly as preflight failure.
+1. Find item by ID: search worktrees first (§ Worktree Discovery), then main repo
+2. Read from worktree copy (authoritative per `rules/collab-workflow.md` § Worktree Rules)
+3. Show detailed view: type, status, agent, branch, PR, progress (checklist), review decision, blockers
+4. Surface `needs-sync` explicitly as preflight failure
 
 ## Next Actions
 
