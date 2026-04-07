@@ -78,7 +78,10 @@ For FEAT/REFAC (post-implementation verification):
 ```
 Next Steps
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# After Cursor verification, proceed to review:
+# Ingest Cursor results for auto-routing:
+/work-verify-ingest {IDs}
+
+# Or skip ingest and proceed directly:
 /work-review {IDs}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
@@ -87,16 +90,12 @@ For AUDIT (standalone audit):
 ```
 Next Steps
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# After Cursor audit, choose one:
+# Ingest audit results:
+/work-verify-ingest {IDs}
+# → auto-routes to: create issues, plan fixes, or mark audited
 
-# Option 1: Create issues from findings
-# (manually create issues from the audit report)
-
-# Option 2: Fix findings via work-plan
+# Or manually choose:
 /work-plan --type=fix "Fix {audit objective} findings"
-
-# Option 3: Mark audit complete
-# Update status.md → Status = audited
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 

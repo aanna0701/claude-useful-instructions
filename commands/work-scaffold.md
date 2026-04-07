@@ -47,12 +47,15 @@ The agent:
 3. Fills template variables
 4. Returns rendered prompt + `.cursorrules` content
 
-### Step 3: Generate .cursorrules
+### Step 3: Generate Cursor Integration Files
 
 For each non-AUDIT item:
 
 1. Write `.cursorrules` to the worktree root: `{worktree_path}/.cursorrules`
-2. Stage and commit: `chore({SLUG}): add .cursorrules for Cursor integration`
+2. Create `.cursor/rules/` directory: `mkdir -p {worktree_path}/.cursor/rules/`
+3. Write `{SLUG}-guard.mdc` — contract boundary enforcement (auto-applied when editing allowed files)
+4. Write `{SLUG}-forbidden.mdc` — boundary violation warning (auto-applied when opening forbidden zone files)
+5. Stage and commit all files: `chore({SLUG}): add .cursorrules and .cursor/rules/ for contract enforcement`
 
 ### Step 4: Update Status
 
@@ -72,8 +75,12 @@ FEAT-001 — Cursor Composer Prompt
 <rendered prompt here>
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📋 Copy the prompt above → Cursor Composer (Cmd+I / Ctrl+I)
-🎯 Open worktree in Cursor: cursor {worktree_path}
+Copy the prompt above → Cursor Composer (Cmd+I / Ctrl+I)
+Open worktree in Cursor: cursor {worktree_path}
+
+Cursor Rules auto-applied:
+  .cursor/rules/{SLUG}-guard.mdc     ← contract boundaries (active during editing)
+  .cursor/rules/{SLUG}-forbidden.mdc ← forbidden zone warnings
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -92,6 +99,10 @@ bash codex-run.sh {non-audit IDs}
 
 # Or implement manually:
 /work-impl {ID}
+
+# After implementation, verify and ingest results:
+/work-verify {ID}
+# → paste Cursor output → /work-verify-ingest {ID}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 

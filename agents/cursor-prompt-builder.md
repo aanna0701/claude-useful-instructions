@@ -70,6 +70,16 @@ Default: `scaffold-feat.md` / `verify-feat.md` for unrecognized prefixes.
 6. Generate `.cursorrules` content from `cursorrules.md` template
 7. Infer `primary_language` from file extensions in `allowed_modifications`:
    - `.py` → Python, `.ts`/`.tsx` → TypeScript, `.go` → Go, `.rs` → Rust, etc.
+8. Derive glob patterns from `allowed_modifications`:
+   - Directory paths (trailing `/`) → append `**` (e.g., `src/auth/` → `src/auth/**`)
+   - File paths → keep as-is (e.g., `src/auth/token.py`)
+   - Already-glob patterns → keep as-is (e.g., `src/auth/*.py`)
+9. Derive glob patterns from `forbidden_zones`:
+   - Same rules as step 8
+10. Fill `contract-guard.mdc.md` template → write to `{worktree_path}/.cursor/rules/{SLUG}-guard.mdc`
+11. Fill `boundary-alert.mdc.md` template → write to `{worktree_path}/.cursor/rules/{SLUG}-forbidden.mdc`
+12. Stage and commit all Cursor integration files:
+    `chore({SLUG}): add .cursorrules and .cursor/rules/ for contract enforcement`
 
 ### Mode: verify
 
@@ -91,6 +101,14 @@ The fully rendered prompt from the selected template. Print it inside a fenced c
 
 Write to `{worktree_path}/.cursorrules` (or print if worktree path unavailable).
 
+### 3. .cursor/rules/ files (scaffold mode only)
+
+Write to `{worktree_path}/.cursor/rules/`:
+- `{SLUG}-guard.mdc` — contract boundaries, applied when editing allowed files
+- `{SLUG}-forbidden.mdc` — warning when opening forbidden zone files
+
+If worktree path is unavailable, print file contents instead of writing.
+
 ## Error Handling
 
 - If `brief.md` or `contract.md` is missing: fail with clear error pointing to the missing file
@@ -98,3 +116,4 @@ Write to `{worktree_path}/.cursorrules` (or print if worktree path unavailable).
 - If mode is `scaffold` but status is not `planned`: warn but proceed
 - If mode is `verify` but status is not `ready-for-review`: warn but proceed (AUDIT items may be `planned`)
 - Never modify brief.md, contract.md, or checklist.md
+- If `.cursor/rules/` directory creation fails (e.g., no worktree), fall back to printing the .mdc content
