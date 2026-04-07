@@ -8,20 +8,20 @@ The `collab` bundle enables structured handoff between **Claude** (design/review
 
 ## Roles & Work Item Files
 
-| Agent | Role | Writes |
+| Agent (Command) | Role | Writes |
 |-------|------|--------|
-| **Claude** | spec owner, integrator, final authority | brief.md, contract.md (signed), checklist.md, review.md |
-| **Cursor** | structure propagator, verifier (optional) | scaffolded files via Composer, verification reports via @Codebase |
-| **Codex** | implementer farm | code, status.md |
+| **Claude** (`/work-plan`, `/work-review`) | spec owner, integrator, final authority | brief.md, contract.md (signed), checklist.md, review.md |
+| **Cursor / Antigravity** (`/work-scaffold`, `/work-verify`) | structure propagator, verifier (optional) | scaffolded files via Composer, verification reports via @Codebase |
+| **Codex** (`/work-impl`) | implementer farm | code, status.md |
 
-## Workflow (with optional Cursor phases)
+## Workflow (with optional Cursor / Antigravity phases)
 
 ```
 Claude: /work-plan topic1, topic2, topic3
   → parallel agent generation + boundary check + dispatch manifest
                                           ↓
 [OPTIONAL] — Human: /work-scaffold FEAT-001 FEAT-002
-  → Copy prompt to Cursor Composer (Cmd+I) → scaffolds file structure
+  → Copy prompt to Cursor/Antigravity Composer (Cmd+I) → scaffolds file structure
   → .cursor/rules/*.mdc generated in worktree
   → guard.mdc auto-enforces contract boundaries during editing
                                           ↓
@@ -43,7 +43,7 @@ Claude: /work-plan --type=audit "naming convention check"
   → generates AUDIT-001 with Audit Scope + Audit Criteria
                                           ↓
 Human: /work-verify AUDIT-001
-  → Copy prompt to Cursor Chat (@Codebase) → codebase audit
+  → Copy prompt to Cursor/Antigravity Chat → codebase audit
 ```
 
 Review follow-up policy:
@@ -77,7 +77,7 @@ Use one overall state per work item:
 | `revising` | Review requested changes | Claude then Codex |
 | `merged` | PR merged and branch cleaned up | Claude |
 | `rejected` | Item closed without merge | Claude |
-| `auditing` | Cursor @Codebase audit in progress (AUDIT only) | Cursor |
+| `auditing` | Cursor/Antigravity audit in progress (AUDIT only) | Cursor / Antigravity |
 | `audited` | Audit complete (AUDIT only) | Claude |
 
 Transition graph:
@@ -327,9 +327,9 @@ Before merge:
 
 ---
 
-## Cursor Integration
+## Cursor / Antigravity Integration
 
-The collab workflow supports optional Cursor phases for multi-file scaffolding and codebase-wide verification.
+The collab workflow supports optional Cursor/Antigravity phases for multi-file scaffolding and codebase-wide verification.
 
 ### Pipeline Rule (auto-orchestrated)
 

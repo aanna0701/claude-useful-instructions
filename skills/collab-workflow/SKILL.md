@@ -12,6 +12,16 @@ description: >
 
 # Claude-Codex Collaboration Workflow
 
+## Tool Assignments (Pipeline Roles)
+
+| Command / Phase | Primary Tool | Description |
+|-----------------|--------------|-------------|
+| `/work-plan` | **Claude** | Decomposes tasks into sub-tasks and contracts. |
+| `/work-scaffold`| **Cursor / Antigravity** | Generates file structure, stubs, and boundary configuration. |
+| `/work-impl` | **Codex** | Implements code following the contract parameters. |
+| `/work-verify` | **Cursor / Antigravity** | Performs code audit and codebase consistency checks. |
+| `/work-review` | **Claude** | Reviews implemented work and applies changes. |
+
 ## Routing
 
 | User Intent | Route To |
@@ -22,9 +32,9 @@ description: >
 | Set up branch hierarchy | `/branch-init` |
 | Show branch state / freshness | `/branch-status` |
 | Audit / fix / generate CI workflows | `/gha-branch-sync` |
-| Cursor pipeline (auto-orchestrated) | Open `work/**` in Cursor → `collab-pipeline.mdc` activates |
-| Scaffold file structure (Cursor) | `/work-scaffold FEAT-NNN` or `/work-scaffold REFAC-NNN` |
-| Codebase audit (Cursor) | `/work-verify AUDIT-NNN` [→ `--ingest`] |
+| Cursor/Antigravity pipeline (auto-orchestrated) | Open `work/**` in Cursor/Antigravity → `collab-pipeline.mdc` or `.agent/workflows/` activates |
+| Scaffold file structure (Cursor/Antigravity) | `/work-scaffold FEAT-NNN` or `/work-scaffold REFAC-NNN` |
+| Codebase audit (Cursor/Antigravity) | `/work-verify AUDIT-NNN` [→ `--ingest`] |
 | Boundary check / dispatch | `codex-run.sh` (suggest command) |
 | Implement in worktree | `/work-impl #<issue>` or `/work-impl FEAT-NNN` |
 | Re-dispatch failed review | `/work-revise FEAT-NNN` |
@@ -39,5 +49,5 @@ description: >
 - Docs: `docs/collab-workflow.md` (full setup guide + walkthrough)
 - Scripts: `codex-run.sh`
 - Templates: `.claude/templates/work-item/`, `.claude/templates/branch-map/`, `.claude/templates/cursor/`
-- Agent: `cursor-prompt-builder` (contract → Cursor prompt + .cursor/rules/ assembly)
-- Docs: `docs/cursor-integration.md` (Cursor integration guide)
+- Agent: `cursor-prompt-builder` (contract → Cursor/Antigravity prompt + rules assembly)
+- Docs: `docs/cursor-integration.md` (Cursor/Antigravity integration guide)

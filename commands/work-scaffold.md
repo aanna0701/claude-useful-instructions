@@ -1,6 +1,6 @@
-# work-scaffold — Generate Cursor Composer Prompts from Contracts
+# work-scaffold — Generate Cursor/Antigravity Composer Prompts from Contracts
 
-Generate Cursor Composer prompts for scaffolding file structures. Type is auto-detected from work item ID prefix.
+Generate Cursor/Antigravity Composer prompts for scaffolding file structures. Type is auto-detected from work item ID prefix.
 
 ---
 
@@ -68,16 +68,16 @@ Print each prompt in a fenced code block with copy instruction:
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-FEAT-001 — Cursor Composer Prompt
+FEAT-001 — Cursor/Antigravity Composer Prompt
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 <rendered prompt here>
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Copy the prompt above → Cursor Composer (Cmd+I / Ctrl+I)
-Open worktree in Cursor: cursor {worktree_path}
+Copy the prompt above → Cursor/Antigravity Composer (Cmd+I / Ctrl+I)
+Open worktree in Cursor/Antigravity: cursor {worktree_path}
 
-Cursor Rules auto-applied:
+Cursor/Antigravity Rules auto-applied:
   .cursor/rules/{SLUG}-guard.mdc     ← contract boundaries (active during editing)
   .cursor/rules/{SLUG}-forbidden.mdc ← forbidden zone warnings
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -93,7 +93,7 @@ After all items:
 ```
 Next Steps
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# After Cursor scaffolding, dispatch to Codex:
+# After Cursor/Antigravity scaffolding, dispatch to Codex:
 bash codex-run.sh {non-audit IDs}
 
 # Or implement manually:

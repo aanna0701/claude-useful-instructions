@@ -159,14 +159,14 @@ Batch: work/batches/2026-04-03-schema-cleanup.json
 
 Next Steps — by type:
 ──────────────────────────────────────────────
-# FEAT / REFAC — Scaffold with Cursor, then dispatch to Codex
+# FEAT / REFAC — Scaffold with Cursor/Antigravity, then dispatch to Codex
 /work-scaffold FEAT-001 REFAC-002
 bash codex-run.sh FEAT-001 REFAC-002
 
-# AUDIT — Verify directly with Cursor (no Codex needed)
+# AUDIT — Verify directly with Cursor/Antigravity (no Codex needed)
 /work-verify AUDIT-003
 
-# Or skip Cursor — dispatch directly
+# Or skip Cursor/Antigravity — dispatch directly
 bash codex-run.sh FEAT-001 REFAC-002
 
 # Single item via Claude
