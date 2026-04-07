@@ -11,11 +11,13 @@ No arguments: auto-glob for `ready-for-review` items.
 ## Steps
 
 1. **Resolve worktree**: Per `rules/collab-workflow.md` § Worktree Rules. Set `$WORK_ROOT`. All reads from worktree.
-2. **Pre-flight**: Read brief/contract/checklist/status (parallel). Require `ready-for-review` or `revising`. Acquire lock per § Locks.
-3. **Branch map validation**: Per `rules/review-merge-policy.md` § Merge Gating. Check freshness, merge target, role consistency.
-4. **Resolve PR**: `status.md` PR field > `gh pr list --head <branch>` > create as fallback.
-5. **Review changed files**: From status.md `Changed Files` or `git log --name-only`.
-6. **Generate review**: Spawn `pr-reviewer` agent. Decision: MERGE / REVISE / REJECT. Write `review.md`. Use `git add -f work/items/{SLUG}/`.
+2. **Read relay**: Per `rules/collab-workflow.md` § Relay Protocol — read `relay.md` for impl + verify results. Factor verify failures into review (raise severity if tests failed). Include relay summary in PR reviewer context.
+3. **Pre-flight**: Read brief/contract/checklist/status (parallel). Require `ready-for-review` or `revising`. Acquire lock per § Locks.
+4. **Branch map validation**: Per `rules/review-merge-policy.md` § Merge Gating. Check freshness, merge target, role consistency.
+5. **Resolve PR**: `status.md` PR field > `gh pr list --head <branch>` > create as fallback.
+6. **Review changed files**: From status.md `Changed Files` or `git log --name-only`.
+7. **Generate review**: Spawn `pr-reviewer` agent. Decision: MERGE / REVISE / REJECT. Write `review.md`. Use `git add -f work/items/{SLUG}/`.
+8. **Relay**: Append `review` block to `relay.md` with decision, must_fix/optional counts, and items list. Post PR comment with decision summary.
 
 ### MERGE
 

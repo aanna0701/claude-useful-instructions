@@ -55,7 +55,7 @@ Sequential `{TYPE}-NNN` (3-digit, zero-padded). Slug: kebab-case, max 30 chars.
 
 ### Step 6: Generate Work Items (parallel)
 
-Spawn agents per item. Each generates `brief.md`, `contract.md`, `checklist.md`, `status.md` from templates. Ensure Allowed Modifications are **disjoint** across siblings.
+Spawn agents per item. Each generates `brief.md`, `contract.md`, `checklist.md`, `status.md` from templates. (`relay.md` is created by later stages per § Relay Protocol — not seeded here.) Ensure Allowed Modifications are **disjoint** across siblings.
 
 **AUDIT variation**: "Allowed Modifications" → "Audit Scope", "Forbidden Zones" → "Out of Scope", "Interfaces" → "Audit Criteria", "Test Requirements" → "Expected Output Format".
 

@@ -13,11 +13,13 @@ Generate a Cursor verification prompt, or execute directly with `--claude`.
 ## Steps
 
 1. **Resolve**: Locate `work/items/{ID}-*/`, read `status.md`, resolve worktree per `rules/collab-workflow.md` § Worktree Rules
-2. **Generate**:
+2. **Read relay**: Per `rules/collab-workflow.md` § Relay Protocol — read `relay.md` for impl results. If impl `result: blocked`, abort with error. Use `changed` files list to scope verification.
+3. **Generate**:
    - **Default**: Spawn `cursor-prompt-builder` agent. Prompt instructs Cursor to write `verify-result.md` in worktree.
    - **`--claude`**: Read code directly, verify against contract, write `verify-result.md`.
-3. **Update status**: AUDIT/DOCS → `auditing`. FEAT/REFAC/FIX → unchanged.
-4. **Output**: Print prompt with absolute `{WT_PATH}`
+4. **Relay**: Append `verify` block to `relay.md` with passed/failed counts and failure details. Post PR comment.
+5. **Update status**: AUDIT/DOCS → `auditing`. FEAT/REFAC/FIX → unchanged.
+6. **Output**: Print prompt with absolute `{WT_PATH}`
 
 ## Verification Items
 

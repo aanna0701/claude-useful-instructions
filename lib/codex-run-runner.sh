@@ -202,7 +202,8 @@ print_manual_dispatch_instructions() {
   done
   echo ""
   echo "After all complete, run:"
-  echo "  /work-review $feat_ids_label"
+  echo "  /work-verify $feat_ids_label               # Cursor 없으면: /work-verify $feat_ids_label --claude"
+  echo "  /work-review $feat_ids_label               # verify 통과 후"
 }
 
 collect_dispatch_results() {
@@ -299,6 +300,12 @@ cmd_dispatch() {
       pr_result=$(push_and_create_pr "$fid" 2>&1) || true
       echo "$pr_result"
     done
+
+    echo ""
+    echo "Posting impl relay comments on PRs..."
+    for fid in "${review_ids[@]}"; do
+      post_impl_relay_comment "$fid" 2>/dev/null || true
+    done
   fi
 
   echo "══════════════════════════════════════════════"
@@ -318,9 +325,10 @@ cmd_dispatch() {
   fi
 
   if [ ${#review_ids[@]} -gt 0 ]; then
-    echo "Next step — paste this into Claude:"
+    echo "📋 다음 단계"
     echo ""
-    echo "  /work-review ${review_ids[*]}"
+    echo "  /work-verify ${review_ids[*]}               # Cursor 없으면: /work-verify ${review_ids[*]} --claude"
+    echo "  /work-review ${review_ids[*]}               # verify 통과 후"
     echo ""
   fi
 

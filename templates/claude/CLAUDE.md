@@ -9,7 +9,7 @@ This project uses a structured handoff workflow. See `.claude/rules/collab-workf
 
 Commands: `/work-plan`, `/work-status`, `/work-review`, `/work-impl`, `/work-revise`
 
-Work items at `work/items/FEAT-NNN-slug/` with: `brief.md`, `contract.md`, `checklist.md`, `status.md`, `review.md`
+Work items at `work/items/FEAT-NNN-slug/` with: `brief.md`, `contract.md`, `checklist.md`, `status.md`, `review.md`, `relay.md`
 
 ## Code Standards
 

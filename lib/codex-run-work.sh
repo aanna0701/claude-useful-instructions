@@ -392,6 +392,14 @@ Non-negotiables:
 - Stay inside contract boundaries only.
 - Update $wdir/status.md on every state change.
 - Run the checklist verification commands before marking done.
+- Before starting, read $wdir/relay.md (if it exists) for context from prior stages.
+- On completion, append an impl block to $wdir/relay.md:
+  ## impl @ {timestamp}
+  result: {success|partial|blocked}
+  changed: [{list of changed files}]
+  commits: [{commit hashes}]
+  notes: |
+    {1-3 line summary}
 - Print /work-review $feat_id as your final output.
 - If git commit fails due to sandbox restrictions, leave files saved; codex-run.sh will rescue the commit.
 

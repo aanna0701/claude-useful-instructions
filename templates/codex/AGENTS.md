@@ -12,7 +12,8 @@ Normal path:
 Manual fallback:
 1. Find `work/items/FEAT-NNN-*/`
 2. Read `status.md`
-3. Read `brief.md` -> `contract.md` -> `checklist.md`
+3. Read `relay.md` (if exists) for prior stage results
+4. Read `brief.md` -> `contract.md` -> `checklist.md`
 
 ## Context Discovery
 

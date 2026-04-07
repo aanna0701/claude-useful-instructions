@@ -77,6 +77,52 @@ cursor "$WT_PATH"
 
 Worktree copy is authoritative. Bootstrap: resolve slug → read `Worktree Path` from worktree `status.md` → fallback to convention → ALL subsequent reads use resolved absolute path.
 
+## Relay Protocol
+
+Each stage appends a structured block to `work/items/{SLUG}/relay.md` and posts a summary on the PR. This enables downstream stages to read prior results without re-deriving them.
+
+### relay.md Format
+
+```markdown
+## {stage} @ {YYYY-MM-DD HH:MM}
+result: {success | partial | revise | reject | blocked}
+{stage-specific fields — see below}
+notes: |
+  {free-form summary, 1-3 lines}
+```
+
+Stage-specific fields:
+
+| Stage | Fields |
+|-------|--------|
+| impl | `changed: [files]`, `commits: [hashes]` |
+| verify | `passed: N`, `failed: N`, `failures: [- test: reason]` |
+| review | `decision: {MERGE\|REVISE\|REJECT}`, `must_fix: N`, `optional: N`, `items: [- {SEV}: description (file:line)]` |
+| revise | `fixed: [- description]`, `remaining: N` |
+
+### Read Before Act
+
+Each stage MUST read `relay.md` (if it exists) before starting:
+- **verify**: Check impl stage result — skip if `blocked`.
+- **review**: Check verify failures — factor into review severity.
+- **revise**: Read review `items` — these are the MUST-fix list.
+
+### PR Comment
+
+After writing `relay.md`, post a summary comment on the PR (if PR exists in `status.md`):
+
+```bash
+gh pr comment {PR_NUMBER} --body "$(cat <<EOF
+### {Stage} — {result}
+{1-3 line summary from relay.md notes}
+{for verify: passed/failed counts}
+{for review: decision + must_fix count}
+EOF
+)"
+```
+
+Skip PR comment if no PR exists yet (e.g., during impl before push).
+
 ## Locks
 
 - `work/locks/planning.lock` — prevents concurrent `/work-plan`
@@ -96,7 +142,7 @@ Worktree copy is authoritative. Bootstrap: resolve slug → read `Worktree Path`
 - Ambiguities recorded in `status.md`, never resolved by implementer
 - Draft PR creation happens at implementation stage, not review stage
 - Human intervention: dispatch + review only
-- Pipeline: plan(`/work-plan`) → scaffold(`/work-scaffold`→Cursor) → impl(`codex-run.sh`) → verify(`/work-verify`→Cursor) → review(`/work-review`)
+- Pipeline: plan(`/work-plan`) → scaffold(`/work-scaffold`→Cursor) → impl(`codex-run.sh`) → verify(`/work-verify`→Cursor) → review(`/work-review`). Each stage reads + writes `relay.md` per § Relay Protocol.
 - Cursor/Codex fallback: `--claude` flag on scaffold/verify, `/work-impl` for implement
 - AUDIT type items skip impl: `planned → auditing → audited` via `/work-verify`
 - `/work-scaffold` and `/work-verify` auto-detect type from ID prefix

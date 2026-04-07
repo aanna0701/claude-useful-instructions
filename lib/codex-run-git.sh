@@ -93,7 +93,7 @@ sync_worktree_artifacts() {
   if [ -d "$wdir" ]; then
     mkdir -p "$wt_feat_dir"
     local spec_file=""
-    for spec_file in brief.md contract.md checklist.md review.md; do
+    for spec_file in brief.md contract.md checklist.md review.md relay.md; do
       [ -f "$wdir/$spec_file" ] || continue
       if [ ! -f "$wt_feat_dir/$spec_file" ] || ! cmp -s "$wdir/$spec_file" "$wt_feat_dir/$spec_file"; then
         cp "$wdir/$spec_file" "$wt_feat_dir/$spec_file"
@@ -115,6 +115,55 @@ sync_worktree_artifacts() {
     git -C "$target_dir" commit -m "chore($slug): seed work item artifacts" || true
     echo "    [sync] committed artifacts on feature branch"
   fi
+}
+
+post_impl_relay_comment() {
+  local feat_id="$1"
+  local wdir
+  wdir=$(resolve_work_dir "$feat_id") || return 1
+  local slug
+  slug=$(resolve_work_item_slug "$wdir")
+  local git_dir
+  git_dir=$(resolve_git_dir "$feat_id" "$wdir")
+
+  command -v gh &>/dev/null || return 0
+
+  local branch
+  branch=$(git -C "$git_dir" rev-parse --abbrev-ref HEAD 2>/dev/null || true)
+  local pr_number
+  pr_number=$(gh pr list --head "$branch" --json number -q '.[0].number' 2>/dev/null || true)
+  [ -n "$pr_number" ] || return 0
+
+  local relay_file="$git_dir/work/items/$slug/relay.md"
+  if [ ! -f "$relay_file" ]; then
+    relay_file="$wdir/relay.md"
+  fi
+
+  local notes="Implementation completed by Codex."
+  local result="success"
+  if [ -f "$relay_file" ]; then
+    result=$(grep -m1 '^result:' "$relay_file" | awk '{print $2}' || echo "success")
+    notes=$(python3 - "$relay_file" <<'PY' 2>/dev/null || echo "Implementation completed.")
+import sys
+from pathlib import Path
+text = Path(sys.argv[1]).read_text(encoding="utf-8")
+in_notes = False
+lines = []
+for line in text.splitlines():
+    if line.startswith("notes:"):
+        in_notes = True
+        continue
+    if in_notes:
+        if line.startswith("  "):
+            lines.append(line.strip())
+        else:
+            break
+print(" ".join(lines) if lines else "Implementation completed.")
+PY
+  fi
+
+  gh pr comment "$pr_number" --body "### impl — $result
+$notes" || true
 }
 
 preflight_target_dir() {

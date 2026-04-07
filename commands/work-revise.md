@@ -8,7 +8,9 @@
 
 Per `rules/collab-workflow.md` § Worktree Rules, read review.md and status.md from worktree.
 
-Resolve REVISE items. Spawn `work-reviser` agent per item (parallel). Each extracts MUST-fix, updates status → `revising`. Same branch and worktree — never create a second worktree.
+1. **Read relay**: Per `rules/collab-workflow.md` § Relay Protocol — read `relay.md` for review `items` (MUST-fix list). These are the authoritative fix targets; do not re-derive from `review.md` if relay exists.
+2. **Dispatch**: Spawn `work-reviser` agent per item (parallel). Each resolves MUST-fix, updates status → `revising`. Same branch and worktree — never create a second worktree.
+3. **Relay**: Append `revise` block to `relay.md` with `fixed` list and `remaining` count. Post PR comment.
 
 ## Summary
 

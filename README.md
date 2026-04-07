@@ -273,7 +273,7 @@ claude-useful-instructions/
 │   └── codex-run-runner.sh          # Codex execution with stall detection
 ├── templates/                       # Installable templates
 │   ├── branch-map/                  # branch-map.yaml bootstrap config
-│   ├── work-item/                   # brief, contract, checklist, status, review
+│   ├── work-item/                   # brief, contract, checklist, status, review, relay
 │   ├── collab-pipeline-body.md      # Single source for `/collab-workflow` pipeline (assembled by install.sh)
 │   ├── cursor/                      # Cursor/Antigravity prompt templates + per-item .mdc patterns
 │   ├── workflows/                   # GitHub Actions workflow templates
