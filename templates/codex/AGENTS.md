@@ -70,6 +70,11 @@ Before exit:
 4. Set final status to `ready-for-review` or `blocked`
 5. Print `/work-review FEAT-NNN`
 
+## Collab Pipeline
+
+When a user requests work, follow the pipeline: Plan → Scaffold → Implement → Verify → Review → Revise.
+Stop after each step for user confirmation. Details in `.cursor/rules/collab-pipeline.mdc` or `.agent/rules/collab-pipeline.md`.
+
 ## Never Do
 
 - Do not modify `brief.md`, `contract.md`, or `checklist.md`

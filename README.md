@@ -55,7 +55,7 @@ cui-install --collab /path/to/my-project
 | `core` | smart-git-commit-push, optimize-tokens, debug-guide, what-to-do, token analyzers, git-auto-pull hook | Global (`~/.claude/`) |
 | `docs` | diataxis-doc-system, diagram-architect, doc/diagram agents, write-doc, init-docs, sync-docs | Global |
 | `data-pipeline` | data-pipeline-architect skill | Global |
-| `collab` | Claude-Codex collaboration, work items, Cursor integration (scaffold/verify), CI audit, guard-trunk hook, codex-run, AGENTS.md, CLAUDE.md | Per-project |
+| `collab` | Claude-Codex collaboration, work items, AI IDE integration (pipeline rule for Cursor/Antigravity, scaffold/verify), CI audit, guard-trunk hook, codex-run, AGENTS.md, CLAUDE.md | Per-project |
 | `career` | career-docs skill, career agents | Either |
 | `presentation` | html-presentation skill, create/format/edit/export-pdf commands | Global |
 | `worknote` | Work journal with Notion sync (daily log, review, planning) | Global |

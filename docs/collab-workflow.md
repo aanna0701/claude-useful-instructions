@@ -331,6 +331,20 @@ Before merge:
 
 The collab workflow supports optional Cursor phases for multi-file scaffolding and codebase-wide verification.
 
+### Pipeline Rule (auto-orchestrated)
+
+`./install.sh --collab` installs the pipeline rule to 3 paths: `.cursor/rules/collab-pipeline.mdc` (Cursor), `.agent/rules/collab-pipeline.md` (Antigravity), and `AGENTS.md` (all tools). When you open `work/**` files, it activates a 6-step pipeline (Plan → Scaffold → Implement → Verify → Review → Revise) with human confirmation gates between each step.
+
+```
+User: "JWT 인증 미들웨어 추가해줘"
+Cursor: [Step 1: Plan] → "계획 확인해주세요"
+User: "ㅇㅋ"
+Cursor: [Step 2: Scaffold] → "구조 확인해주세요"
+...continues with confirmation at each step...
+```
+
+### Manual commands
+
 - **`/work-scaffold`**: Generates Cursor Composer prompts + `.cursor/rules/*.mdc` (glob-based contract enforcement)
 - **`/work-verify`**: AUDIT-only — codebase audit via Cursor @Codebase; `--ingest` parses results
 - **FEAT/REFAC**: Skip `/work-verify` — go directly from `codex-run.sh` to `/work-review`

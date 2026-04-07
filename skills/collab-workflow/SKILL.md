@@ -22,6 +22,7 @@ description: >
 | Set up branch hierarchy | `/branch-init` |
 | Show branch state / freshness | `/branch-status` |
 | Audit / fix / generate CI workflows | `/gha-branch-sync` |
+| Cursor pipeline (auto-orchestrated) | Open `work/**` in Cursor → `collab-pipeline.mdc` activates |
 | Scaffold file structure (Cursor) | `/work-scaffold FEAT-NNN` or `/work-scaffold REFAC-NNN` |
 | Codebase audit (Cursor) | `/work-verify AUDIT-NNN` [→ `--ingest`] |
 | Boundary check / dispatch | `codex-run.sh` (suggest command) |
