@@ -329,6 +329,31 @@ install_file() {
   chmod 644 "$dst"
 }
 
+install_command() {
+  local path="$1"
+  local src="$REPO_DIR/commands/$path"
+  local dst="$CLAUDE_DIR/commands/$path"
+  
+  install_file "$src" "$dst"
+
+  if [ -n "$PROJECT_ROOT" ] && [ "$PROJECT_ROOT" != "$HOME" ]; then
+    local dst_ag="$PROJECT_ROOT/.agent/workflows/$path"
+    mkdir -p "$(dirname "$dst_ag")"
+    
+    local first_line
+    first_line=$(head -n 1 "$src" 2>/dev/null || true)
+    local desc="Execute command"
+    
+    if [[ "$first_line" == *"—"* ]]; then
+      desc=$(echo "$first_line" | awk -F'—' '{print $2}' | xargs)
+    elif [[ "$first_line" == *"-"* ]]; then
+      desc=$(echo "$first_line" | awk -F'-' '{print $2}' | xargs)
+    fi
+    
+    echo -e "---\ndescription: $desc\n---\n$(cat "$src")" > "$dst_ag"
+  fi
+}
+
 install_skill_dir() {
   local skill_name="$1"
   local src="$REPO_DIR/skills/$skill_name"
@@ -346,9 +371,9 @@ install_skill_dir() {
     install_file "$file" "$dst/$relative"
   done
 
-  # Also install into Antigravity standard path (.agents/skills) if project-level
+  # Also install into Antigravity standard path (.agent/skills) if project-level
   if [ -n "$PROJECT_ROOT" ] && [ "$PROJECT_ROOT" != "$HOME" ]; then
-    local dst_ag="$PROJECT_ROOT/.agents/skills/$skill_name"
+    local dst_ag="$PROJECT_ROOT/.agent/skills/$skill_name"
     mkdir -p "$dst_ag"
     find "$src" -type d | while read -r dir; do
       relative="${dir#$src}"
@@ -498,6 +523,14 @@ remove_file() {
   fi
 }
 
+remove_command() {
+  local path="$1"
+  remove_file "$CLAUDE_DIR/commands/$path"
+  if [ -n "$PROJECT_ROOT" ] && [ "$PROJECT_ROOT" != "$HOME" ]; then
+    remove_file "$PROJECT_ROOT/.agent/workflows/$path"
+  fi
+}
+
 remove_dir_if_empty() {
   local dir="$1"
   [ -d "$dir" ] && rmdir --ignore-fail-on-non-empty -p "$dir" 2>/dev/null || true
@@ -509,7 +542,7 @@ remove_skill_dir() {
   if [ -d "$dst" ]; then
     rm -rv "$dst"
   fi
-  local dst_ag="$PROJECT_ROOT/.agents/skills/$skill_name"
+  local dst_ag="$PROJECT_ROOT/.agent/skills/$skill_name"
   if [ -d "$dst_ag" ]; then
     rm -rv "$dst_ag"
   fi
@@ -697,14 +730,14 @@ if $UNINSTALL; then
 
     case "$type" in
       rules)     remove_file "$CLAUDE_DIR/rules/$path" ;;
-      commands)  remove_file "$CLAUDE_DIR/commands/$path" ;;
+      commands)  remove_command "$path" ;;
       agents)    remove_file "$CLAUDE_DIR/agents/$path" ;;
       skills)    remove_skill_dir "$path" ;;
       templates) remove_template_dir "$path" ;;
       workflow)     remove_file "$PROJECT_ROOT/.github/workflows/$path" ;;
       root-file)   remove_root_file "$path" ;;
       cursor-rule) remove_file "$PROJECT_ROOT/.cursor/rules/$path" ;;
-      agent-rule)  remove_file "$PROJECT_ROOT/.agents/workflows/$path" ;;
+      agent-rule)  remove_file "$PROJECT_ROOT/.agent/workflows/$path" ;;
       script)      remove_file "$PROJECT_ROOT/$path" ;;
       hook)        remove_hook "$path" ;;
       claude-hook) remove_claude_hook "$path" ;;
@@ -746,7 +779,7 @@ for entry in "${INSTALL_LIST[@]}"; do
       install_file "$REPO_DIR/rules/$path" "$CLAUDE_DIR/rules/$path"
       ;;
     commands)
-      install_file "$REPO_DIR/commands/$path" "$CLAUDE_DIR/commands/$path"
+      install_command "$path"
       ;;
     agents)
       install_file "$REPO_DIR/agents/$path" "$CLAUDE_DIR/agents/$path"
@@ -770,8 +803,8 @@ for entry in "${INSTALL_LIST[@]}"; do
       ;;
     agent-rule)
       if [ -n "$PROJECT_ROOT" ] && [ "$PROJECT_ROOT" != "$HOME" ]; then
-        mkdir -p "$PROJECT_ROOT/.agents/workflows"
-        install_file "$REPO_DIR/templates/agent-rules/$path" "$PROJECT_ROOT/.agents/workflows/$path"
+        mkdir -p "$PROJECT_ROOT/.agent/workflows"
+        install_file "$REPO_DIR/templates/agent-rules/$path" "$PROJECT_ROOT/.agent/workflows/$path"
       else
         echo "  SKIP agent-rule:$path (requires per-project install with --collab /path/to/project)"
       fi
