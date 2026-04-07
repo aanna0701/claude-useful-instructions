@@ -25,6 +25,8 @@ Per `rules/review-merge-policy.md`: check `merge_policy.ask_confirm_before_merge
 
 Write MUST-fix to review.md. Status → `revising`. Spawn `work-reviser` agent.
 
+**MANDATORY OUTPUT**: The `📋 다음 단계` block below MUST appear verbatim in the final response, including when executed by a subagent.
+
 ```
 📋 다음 단계 (REVISE)
   bash codex-run.sh {ID}           # Codex 없으면: /work-impl {ID}

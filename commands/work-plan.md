@@ -86,7 +86,9 @@ Spawn `issue-creator` agent per item (parallel). Write `work/batches/{batch_id}.
 
 ### Step 10: Summary
 
-Print table with absolute worktree paths, then next-step commands:
+Print table with absolute worktree paths, then next-step commands.
+
+**MANDATORY OUTPUT**: The `📋 다음 단계` block below MUST appear verbatim in the final response. When executed by a subagent, include this block in the returned result so the parent agent can relay it to the user.
 
 ```
 📋 다음 단계

@@ -25,6 +25,8 @@ Generate a Cursor verification prompt, or execute directly with `--claude`.
 
 **AUDIT/DOCS**: Audit scope + criteria from contract. Findings table with severity (CRITICAL/HIGH/MEDIUM/LOW).
 
+**MANDATORY OUTPUT**: The `📋 다음 단계` block below MUST appear verbatim in the final response, including when executed by a subagent.
+
 ```
 📋 다음 단계
   /work-review {ID}                        # FEAT/REFAC/FIX

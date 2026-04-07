@@ -14,6 +14,8 @@ Resolve REVISE items. Spawn `work-reviser` agent per item (parallel). Each extra
 
 Print dispatched items with MUST-fix counts, then:
 
+**MANDATORY OUTPUT**: The `📋 다음 단계` block below MUST appear verbatim in the final response, including when executed by a subagent.
+
 ```
 📋 다음 단계
   bash codex-run.sh {IDs}          # Codex 없으면: /work-impl {ID}
