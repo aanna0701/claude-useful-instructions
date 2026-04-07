@@ -27,12 +27,12 @@ Generate a Cursor verification prompt, or execute directly with `--claude`.
 
 **AUDIT/DOCS**: Audit scope + criteria from contract. Findings table with severity (CRITICAL/HIGH/MEDIUM/LOW).
 
-**MANDATORY OUTPUT**: The `📋 다음 단계` block below MUST appear verbatim in the final response, including when executed by a subagent.
+**MANDATORY NEXT-STEP TEMPLATE** — Print the block below as-is. Fill `«___»` slots with actual ID. Do NOT add, remove, or reorder lines.
 
 ```
 📋 다음 단계
-  /work-review {ID}                        # FEAT/REFAC/FIX
-  /work-plan --type=fix "Fix {ID}"         # AUDIT (선택)
+  /work-review «ID»                        # FEAT/REFAC/FIX
+  /work-plan --type=fix "Fix «ID»"         # AUDIT (선택)
 ```
 
 ## Error Handling

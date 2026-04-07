@@ -27,13 +27,13 @@ Per `rules/review-merge-policy.md`: check `merge_policy.ask_confirm_before_merge
 
 Write MUST-fix to review.md. Status → `revising`. Spawn `work-reviser` agent.
 
-**MANDATORY OUTPUT**: The `📋 다음 단계` block below MUST appear verbatim in the final response, including when executed by a subagent.
+**MANDATORY NEXT-STEP TEMPLATE** — Print the block below as-is. Fill `«___»` slots with actual ID. Do NOT add, remove, or reorder lines.
 
 ```
 📋 다음 단계 (REVISE)
-  bash codex-run.sh {ID}           # Codex 없으면: /work-impl {ID}
-  /work-verify {ID}                # Cursor 없으면: --claude
-  /work-review {ID}
+  bash codex-run.sh «ID»           # Codex 없으면: /work-impl «ID»
+  /work-verify «ID»                # Cursor 없으면: --claude
+  /work-review «ID»
 ```
 
 ### REJECT

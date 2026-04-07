@@ -28,12 +28,12 @@ Generate Cursor Composer prompts for scaffolding, or execute directly with `--cl
 4. **Update status** → `scaffolded` (both control plane and worktree)
 5. **Output**: Print prompt with absolute worktree path (`{WT_PATH}`)
 
-**MANDATORY OUTPUT**: The `📋 다음 단계` block below MUST appear verbatim in the final response, including when executed by a subagent.
+**MANDATORY NEXT-STEP TEMPLATE** — Print the block below as-is. Fill `«___»` slots with actual IDs. Do NOT add, remove, or reorder lines.
 
 ```
 📋 다음 단계
-  bash codex-run.sh {IDs}           # Codex 없으면: /work-impl {ID}
-  /work-verify {ID}                 # Cursor 없으면: --claude
+  bash codex-run.sh «IDs»           # Codex 없으면: /work-impl «ID»
+  /work-verify «ID»                 # Cursor 없으면: --claude
 ```
 
 ## Error Handling

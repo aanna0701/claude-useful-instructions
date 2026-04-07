@@ -24,13 +24,15 @@ Detailed view: type, status, agent, branch, PR, progress (checklist), review dec
 
 Print per-status commands:
 
+**MANDATORY NEXT-STEP TEMPLATE** — Print only the line matching the item's status. Fill `«___»` slots with actual values.
+
 ```
 📋 다음 단계
-  planned      → /work-scaffold {ID} then bash codex-run.sh {ID}
-  ready-for-review → /work-verify {ID} then /work-review {ID}
-  revising     → bash codex-run.sh {ID} then /work-verify then /work-review
-  implementing → tail -f work/.dispatch-logs/{SLUG}.log
-  blocked      → git -C {WT_PATH} status --short, then bash codex-run.sh {ID}
+  planned          → /work-scaffold «ID» then bash codex-run.sh «ID»
+  ready-for-review → /work-verify «ID» then /work-review «ID»
+  revising         → bash codex-run.sh «ID» then /work-verify «ID» then /work-review «ID»
+  implementing     → tail -f work/.dispatch-logs/«SLUG».log
+  blocked          → git -C «WT_PATH» status --short, then bash codex-run.sh «ID»
 ```
 
 Fallback: scaffold `--claude`, verify `--claude`, impl `/work-impl`.

@@ -88,11 +88,16 @@ Spawn `issue-creator` agent per item (parallel). Write `work/batches/{batch_id}.
 
 Print table with absolute worktree paths, then next-step commands.
 
-**MANDATORY OUTPUT**: The `📋 다음 단계` block below MUST appear verbatim in the final response. When executed by a subagent, include this block in the returned result so the parent agent can relay it to the user.
+**MANDATORY NEXT-STEP TEMPLATE** — Print the block below as-is. Fill `«___»` slots with actual IDs. Do NOT add, remove, or reorder lines.
 
 ```
 📋 다음 단계
-  /work-scaffold {IDs}              # Cursor 없으면: --claude
-  bash codex-run.sh {IDs}           # Codex 없으면: /work-impl {ID}
-  /work-verify AUDIT-NNN            # AUDIT only
+  /work-scaffold «IDs»              # Cursor 없으면: --claude
+  bash codex-run.sh «IDs»           # Codex 없으면: /work-impl «ID»
+  /work-verify «AUDIT-NNN»          # AUDIT only — 없으면 이 줄 삭제
 ```
+
+Fill rules:
+- `«IDs»` → space-separated IDs (e.g., `PERF-154 PERF-155 PERF-156`)
+- `«AUDIT-NNN»` → AUDIT ID if exists, otherwise delete line
+- Lines, commands, order, comments — NEVER change

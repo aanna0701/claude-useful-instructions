@@ -15,10 +15,10 @@ Resolve a work item to its worktree and implement per contract. Claude fallback 
 5. **Complete & Push**: Status → `ready-for-review`. Update Changed Files, Verification, Doc Changes. Use `git add -f work/items/${SLUG}/`. Commit with `{type}({ID}): <description>`, push with `-u`. Create draft PR targeting contract's merge target. Update status.md with PR.
 6. **Relay**: Per `rules/collab-workflow.md` § Relay Protocol — append `impl` block to `relay.md` with changed files, commit hashes, and notes. Post PR comment if PR exists.
 
-**MANDATORY OUTPUT**: The `📋 다음 단계` block below MUST appear verbatim in the final response, including when executed by a subagent.
+**MANDATORY NEXT-STEP TEMPLATE** — Print the block below as-is. Fill `«___»` slots with actual ID. Do NOT add, remove, or reorder lines.
 
 ```
 📋 다음 단계
-  /work-verify {ID}                 # Cursor 없으면: --claude
-  /work-review {ID}
+  /work-verify «ID»                 # Cursor 없으면: --claude
+  /work-review «ID»
 ```
