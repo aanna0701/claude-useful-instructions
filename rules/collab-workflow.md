@@ -3,7 +3,7 @@
 ## Roles
 
 - **Claude**: spec owner, integrator — designs work items, reviews, merges, handles doc changes
-- **Cursor**: structure propagator, verifier — scaffolds multi-file structures (Composer), verifies codebase consistency (Chat @Codebase)
+- **Cursor/Antigravity**: structure propagator, verifier — scaffolds multi-file structures (Composer), verifies codebase consistency
 - **Codex**: implementer — per contract only, never modifies docs (records in `status.md`)
 
 ## State Machine
@@ -17,11 +17,11 @@ planned → auditing → audited   ← AUDIT type only (/work-verify → --inges
 ```
 
 Valid transitions:
-- `planned → scaffolded` — `/work-scaffold` (optional, Cursor integration)
+- `planned → scaffolded` — `/work-scaffold` (optional, Cursor/Antigravity integration)
 - `planned → implementing` — `codex-run.sh` (direct, without scaffold)
-- `scaffolded → implementing` — `codex-run.sh` (after Cursor scaffolding)
+- `scaffolded → implementing` — `codex-run.sh` (after Cursor/Antigravity scaffolding)
 - `planned → auditing` — `/work-verify` (AUDIT type only)
-- `auditing → audited` — manual or after Cursor @Codebase audit
+- `auditing → audited` — manual or after Cursor/Antigravity audit
 
 Illegal shortcuts:
 - `planned → reviewing` (must implement first)
@@ -58,7 +58,7 @@ Worktree copy is authoritative. Bootstrap: resolve slug → read `Worktree Path`
 - Ambiguities recorded in `status.md`, never resolved by implementer
 - Draft PR creation happens at implementation stage, not review stage
 - Human intervention: dispatch + review only
-- Cursor integration is optional — all workflows work without Cursor
+- Cursor/Antigravity integration is optional — all workflows work without IDE AI
 - AUDIT type items skip implementation: `planned → auditing → audited`
 - `/work-scaffold` and `/work-verify` auto-detect type from ID prefix (FEAT/REFAC/AUDIT)
 - `/work-scaffold` generates `.cursor/rules/*.mdc` for glob-based contract enforcement

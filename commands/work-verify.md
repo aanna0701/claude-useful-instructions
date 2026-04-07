@@ -1,6 +1,6 @@
 # work-verify — Codebase Audit (AUDIT type only)
 
-Run codebase audits via Cursor Chat `@Codebase`. AUDIT items have no implementation phase — this IS the execution step. Optionally ingest results with `--ingest`.
+Run codebase audits via Cursor/Antigravity. AUDIT items have no implementation phase — this IS the execution step. Optionally ingest results with `--ingest`.
 
 For FEAT/REFAC verification, use `/work-review` directly — Claude reviews against the contract.
 
@@ -9,8 +9,8 @@ For FEAT/REFAC verification, use `/work-review` directly — Claude reviews agai
 ## Input
 
 ```
-/work-verify AUDIT-001                     # Generate audit prompt for Cursor Chat
-/work-verify AUDIT-001 --ingest            # Parse Cursor output → verdict → route
+/work-verify AUDIT-001                     # Generate audit prompt for Cursor/Antigravity
+/work-verify AUDIT-001 --ingest            # Parse Cursor/Antigravity output → verdict → route
 /work-verify AUDIT-001 --ingest @file.md   # Read results from file
 ```
 
@@ -50,15 +50,15 @@ The agent:
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-AUDIT-001 — Cursor Chat Audit Prompt
+AUDIT-001 — Cursor/Antigravity Audit Prompt
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 <rendered prompt here>
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Copy the prompt above → Cursor Chat (@Codebase)
+Copy the prompt above → Cursor/Antigravity Chat
 
-After Cursor responds, ingest the results:
+After the AI responds, ingest the results:
   /work-verify AUDIT-001 --ingest
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
@@ -70,7 +70,7 @@ After Cursor responds, ingest the results:
 ### Step 1: Collect Output
 
 1. If `$ARGUMENTS` contains a file path (starts with `@`): read that file
-2. Otherwise: prompt user to paste Cursor Chat output
+2. Otherwise: prompt user to paste Cursor/Antigravity output
 
 ### Step 2: Parse Findings
 
@@ -93,7 +93,7 @@ Save parsed results to `work/items/{ID}-*/verify-result.md`:
 # Audit Result — {ID}
 
 **Audited**: {timestamp}
-**Source**: Cursor Chat @Codebase
+**Source**: Cursor/Antigravity codebase audit
 **Total findings**: {count}
 
 ## Summary

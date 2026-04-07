@@ -189,8 +189,8 @@ Subagents delegated by Claude for specific tasks.
 | `/work-status` | Check work item progress |
 | `/work-impl` | Implement a work item in its worktree per contract |
 | `/work-review` | Review Codex implementation against contract |
-| `/work-scaffold` | Generate Cursor Composer prompts + .cursor/rules/*.mdc from contracts |
-| `/work-verify` | Codebase audit via Cursor (AUDIT type only, `--ingest` for result parsing) |
+| `/work-scaffold` | Generate Cursor/Antigravity Composer prompts + .cursor/rules/*.mdc from contracts |
+| `/work-verify` | Codebase audit via Cursor/Antigravity (AUDIT type only, `--ingest` for result parsing) |
 | `/work-revise` | Re-dispatch REVISE items from review to agent or Codex |
 | `/gha-branch-sync` | Audit GitHub Actions against branch map |
 | `/write-doc` | Diataxis-based document writing |
@@ -252,7 +252,7 @@ claude-useful-instructions/
 │   ├── issue-creator.md             # GitHub Issue creation from work items
 │   ├── pr-reviewer.md               # PR review against work item contract
 │   ├── work-reviser.md              # Re-dispatch REVISE items from review
-│   ├── cursor-prompt-builder.md     # Contract → Cursor Composer/Chat prompts
+│   ├── cursor-prompt-builder.md     # Contract → Cursor/Antigravity prompts
 │   ├── ci-audit-agent.md            # GitHub Actions topology audit
 │   ├── career-docs-*.md             # Career document writer & reviewer
 │   └── dl-*.md                      # DL pipeline agents (6 domains)
@@ -274,7 +274,7 @@ claude-useful-instructions/
 ├── templates/                       # Installable templates
 │   ├── branch-map/                  # branch-map.yaml bootstrap config
 │   ├── work-item/                   # brief, contract, checklist, status, review
-│   ├── cursor/                      # Cursor prompt templates + .cursor/rules/*.mdc
+│   ├── cursor/                      # Cursor/Antigravity prompt templates + .cursor/rules/*.mdc
 │   ├── workflows/                   # GitHub Actions workflow templates
 │   ├── codex/AGENTS.md
 │   └── claude/CLAUDE.md
@@ -293,7 +293,7 @@ claude-useful-instructions/
 | Guide | Description |
 |-------|-------------|
 | [Collab Workflow](docs/collab-workflow.md) | Claude-Codex architecture, setup, and walkthrough |
-| [Cursor Integration](docs/cursor-integration.md) | Cursor as structure propagator and codebase verifier |
+| [Cursor/Antigravity Integration](docs/cursor-integration.md) | IDE AI as pipeline orchestrator, structure propagator, and codebase verifier |
 | [Skills Reference](docs/skills.md) | Full skill documentation |
 | [Agents Reference](docs/agents.md) | Full agent documentation |
 | [Commands Reference](docs/commands.md) | Full command documentation |

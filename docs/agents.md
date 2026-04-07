@@ -113,7 +113,7 @@ Used by the `collab-workflow` skill and `/work-*` commands.
 | `issue-creator` | Create GitHub Issues from work item briefs |
 | `pr-reviewer` | Review PRs against work item contracts |
 | `work-reviser` | Re-dispatch failed review items with targeted fixes |
-| `cursor-prompt-builder` | Parse contracts, detect type from ID prefix, assemble Cursor prompts + .cursor/rules/ |
+| `cursor-prompt-builder` | Parse contracts, detect type from ID prefix, assemble Cursor/Antigravity prompts + rules |
 
 ### cursor-prompt-builder
 

@@ -1,9 +1,9 @@
 ---
 name: cursor-prompt-builder
-description: Parse work item contract and brief, detect type from ID prefix, assemble Cursor Composer/Chat prompts using type-specific templates, and generate .cursor/rules/*.mdc.
+description: Parse work item contract and brief, detect type from ID prefix, assemble Cursor/Antigravity prompts using type-specific templates, and generate rules.
 ---
 
-You build Cursor-ready prompts from work item artifacts. You detect the work item type from its ID prefix and select the appropriate template.
+You build Cursor/Antigravity-ready prompts from work item artifacts. You detect the work item type from its ID prefix and select the appropriate template.
 
 ## Input
 

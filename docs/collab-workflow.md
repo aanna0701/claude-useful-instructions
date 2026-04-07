@@ -69,7 +69,7 @@ Use one overall state per work item:
 | State | Meaning | Primary owner |
 |------|---------|---------------|
 | `planned` | Contract signed, not yet dispatched | Claude |
-| `scaffolded` | Cursor Composer scaffolding done (optional) | Cursor |
+| `scaffolded` | Cursor/Antigravity scaffolding done (optional) | Cursor/Antigravity |
 | `implementing` | Codex actively working | Codex |
 | `blocked` | Preconditions or verification failed | Codex or Claude |
 | `ready-for-review` | Implementation finished and verified | Codex |
@@ -138,7 +138,7 @@ project/
 ├── work/items/                        # Work items (created by install.sh)
 ├── work/dispatch.json                 # Parallel dispatch manifest (created by /work-plan)
 └── .claude/
-    ├── rules/collab-workflow.md       # Auto-loaded 3-agent rules (Claude, Cursor, Codex)
+    ├── rules/collab-workflow.md       # Auto-loaded 3-agent rules (Claude, Cursor/Antigravity, Codex)
     ├── commands/work-{plan,scaffold,verify,review,impl,revise,status}.md
     ├── agents/{issue-creator,work-reviser,cursor-prompt-builder}.md
     ├── skills/collab-workflow/
@@ -331,27 +331,37 @@ Before merge:
 
 The collab workflow supports optional Cursor/Antigravity phases for multi-file scaffolding and codebase-wide verification.
 
-### Pipeline Rule (auto-orchestrated)
+### Full Pipeline: `/collab-workflow`
 
-`./install.sh --collab` installs the pipeline rule to 3 paths: `.cursor/rules/collab-pipeline.mdc` (Cursor), `.agent/rules/collab-pipeline.md` (Antigravity), and `AGENTS.md` (all tools). When you open `work/**` files, it activates a 6-step pipeline (Plan → Scaffold → Implement → Verify → Review → Revise) with human confirmation gates between each step.
+Type `/collab-workflow {instruction}` in Cursor or Antigravity. The IDE AI orchestrates, delegating each step to the best tool:
 
 ```
-User: "JWT 인증 미들웨어 추가해줘"
-Cursor: [Step 1: Plan] → "계획 확인해주세요"
-User: "ㅇㅋ"
-Cursor: [Step 2: Scaffold] → "구조 확인해주세요"
-...continues with confirmation at each step...
+User: /collab-workflow JWT 인증 미들웨어 추가해줘
+
+AI:   [Step 1] → claude -p "...work-plan..."           → "FEAT-153 계획 확인해주세요"
+User: ㅇㅋ
+AI:   [Step 2] → creates file stubs directly            → "구조 확인해주세요"
+User: 진행
+AI:   [Step 3] → bash codex-run.sh FEAT-153             → "구현 결과 확인해주세요"
+User: ok
+AI:   [Step 4] → searches codebase, checks contract     → "검증 결과 확인해주세요"
+User: next
+AI:   [Step 5] → claude -p "...work-review..."          → "머지할까요?"
 ```
 
-### Manual commands
+Each tool does what it's best at: Claude for specs/review, Codex for implementation, IDE AI for scaffolding/verification.
 
-- **`/work-scaffold`**: Generates Cursor Composer prompts + `.cursor/rules/*.mdc` (glob-based contract enforcement)
-- **`/work-verify`**: AUDIT-only — codebase audit via Cursor @Codebase; `--ingest` parses results
+`./install.sh --collab` installs to 3 paths: `.cursor/rules/collab-pipeline.mdc`, `.agent/workflows/collab-pipeline.md`, and `AGENTS.md`.
+
+### Standalone commands (for step-by-step use)
+
+- **`/work-scaffold`**: Generate Composer prompts + `.cursor/rules/*.mdc` (contract enforcement)
+- **`/work-verify`**: AUDIT-only — codebase audit; `--ingest` parses results
 - **FEAT/REFAC**: Skip `/work-verify` — go directly from `codex-run.sh` to `/work-review`
 
-All Cursor phases are optional. Skip them to use the original 2-touch workflow.
+All Cursor/Antigravity phases are optional. Skip them to use the original 2-touch workflow.
 
-> Full guide: [Cursor Integration](cursor-integration.md)
+> Full guide: [Cursor/Antigravity Integration](cursor-integration.md)
 
 ---
 

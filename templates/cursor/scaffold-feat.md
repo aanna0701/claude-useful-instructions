@@ -1,6 +1,6 @@
-# Cursor Composer Prompt — FEAT (New Feature)
+# Cursor/Antigravity Composer Prompt — FEAT (New Feature)
 
-Use this template to generate a Cursor Composer prompt for scaffolding new feature files.
+Use this template to generate a Cursor/Antigravity Composer prompt for scaffolding new feature files.
 
 ---
 

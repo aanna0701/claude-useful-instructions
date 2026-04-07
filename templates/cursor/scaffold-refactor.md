@@ -1,6 +1,6 @@
-# Cursor Composer Prompt — REFACTOR (Code Restructuring)
+# Cursor/Antigravity Composer Prompt — REFACTOR (Code Restructuring)
 
-Use this template to generate a Cursor Composer prompt for refactoring operations.
+Use this template to generate a Cursor/Antigravity Composer prompt for refactoring operations.
 
 ---
 

@@ -1,6 +1,6 @@
-# Cursor Chat Verification Prompt — AUDIT (Codebase Audit)
+# Cursor/Antigravity Verification Prompt — AUDIT (Codebase Audit)
 
-Use this template to generate a Cursor Chat prompt for standalone codebase audits.
+Use this template to generate a Cursor/Antigravity prompt for standalone codebase audits.
 AUDIT items skip scaffold and Codex — this prompt runs directly after `/work-plan`.
 
 ---

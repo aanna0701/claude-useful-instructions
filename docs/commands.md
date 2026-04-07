@@ -132,7 +132,7 @@ Re-dispatch a work item that failed review with targeted fix instructions.
 
 ## /work-scaffold
 
-Generate Cursor Composer prompts from work item contracts. Auto-detects type from ID prefix.
+Generate Cursor/Antigravity Composer prompts from work item contracts. Auto-detects type from ID prefix.
 
 **Usage**:
 ```
@@ -152,18 +152,18 @@ Generate Cursor Composer prompts from work item contracts. Auto-detects type fro
 
 Also generates `.cursor/rules/*.mdc` (glob-based contract enforcement) in the worktree root. Updates `status.md` → `scaffolded`.
 
-> See [Cursor Integration](cursor-integration.md) for the full guide.
+> See [Cursor/Antigravity Integration](cursor-integration.md) for the full guide.
 
 ---
 
 ## /work-verify
 
-Codebase audit via Cursor Chat `@Codebase`. **AUDIT type only** — FEAT/REFAC go directly to `/work-review`.
+Codebase audit via Cursor/Antigravity. **AUDIT type only** — FEAT/REFAC go directly to `/work-review`.
 
 **Usage**:
 ```
 /work-verify AUDIT-001                     # Generate audit prompt
-/work-verify AUDIT-001 --ingest            # Parse Cursor output → verdict → route
+/work-verify AUDIT-001 --ingest            # Parse Cursor/Antigravity output → verdict → route
 /work-verify FEAT-001                      # → redirects to /work-review
 ```
 
@@ -175,7 +175,7 @@ Codebase audit via Cursor Chat `@Codebase`. **AUDIT type only** — FEAT/REFAC g
 | 0 CRITICAL, 1+ HIGH | PASS_WITH_WARNINGS | Status → `audited`, print warnings |
 | 1+ CRITICAL | FAIL | Status stays, print action items |
 
-> See [Cursor Integration](cursor-integration.md) for the full guide.
+> See [Cursor/Antigravity Integration](cursor-integration.md) for the full guide.
 
 ---
 

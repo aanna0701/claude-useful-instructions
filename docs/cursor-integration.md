@@ -1,38 +1,41 @@
-# Cursor Integration Guide
+# Cursor / Antigravity Integration Guide
 
 > **Doc type**: How-to | **Audience**: Developers using the Claude-Codex collab workflow
 
-The Cursor integration adds two optional phases to the collab workflow: **structure scaffolding** (Cursor Composer) and **codebase verification** (Cursor Chat @Codebase).
+The Cursor/Antigravity integration adds pipeline orchestration (`/collab-workflow`), **structure scaffolding**, and **codebase verification** to the collab workflow.
 
 ---
 
-## Why Cursor?
+## Why Cursor/Antigravity?
 
-Cursor fills three gaps in the Claude Code + Codex workflow:
+IDE AI fills three gaps in the Claude Code + Codex workflow:
 
-| Gap | Cursor Feature | How It Helps |
+| Gap | IDE AI Feature | How It Helps |
 |-----|---------------|--------------|
 | Multi-file structure creation | **Composer** (Cmd+I) | Scaffolds directories, types, and stubs across many files at once |
-| Full codebase context | **@Codebase** in Chat | Verifies implementation against the entire project, not just changed files |
-| Visual diff review | **Side-by-Side Diff** | See AI-proposed changes before accepting — final approval desk |
+| Full codebase context | **Codebase search** | Verifies implementation against the entire project, not just changed files |
+| Pipeline orchestration | **`/collab-workflow`** | Coordinates Claude→IDE→Codex→IDE→Claude with human gates |
 
-**Cursor is optional.** All workflows work without it. The commands gracefully skip or redirect when Cursor isn't in use.
+**Cursor/Antigravity is optional.** All workflows work without it. The commands gracefully skip or redirect when IDE AI isn't in use.
 
 ---
 
 ## Quick Start
 
 ```bash
-# 1. Install collab bundle (includes Cursor templates)
+# 1. Install collab bundle (includes Cursor/Antigravity templates)
 ./install.sh --collab /path/to/project
 
-# 2. Plan work items as usual
+# 2a. Full pipeline (recommended) — in Cursor/Antigravity:
+/collab-workflow "Add payment module"
+# → Claude plans → IDE scaffolds → Codex implements → IDE verifies → Claude reviews
+
+# 2b. Or use individual commands:
 /work-plan "Add payment module"
 
-# 3. Scaffold with Cursor (optional)
+# 3. Scaffold with Cursor/Antigravity (optional)
 /work-scaffold FEAT-001
-# → Copy the printed prompt → Cursor Composer (Cmd+I)
-# → Open worktree: cursor ../project-FEAT-001-payment/
+# → Copy the printed prompt → Composer (Cmd+I)
 # → .cursor/rules/*.mdc auto-enforces contract boundaries
 
 # 4. Dispatch to Codex as usual
@@ -43,7 +46,7 @@ bash codex-run.sh FEAT-001
 
 # For AUDIT items (no implementation):
 /work-verify AUDIT-001
-# → Copy prompt → Cursor Chat (@Codebase)
+# → Copy prompt → Cursor/Antigravity Chat
 /work-verify AUDIT-001 --ingest
 # → Paste output → auto-parsed → audited
 ```
@@ -79,7 +82,7 @@ bash codex-run.sh FEAT-001
 
 **No scaffold or Codex needed.** `/work-verify` is AUDIT-only — the only type where it's the execution step.
 
-**Verify**: @Codebase audit → `--ingest` parses findings → `audited` status.
+**Verify**: Codebase audit → `--ingest` parses findings → `audited` status.
 
 ---
 
@@ -87,7 +90,7 @@ bash codex-run.sh FEAT-001
 
 ### `/work-scaffold`
 
-Generates a Cursor Composer prompt from work item contracts.
+Generates a Cursor/Antigravity Composer prompt from work item contracts.
 
 ```
 /work-scaffold FEAT-001              # New feature scaffold
@@ -106,7 +109,7 @@ Generates a Cursor Composer prompt from work item contracts.
 
 ### `/work-verify`
 
-Generates a Cursor Chat `@Codebase` verification prompt.
+Generates a Cursor/Antigravity codebase verification prompt.
 
 ```
 /work-verify FEAT-001               # Implementation verification
@@ -122,9 +125,9 @@ Generates a Cursor Chat `@Codebase` verification prompt.
 
 ---
 
-## Cursor Rules
+## Cursor/Antigravity Rules
 
-`.cursor/rules/*.mdc` files are glob-based rules that Cursor applies automatically:
+`.cursor/rules/*.mdc` files are glob-based rules that Cursor/Antigravity applies automatically:
 
 ### Project-level (installed by `./install.sh --collab`)
 
@@ -139,7 +142,7 @@ Generates a Cursor Chat `@Codebase` verification prompt.
 | `{SLUG}-guard.mdc` | Editing files matching allowed modifications | Shows contract boundaries, interfaces, invariants |
 | `{SLUG}-forbidden.mdc` | Opening files in forbidden zones | Warns that the file is outside contract scope |
 
-**How it works**: Cursor reads `.cursor/rules/*.mdc` files and matches the `globs` frontmatter against the file being edited. When a match is found, the rule content is injected into Cursor's context automatically — no manual prompt copy needed.
+**How it works**: Cursor/Antigravity reads `.cursor/rules/*.mdc` files and matches the `globs` frontmatter against the file being edited. When a match is found, the rule content is injected into the AI's context automatically — no manual prompt copy needed.
 
 Example generated `FEAT-001-guard.mdc`:
 ```
@@ -159,30 +162,38 @@ globs: ["src/auth/**", "tests/auth/**"]
 ...
 ```
 
-Cursor reads these files and matches the `globs` frontmatter against the file being edited — no manual prompt copy needed.
+Cursor/Antigravity reads these files and matches the `globs` frontmatter against the file being edited — no manual prompt copy needed.
 
 ---
 
 ## Pipeline Rule
 
-The `collab-pipeline.mdc` rule orchestrates the full collab workflow inside Cursor. It activates when editing files in `work/**`, `AGENTS.md`, or `CLAUDE.md`.
+The `collab-pipeline.mdc` rule orchestrates the full collab workflow inside Cursor/Antigravity. The AI executes every step directly — no external tool calls needed.
+
+### Entry point
+
+```
+/collab-workflow JWT 인증 미들웨어 추가해줘
+```
+
+Or just describe the task naturally — the rule activates when editing `work/**` files.
 
 ### How it works
 
-1. User requests a feature (e.g., "JWT 인증 미들웨어 추가해줘")
-2. Cursor follows the 6-step pipeline, stopping after each step for confirmation
+1. User types `/collab-workflow {instruction}` or requests a feature/fix/refactor/audit
+2. AI executes the 6-step pipeline, stopping after each step for confirmation
 3. User confirms with "ㅇㅋ", "ok", "진행", or "next" to proceed
 
 ### Pipeline steps
 
-| Step | Action | Tool |
-|------|--------|------|
-| 1. Plan | Generate work item (brief + contract + checklist) | `claude -p` |
-| 2. Scaffold | Create file structure + type stubs from contract | Cursor Composer |
-| 3. Implement | Dispatch to Codex or implement directly | `codex exec --full-auto` |
-| 4. Verify | Check implementation against contract | `@Codebase` |
-| 5. Review | Contract-based merge/revise decision | `claude -p` |
-| 6. Revise | Fix MUST-fix items (max 3 rounds) | Loop to Step 3 |
+| Step | Action | Executor | Method |
+|------|--------|----------|--------|
+| 1. Plan | Generate work item specs | Claude | `claude -p` with work-plan command |
+| 2. Scaffold | Create dirs + type stubs | Cursor/Antigravity | Direct file creation |
+| 3. Implement | Write code per contract | Codex | `codex-run.sh` or `codex exec` |
+| 4. Verify | Check against contract | Cursor/Antigravity | Codebase search |
+| 5. Review | Merge/revise decision | Claude | `claude -p` with work-review command |
+| 6. Revise | Fix MUST-fix items | Codex→Cursor→Claude | Re-run steps 3→4→5 |
 
 ### Revise limits
 
@@ -208,7 +219,7 @@ Installs to 3 paths for cross-tool compatibility:
 
 ## State Machine
 
-The Cursor integration adds optional states and transitions:
+The Cursor/Antigravity integration adds optional states and transitions:
 
 ```
 planned → [scaffolded] → implementing → ready-for-review → reviewing → merged
@@ -226,11 +237,11 @@ planned → auditing → audited   ← AUDIT only (/work-verify --ingest)
 
 ## Verify Result Ingestion
 
-After running `/work-verify AUDIT-NNN` and getting Cursor's output, ingest the results:
+After running `/work-verify AUDIT-NNN` and getting Cursor/Antigravity's output, ingest the results:
 
 ```
 /work-verify AUDIT-001 --ingest
-# → Paste Cursor output → auto-parsed → verdict + routing
+# → Paste Cursor/Antigravity output → auto-parsed → verdict + routing
 ```
 
 The `--ingest` mode:
