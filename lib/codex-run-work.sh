@@ -2,9 +2,31 @@
 
 resolve_work_dir() {
   local feat_id="$1"
+
+  # 1. Search cwd work/items/
   for dir in work/items/${feat_id}*/; do
     [ -d "$dir" ] && echo "${dir%/}" && return 0
   done
+
+  # 2. Search worktrees
+  local repo_root project parent
+  repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  project="$(basename "$repo_root")"
+  parent="$(dirname "$repo_root")"
+
+  while IFS= read -r wt_path; do
+    [ -d "$wt_path" ] || continue
+    [ "$wt_path" = "$repo_root" ] && continue
+    for dir in "$wt_path"/work/items/${feat_id}*/; do
+      [ -d "$dir" ] && echo "${dir%/}" && return 0
+    done
+  done < <(git worktree list --porcelain 2>/dev/null | sed -n 's/^worktree //p')
+
+  # 3. Sibling directory fallback
+  for dir in "$parent"/"$project"-${feat_id}*/work/items/${feat_id}*/; do
+    [ -d "$dir" ] && echo "${dir%/}" && return 0
+  done
+
   return 1
 }
 
@@ -348,7 +370,7 @@ cmd_status() {
   echo "Work Items"
   echo "──────────────────────────────────────────────"
   local count=0
-  for dir in work/items/FEAT-*/; do
+  for dir in work/items/*/; do
     [ -d "$dir" ] || continue
     local slug status
     slug=$(resolve_work_item_slug "$dir")
