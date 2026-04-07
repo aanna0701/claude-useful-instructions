@@ -351,7 +351,7 @@ AI:   [Step 5] → claude -p "...work-review..."          → "머지할까요?"
 
 Each tool does what it's best at: Claude for specs/review, Codex for implementation, IDE AI for scaffolding/verification.
 
-`./install.sh --collab` installs pipeline artifacts to `.cursor/rules/collab-pipeline.mdc`, `.agent/workflows/collab-pipeline.md`, and `AGENTS.md`. Bundled skills (e.g. `collab-workflow`) are installed **only** under `.claude/skills/<name>/`.
+`./install.sh --collab` installs pipeline artifacts to `.cursor/rules/collab-pipeline.mdc`, `.agent/workflows/collab-pipeline.md`, and `AGENTS.md`. The shared step-by-step text lives only in **`templates/collab-pipeline-body.md`** in claude-useful-instructions; the installer prepends tool-specific frontmatter so Cursor and Antigravity stay in sync. Bundled skills (e.g. `collab-workflow`) are installed **only** under `.claude/skills/<name>/`.
 
 ### Standalone commands (for step-by-step use)
 

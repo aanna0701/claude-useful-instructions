@@ -274,7 +274,8 @@ claude-useful-instructions/
 ├── templates/                       # Installable templates
 │   ├── branch-map/                  # branch-map.yaml bootstrap config
 │   ├── work-item/                   # brief, contract, checklist, status, review
-│   ├── cursor/                      # Cursor/Antigravity prompt templates + .cursor/rules/*.mdc
+│   ├── collab-pipeline-body.md      # Single source for `/collab-workflow` pipeline (assembled by install.sh)
+│   ├── cursor/                      # Cursor/Antigravity prompt templates + per-item .mdc patterns
 │   ├── workflows/                   # GitHub Actions workflow templates
 │   ├── codex/AGENTS.md
 │   └── claude/CLAUDE.md

@@ -35,6 +35,8 @@ REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
 # Each bundle lists its files relative to REPO_DIR.
 # Format: "type:relative_path" where type is rules|commands|agents|skills|templates|...
 #   cursor-command:basename.md → templates/cursor-commands/<basename> → .cursor/commands/<basename>
+#   collab-pipeline:project → assemble templates/collab-pipeline-body.md into
+#     .cursor/rules/collab-pipeline.mdc and .agent/workflows/collab-pipeline.md (single source)
 
 BUNDLE_CORE=(
   "commands:smart-git-commit-push.md"
@@ -116,9 +118,8 @@ BUNDLE_COLLAB=(
   "templates:branch-map"
   "templates:work-item"
   "templates:cursor"
-  "cursor-rule:collab-pipeline.mdc"
+  "collab-pipeline:project"
   "cursor-command:collab-workflow.md"
-  "agent-rule:collab-pipeline.md"
   "workflow:branch-auto-sync.yml"
   "root-file:AGENTS.md"
   "root-file:CLAUDE.md"
@@ -330,6 +331,37 @@ install_file() {
   mkdir -p "$(dirname "$dst")"
   cp -v "$src" "$dst"
   chmod 644 "$dst"
+}
+
+# Assemble collab pipeline from templates/collab-pipeline-body.md (single source; no duplicate templates).
+install_collab_pipeline_project_artifacts() {
+  local body="$REPO_DIR/templates/collab-pipeline-body.md"
+  local tmp_cursor tmp_agent
+  if [ ! -f "$body" ]; then
+    echo "ERROR: missing collab pipeline body template: $body" >&2
+    exit 1
+  fi
+  tmp_cursor="$(mktemp)"
+  tmp_agent="$(mktemp)"
+  {
+    printf '%s\n' '---'
+    printf '%s\n' 'description: "collab pipeline — /collab-workflow {instruction} orchestrates Claude→You→Codex→You→Claude via terminal"'
+    printf '%s\n' 'globs: ["work/**", "AGENTS.md", "CLAUDE.md"]'
+    printf '%s\n' 'alwaysApply: false'
+    printf '%s\n' '---'
+    printf '%s\n' ''
+    cat "$body"
+  } >"$tmp_cursor"
+  {
+    printf '%s\n' '---'
+    printf '%s\n' 'description: "collab pipeline — /collab-workflow {instruction} orchestrates Claude→You→Codex→You→Claude via terminal"'
+    printf '%s\n' '---'
+    printf '%s\n' ''
+    cat "$body"
+  } >"$tmp_agent"
+  install_file "$tmp_cursor" "$PROJECT_ROOT/.cursor/rules/collab-pipeline.mdc"
+  install_file "$tmp_agent" "$PROJECT_ROOT/.agent/workflows/collab-pipeline.md"
+  rm -f "$tmp_cursor" "$tmp_agent"
 }
 
 install_command() {
@@ -739,6 +771,10 @@ if $UNINSTALL; then
       cursor-rule) remove_file "$PROJECT_ROOT/.cursor/rules/$path" ;;
       cursor-command) remove_file "$PROJECT_ROOT/.cursor/commands/$path" ;;
       agent-rule)  remove_file "$PROJECT_ROOT/.agent/workflows/$path" ;;
+      collab-pipeline)
+        remove_file "$PROJECT_ROOT/.cursor/rules/collab-pipeline.mdc"
+        remove_file "$PROJECT_ROOT/.agent/workflows/collab-pipeline.md"
+        ;;
       script)      remove_file "$PROJECT_ROOT/$path" ;;
       hook)        remove_hook "$path" ;;
       claude-hook) remove_claude_hook "$path" ;;
@@ -812,6 +848,14 @@ for entry in "${INSTALL_LIST[@]}"; do
         install_file "$REPO_DIR/templates/cursor/$path" "$PROJECT_ROOT/.cursor/rules/$path"
       else
         echo "  SKIP cursor-rule:$path (requires per-project install with --collab /path/to/project)"
+      fi
+      ;;
+    collab-pipeline)
+      if [ -n "$PROJECT_ROOT" ] && [ "$PROJECT_ROOT" != "$HOME" ]; then
+        mkdir -p "$PROJECT_ROOT/.cursor/rules" "$PROJECT_ROOT/.agent/workflows"
+        install_collab_pipeline_project_artifacts
+      else
+        echo "  SKIP collab-pipeline:$path (requires per-project install with --collab /path/to/project)"
       fi
       ;;
     cursor-command)

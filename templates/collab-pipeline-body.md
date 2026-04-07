@@ -1,7 +1,3 @@
----
-description: "collab pipeline — /collab-workflow {instruction} orchestrates Claude→You→Codex→You→Claude via terminal"
----
-
 # Collab Pipeline
 
 When the user says `/collab-workflow {instruction}` or requests a feature/fix/refactor/audit,
@@ -13,7 +9,7 @@ orchestrate the pipeline below.
 
 - You MUST NOT generate plans, contracts, or review documents yourself.
 - You MUST NOT write implementation code yourself (except scaffold stubs in Step 2).
-- You MUST delegate to external tools via terminal (`run_command` / shell execution).
+- You MUST delegate to external tools via terminal execution.
 - Your only direct work is: Step 2 (scaffold) and Step 4 (verify).
 - Everything else: run a terminal command → read output → report to user.
 

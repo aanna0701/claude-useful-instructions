@@ -20,4 +20,4 @@ Tell the user to run `./install.sh --collab .` from their **claude-useful-instru
 - Replace the pipeline with ad-hoc steps.
 - Skip terminal delegation for plan (Claude) and implement (Codex) when those tools are available.
 
-The authoritative step-by-step content lives only in `.cursor/rules/collab-pipeline.mdc` to avoid drift; this command exists so **Cursor lists `/collab-workflow` in the slash menu**.
+Step-by-step pipeline text is maintained in **claude-useful-instructions** as `templates/collab-pipeline-body.md`; `./install.sh --collab` writes the same body into `.cursor/rules/collab-pipeline.mdc` (and `.agent/workflows/collab-pipeline.md`). This command exists so **Cursor lists `/collab-workflow` in the slash menu**.

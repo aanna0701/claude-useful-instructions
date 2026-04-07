@@ -52,3 +52,4 @@ description: >
 - Templates: `.claude/templates/work-item/`, `.claude/templates/branch-map/`, `.claude/templates/cursor/`
 - Agent: `cursor-prompt-builder` (contract → Cursor/Antigravity prompt + rules assembly)
 - Docs: `docs/cursor-integration.md` (Cursor/Antigravity integration guide)
+- Pipeline steps (identical text): `.cursor/rules/collab-pipeline.mdc` and `.agent/workflows/collab-pipeline.md`, assembled by `install.sh` from `templates/collab-pipeline-body.md` in **claude-useful-instructions** (single source; do not edit the two installed copies by hand)
