@@ -760,6 +760,16 @@ if $UNINSTALL; then
   done
   remove_dir_if_empty "$CLAUDE_DIR"
 
+  # Clean up empty Antigravity directories (.agent/, .cursor/)
+  if [ -n "$PROJECT_ROOT" ] && [ "$PROJECT_ROOT" != "$HOME" ]; then
+    for subdir in workflows skills; do
+      remove_dir_if_empty "$PROJECT_ROOT/.agent/$subdir"
+    done
+    remove_dir_if_empty "$PROJECT_ROOT/.agent"
+    remove_dir_if_empty "$PROJECT_ROOT/.cursor/rules"
+    remove_dir_if_empty "$PROJECT_ROOT/.cursor"
+  fi
+
   echo "────────────────────────────────────────────────────────"
   echo "Done. Uninstalled bundles: ${SELECTED_BUNDLES[*]}"
   exit 0
