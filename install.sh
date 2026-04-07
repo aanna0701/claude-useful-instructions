@@ -114,6 +114,8 @@ BUNDLE_COLLAB=(
   "templates:branch-map"
   "templates:work-item"
   "templates:cursor"
+  "cursor-rule:collab-pipeline.mdc"
+  "agent-rule:collab-pipeline.md"
   "workflow:branch-auto-sync.yml"
   "root-file:AGENTS.md"
   "root-file:CLAUDE.md"
@@ -681,9 +683,11 @@ if $UNINSTALL; then
       agents)    remove_file "$CLAUDE_DIR/agents/$path" ;;
       skills)    remove_skill_dir "$path" ;;
       templates) remove_template_dir "$path" ;;
-      workflow)  remove_file "$PROJECT_ROOT/.github/workflows/$path" ;;
-      root-file) remove_root_file "$path" ;;
-      script)    remove_file "$PROJECT_ROOT/$path" ;;
+      workflow)     remove_file "$PROJECT_ROOT/.github/workflows/$path" ;;
+      root-file)   remove_root_file "$path" ;;
+      cursor-rule) remove_file "$PROJECT_ROOT/.cursor/rules/$path" ;;
+      agent-rule)  remove_file "$PROJECT_ROOT/.agents/workflows/$path" ;;
+      script)      remove_file "$PROJECT_ROOT/$path" ;;
       hook)        remove_hook "$path" ;;
       claude-hook) remove_claude_hook "$path" ;;
       mcp)         remove_mcp_dir "$path" ;;
@@ -737,6 +741,22 @@ for entry in "${INSTALL_LIST[@]}"; do
       ;;
     root-file)
       install_root_file "$path"
+      ;;
+    cursor-rule)
+      if [ -n "$PROJECT_ROOT" ] && [ "$PROJECT_ROOT" != "$HOME" ]; then
+        mkdir -p "$PROJECT_ROOT/.cursor/rules"
+        install_file "$REPO_DIR/templates/cursor/$path" "$PROJECT_ROOT/.cursor/rules/$path"
+      else
+        echo "  SKIP cursor-rule:$path (requires per-project install with --collab /path/to/project)"
+      fi
+      ;;
+    agent-rule)
+      if [ -n "$PROJECT_ROOT" ] && [ "$PROJECT_ROOT" != "$HOME" ]; then
+        mkdir -p "$PROJECT_ROOT/.agents/workflows"
+        install_file "$REPO_DIR/templates/agent-rules/$path" "$PROJECT_ROOT/.agents/workflows/$path"
+      else
+        echo "  SKIP agent-rule:$path (requires per-project install with --collab /path/to/project)"
+      fi
       ;;
     script)
       install_file "$REPO_DIR/$path" "$PROJECT_ROOT/$path"
