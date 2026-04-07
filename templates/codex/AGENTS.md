@@ -72,8 +72,18 @@ Before exit:
 
 ## Collab Pipeline
 
-When a user requests work, follow the pipeline: Plan → Scaffold → Implement → Verify → Review → Revise.
-Stop after each step for user confirmation. Details in `.cursor/rules/collab-pipeline.mdc` or `.agent/rules/collab-pipeline.md`.
+`/collab-workflow {instruction}` in Cursor/Antigravity orchestrates multi-tool execution:
+
+| Step | Executor | Method |
+|------|----------|--------|
+| 1. Plan | Claude | `claude -p` with work-plan command |
+| 2. Scaffold | Cursor/Antigravity | Direct file creation |
+| 3. Implement | **Codex (you)** | `codex-run.sh` or `codex exec` |
+| 4. Verify | Cursor/Antigravity | Codebase search + contract check |
+| 5. Review | Claude | `claude -p` with work-review command |
+| 6. Revise | Codex → Cursor → Claude | Re-run steps 3→4→5 |
+
+Human confirms between each step. Full details in `.cursor/rules/collab-pipeline.mdc` or `.agent/workflows/collab-pipeline.md`.
 
 ## Never Do
 

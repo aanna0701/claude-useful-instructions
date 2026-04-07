@@ -14,27 +14,28 @@ description: >
 
 ## Tool Assignments (Pipeline Roles)
 
-| Command / Phase | Primary Tool | Description |
-|-----------------|--------------|-------------|
-| `/work-plan` | **Claude** | Decomposes tasks into sub-tasks and contracts. |
-| `/work-scaffold`| **Cursor / Antigravity** | Generates file structure, stubs, and boundary configuration. |
-| `/work-impl` | **Codex** | Implements code following the contract parameters. |
-| `/work-verify` | **Cursor / Antigravity** | Performs code audit and codebase consistency checks. |
-| `/work-review` | **Claude** | Reviews implemented work and applies changes. |
+| Command / Phase | Orchestrator | Executor | Description |
+|-----------------|-------------|----------|-------------|
+| `/collab-workflow {instruction}` | **Cursor / Antigravity** | Claude→You→Codex→You→Claude | Full pipeline with human gates |
+| `/work-plan` | any | **Claude** | Decomposes tasks into sub-tasks and contracts |
+| `/work-scaffold`| any | **Cursor / Antigravity** | Generates file structure and stubs |
+| `/work-impl` | any | **Codex** | Implements code following contract |
+| `/work-verify` | any | **Cursor / Antigravity** | Codebase audit and consistency checks |
+| `/work-review` | any | **Claude** | Reviews implemented work |
 
 ## Routing
 
 | User Intent | Route To |
 |-------------|----------|
+| **Full pipeline (Cursor/Antigravity)** | **`/collab-workflow {instruction}`** |
 | Plan work item(s) | `/work-plan` |
 | Check status | `/work-status` |
 | Review + merge | `/work-review` |
 | Set up branch hierarchy | `/branch-init` |
 | Show branch state / freshness | `/branch-status` |
 | Audit / fix / generate CI workflows | `/gha-branch-sync` |
-| Cursor/Antigravity pipeline (auto-orchestrated) | Open `work/**` in Cursor/Antigravity → `collab-pipeline.mdc` or `.agent/workflows/` activates |
-| Scaffold file structure (Cursor/Antigravity) | `/work-scaffold FEAT-NNN` or `/work-scaffold REFAC-NNN` |
-| Codebase audit (Cursor/Antigravity) | `/work-verify AUDIT-NNN` [→ `--ingest`] |
+| Scaffold file structure (standalone) | `/work-scaffold FEAT-NNN` or `/work-scaffold REFAC-NNN` |
+| Codebase audit (standalone) | `/work-verify AUDIT-NNN` [→ `--ingest`] |
 | Boundary check / dispatch | `codex-run.sh` (suggest command) |
 | Implement in worktree | `/work-impl #<issue>` or `/work-impl FEAT-NNN` |
 | Re-dispatch failed review | `/work-revise FEAT-NNN` |
