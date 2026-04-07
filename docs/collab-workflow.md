@@ -22,7 +22,9 @@ Claude: /work-plan topic1, topic2, topic3
                                           ↓
 [OPTIONAL] — Human: /work-scaffold FEAT-001 FEAT-002
   → Copy prompt to Cursor Composer (Cmd+I) → scaffolds file structure
-  → .cursorrules generated in worktree
+  → .cursorrules + .cursor/rules/*.mdc generated in worktree
+  → guard.mdc auto-enforces contract boundaries during editing
+  → forbidden.mdc warns when opening out-of-scope files
                                           ↓
 TOUCH 1 — Human: bash codex-run.sh FEAT-001 FEAT-002 FEAT-003
   → auto: boundary check → seed artifacts → parallel codex exec → monitor
@@ -31,6 +33,10 @@ TOUCH 1 — Human: bash codex-run.sh FEAT-001 FEAT-002 FEAT-003
                                           ↓
 [OPTIONAL] — Human: /work-verify FEAT-001 FEAT-002
   → Copy prompt to Cursor Chat (@Codebase) → full project verification
+                                          ↓
+[OPTIONAL] — Human: /work-verify-ingest FEAT-001 FEAT-002
+  → Paste Cursor output → auto-parsed into verify-result.md
+  → PASS → ready-for-review / FAIL → /work-revise guidance
                                           ↓
 TOUCH 2 — Human: /work-review FEAT-001 FEAT-002 FEAT-003
   → Claude reviews in parallel, handles doc changes
@@ -46,6 +52,9 @@ Claude: /work-plan --type=audit "naming convention check"
                                           ↓
 Human: /work-verify AUDIT-001
   → Copy prompt to Cursor Chat (@Codebase) → codebase audit
+                                          ↓
+Human: /work-verify-ingest AUDIT-001
+  → Paste Cursor output → auto-parsed → audited status
   → Create issues from findings or /work-plan --type=fix to address them
 ```
 
@@ -142,11 +151,11 @@ project/
 ├── work/dispatch.json                 # Parallel dispatch manifest (created by /work-plan)
 └── .claude/
     ├── rules/collab-workflow.md       # Auto-loaded 3-agent rules (Claude, Cursor, Codex)
-    ├── commands/work-{plan,scaffold,verify,review,impl,revise,status}.md
+    ├── commands/work-{plan,scaffold,verify,verify-ingest,review,impl,revise,status}.md
     ├── agents/{issue-creator,work-reviser,cursor-prompt-builder}.md
     ├── skills/collab-workflow/
     ├── templates/work-item/*.md       # Brief, contract, checklist, status, review
-    └── templates/cursor/*.md          # Cursor Composer/Chat prompt templates + .cursorrules
+    └── templates/cursor/*.md          # Cursor prompt templates + .cursorrules + .cursor/rules/*.mdc templates
 ```
 
 `/work-plan` seeds each worktree with its work item files and `AGENTS.md` by committing them on the feature branch. `codex-run.sh` re-seeds as a fallback if artifacts are missing.
@@ -334,9 +343,10 @@ Before merge:
 
 The collab workflow supports optional Cursor phases for multi-file scaffolding and codebase-wide verification.
 
-- **`/work-scaffold`**: Generates Cursor Composer prompts from contracts (FEAT → file stubs, REFAC → migration map)
+- **`/work-scaffold`**: Generates Cursor Composer prompts + `.cursor/rules/*.mdc` (glob-based contract enforcement)
 - **`/work-verify`**: Generates Cursor Chat @Codebase prompts (implementation check, regression check, or standalone audit)
-- **AUDIT type**: Dedicated workflow without implementation — `/work-plan --type=audit` → `/work-verify`
+- **`/work-verify-ingest`**: Parses Cursor verification output → `verify-result.md` → PASS/FAIL verdict → auto-routes to next action
+- **AUDIT type**: Dedicated workflow without implementation — `/work-plan --type=audit` → `/work-verify` → `/work-verify-ingest`
 
 All Cursor phases are optional. Skip them to use the original 2-touch workflow.
 
