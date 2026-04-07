@@ -22,34 +22,23 @@ IDE AI fills three gaps in the Claude Code + Codex workflow:
 
 ## Quick Start
 
-```bash
-# 1. Install collab bundle (includes Cursor/Antigravity templates)
-./install.sh --collab /path/to/project
+1. **Install** the collab bundle (Cursor rules + **slash command** for the full pipeline):
 
-# 2a. Full pipeline (recommended) — in Cursor/Antigravity:
-/collab-workflow "Add payment module"
-# → Claude plans → IDE scaffolds → Codex implements → IDE verifies → Claude reviews
+   ```bash
+   ./install.sh --collab /path/to/project
+   ```
 
-# 2b. Or use individual commands:
-/work-plan "Add payment module"
+   This writes `.cursor/commands/collab-workflow.md` so **`/collab-workflow`** shows up in Cursor’s `/` menu, and `.cursor/rules/collab-pipeline.mdc` for glob-based context when you edit `work/**`, `AGENTS.md`, or `CLAUDE.md`.
 
-# 3. Scaffold with Cursor/Antigravity (optional)
-/work-scaffold FEAT-001
-# → Copy the printed prompt → Composer (Cmd+I)
-# → .cursor/rules/*.mdc auto-enforces contract boundaries
+2. **Full pipeline** (recommended) — in Cursor chat:
 
-# 4. Dispatch to Codex as usual
-bash codex-run.sh FEAT-001
+   ```
+   /collab-workflow "Add payment module"
+   ```
 
-# 5. Review and merge as usual
-/work-review FEAT-001
+   Flow: Claude plans → IDE scaffolds → Codex implements → IDE verifies → Claude reviews.
 
-# For AUDIT items (no implementation):
-/work-verify AUDIT-001
-# → Copy prompt → Cursor/Antigravity Chat
-/work-verify AUDIT-001 --ingest
-# → Paste output → auto-parsed → audited
-```
+3. **Or** use individual steps: `/work-plan`, `/work-scaffold FEAT-001`, `bash codex-run.sh FEAT-001`, `/work-review FEAT-001`. For AUDIT items use `/work-verify` (and optional `--ingest`).
 
 ---
 
@@ -278,6 +267,10 @@ The pipeline rule is installed to 3 paths so it works across tools:
 | Cursor Background Agent | `.cursor/rules/*.mdc` | Same file (read from repo clone) |
 | Antigravity (Google) | `.agent/rules/*.md` | `collab-pipeline.md` |
 | Codex / Claude Code | `AGENTS.md` | Pipeline section (pointer to rule files) |
+
+### Skills vs rules (single tree)
+
+Bundled **skills** (`SKILL.md` trees) live only under **`.claude/skills/<name>/`**. Cursor does not get a duplicate under `.cursor/skills/` from this installer; use **`.cursor/rules/*.mdc`** (e.g. `collab-pipeline.mdc`) and `AGENTS.md` for IDE-side workflow context. If you rely on Cursor’s skill picker, point it at `.claude/skills` manually or adopt Cursor’s native `.cursor/skills/` layout yourself—this repo standardizes on one path for Claude Code.
 
 ### Without Cursor or Antigravity
 

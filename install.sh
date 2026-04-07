@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # install.sh — Copy Claude settings (commands, agents, rules, skills) into <TARGET>/.claude/
+# Skills install only to .claude/skills/ (Claude Code). No .cursor/skills or .agent/skills copies.
 # Usage: ./install.sh [OPTIONS] [TARGET_DIR]
 #   TARGET_DIR: project root to install into (default: ~, i.e. ~/.claude)
 #
@@ -32,7 +33,8 @@ REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # ── Bundle definitions ──────────────────────────────────────────────────────
 # Each bundle lists its files relative to REPO_DIR.
-# Format: "type:relative_path" where type is rules|commands|agents|skills
+# Format: "type:relative_path" where type is rules|commands|agents|skills|templates|...
+#   cursor-command:basename.md → templates/cursor-commands/<basename> → .cursor/commands/<basename>
 
 BUNDLE_CORE=(
   "commands:smart-git-commit-push.md"
@@ -115,6 +117,7 @@ BUNDLE_COLLAB=(
   "templates:work-item"
   "templates:cursor"
   "cursor-rule:collab-pipeline.mdc"
+  "cursor-command:collab-workflow.md"
   "agent-rule:collab-pipeline.md"
   "workflow:branch-auto-sync.yml"
   "root-file:AGENTS.md"
@@ -371,18 +374,9 @@ install_skill_dir() {
     install_file "$file" "$dst/$relative"
   done
 
-  # Also install into Antigravity standard path (.agent/skills) if project-level
+  # Remove legacy per-IDE skill paths from older installer versions (single tree: .claude/skills only).
   if [ -n "$PROJECT_ROOT" ] && [ "$PROJECT_ROOT" != "$HOME" ]; then
-    local dst_ag="$PROJECT_ROOT/.agent/skills/$skill_name"
-    mkdir -p "$dst_ag"
-    find "$src" -type d | while read -r dir; do
-      relative="${dir#$src}"
-      [ -n "$relative" ] && mkdir -p "$dst_ag/$relative" || true
-    done
-    find "$src" -type f | while read -r file; do
-      relative="${file#$src}"
-      install_file "$file" "$dst_ag/$relative"
-    done
+    rm -rf "$PROJECT_ROOT/.agent/skills/$skill_name" "$PROJECT_ROOT/.cursor/skills/$skill_name"
   fi
 }
 
@@ -539,12 +533,18 @@ remove_dir_if_empty() {
 remove_skill_dir() {
   local skill_name="$1"
   local dst="$CLAUDE_DIR/skills/$skill_name"
-  if [ -d "$dst" ]; then
-    rm -rv "$dst"
+  if [ -n "$PROJECT_ROOT" ] && [ "$PROJECT_ROOT" != "$HOME" ]; then
+    local dst_ag="$PROJECT_ROOT/.agent/skills/$skill_name"
+    local dst_cu="$PROJECT_ROOT/.cursor/skills/$skill_name"
+    if [ -e "$dst_ag" ] || [ -L "$dst_ag" ]; then
+      rm -rv "$dst_ag"
+    fi
+    if [ -e "$dst_cu" ] || [ -L "$dst_cu" ]; then
+      rm -rv "$dst_cu"
+    fi
   fi
-  local dst_ag="$PROJECT_ROOT/.agent/skills/$skill_name"
-  if [ -d "$dst_ag" ]; then
-    rm -rv "$dst_ag"
+  if [ -d "$dst" ] || [ -L "$dst" ]; then
+    rm -rv "$dst"
   fi
 }
 
@@ -737,6 +737,7 @@ if $UNINSTALL; then
       workflow)     remove_file "$PROJECT_ROOT/.github/workflows/$path" ;;
       root-file)   remove_root_file "$path" ;;
       cursor-rule) remove_file "$PROJECT_ROOT/.cursor/rules/$path" ;;
+      cursor-command) remove_file "$PROJECT_ROOT/.cursor/commands/$path" ;;
       agent-rule)  remove_file "$PROJECT_ROOT/.agent/workflows/$path" ;;
       script)      remove_file "$PROJECT_ROOT/$path" ;;
       hook)        remove_hook "$path" ;;
@@ -760,12 +761,14 @@ if $UNINSTALL; then
   done
   remove_dir_if_empty "$CLAUDE_DIR"
 
-  # Clean up empty Antigravity directories (.agent/, .cursor/)
+  # Clean up empty Antigravity / Cursor directories (.agent/, .cursor/)
   if [ -n "$PROJECT_ROOT" ] && [ "$PROJECT_ROOT" != "$HOME" ]; then
     for subdir in workflows skills; do
       remove_dir_if_empty "$PROJECT_ROOT/.agent/$subdir"
     done
     remove_dir_if_empty "$PROJECT_ROOT/.agent"
+    remove_dir_if_empty "$PROJECT_ROOT/.cursor/skills"
+    remove_dir_if_empty "$PROJECT_ROOT/.cursor/commands"
     remove_dir_if_empty "$PROJECT_ROOT/.cursor/rules"
     remove_dir_if_empty "$PROJECT_ROOT/.cursor"
   fi
@@ -809,6 +812,14 @@ for entry in "${INSTALL_LIST[@]}"; do
         install_file "$REPO_DIR/templates/cursor/$path" "$PROJECT_ROOT/.cursor/rules/$path"
       else
         echo "  SKIP cursor-rule:$path (requires per-project install with --collab /path/to/project)"
+      fi
+      ;;
+    cursor-command)
+      if [ -n "$PROJECT_ROOT" ] && [ "$PROJECT_ROOT" != "$HOME" ]; then
+        mkdir -p "$PROJECT_ROOT/.cursor/commands"
+        install_file "$REPO_DIR/templates/cursor-commands/$path" "$PROJECT_ROOT/.cursor/commands/$path"
+      else
+        echo "  SKIP cursor-command:$path (requires per-project install with --collab /path/to/project)"
       fi
       ;;
     agent-rule)

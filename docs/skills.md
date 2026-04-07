@@ -2,6 +2,8 @@
 
 Skills are auto-triggered by Claude Code based on conversation context. Each skill is a folder under `.claude/skills/` containing `SKILL.md` and optional `references/`.
 
+**Install location**: always `.claude/skills/<name>/` only (project or `~/.claude/skills/` globally). The installer does not create `.cursor/skills/` or `.agent/skills/` trees—those were redundant with Claude Code’s layout. Re-running a project install removes legacy copies or symlinks there from older releases.
+
 ---
 
 ## diataxis-doc-system
