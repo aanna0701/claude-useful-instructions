@@ -276,6 +276,18 @@ fi
 
 # ── Resolve target directory ────────────────────────────────────────────────
 if [ -z "$TARGET_DIR" ]; then
+  if $INSTALL_HAS_COLLAB; then
+    echo "ERROR: --collab needs a project directory." >&2
+    echo "" >&2
+    echo "  The collab bundle installs project-specific files (AGENTS.md, codex-run.sh," >&2
+    echo "  work/ directory, .github/workflows/) that belong in a project root, not ~/" >&2
+    echo "" >&2
+    echo "  Usage:" >&2
+    echo "    ./install.sh --collab /path/to/project" >&2
+    echo "" >&2
+    echo "  Global bundles (--core, --docs, etc.) can be installed without a path." >&2
+    exit 1
+  fi
   PROJECT_ROOT="$HOME"
 else
   PROJECT_ROOT="$(cd "$TARGET_DIR" 2>/dev/null && pwd || echo "$TARGET_DIR")"
@@ -724,43 +736,31 @@ for entry in "${INSTALL_LIST[@]}"; do
       install_template_dir "$path"
       ;;
     root-file)
-      if [ -n "$TARGET_DIR" ]; then
-        install_root_file "$path"
-      else
-        echo "  Skip root-file $path (global install — no project root)"
-      fi
+      install_root_file "$path"
       ;;
     script)
-      if [ -n "$TARGET_DIR" ]; then
-        install_file "$REPO_DIR/$path" "$PROJECT_ROOT/$path"
-        chmod +x "$PROJECT_ROOT/$path"
-      else
-        echo "  Skip script $path (global install — no project root)"
-      fi
+      install_file "$REPO_DIR/$path" "$PROJECT_ROOT/$path"
+      chmod +x "$PROJECT_ROOT/$path"
       ;;
     hook)
       install_hook "$path"
       ;;
     workflow)
-      if [ -n "$TARGET_DIR" ]; then
-        _wf_src="$REPO_DIR/templates/workflows/$path"
-        _wf_dst="$PROJECT_ROOT/.github/workflows/$path"
-        if [ -f "$_wf_src" ]; then
-          mkdir -p "$(dirname "$_wf_dst")"
-          install_file "$_wf_src" "$_wf_dst"
-          _scripts_dir="$REPO_DIR/templates/workflows/scripts"
-          if [ -d "$_scripts_dir" ]; then
-            mkdir -p "$PROJECT_ROOT/.github/workflows/scripts"
-            for s in "$_scripts_dir"/*.py; do
-              [ -f "$s" ] || continue
-              install_file "$s" "$PROJECT_ROOT/.github/workflows/scripts/$(basename "$s")"
-            done
-          fi
-        else
-          echo "WARNING: Workflow template not found: $_wf_src" >&2
+      _wf_src="$REPO_DIR/templates/workflows/$path"
+      _wf_dst="$PROJECT_ROOT/.github/workflows/$path"
+      if [ -f "$_wf_src" ]; then
+        mkdir -p "$(dirname "$_wf_dst")"
+        install_file "$_wf_src" "$_wf_dst"
+        _scripts_dir="$REPO_DIR/templates/workflows/scripts"
+        if [ -d "$_scripts_dir" ]; then
+          mkdir -p "$PROJECT_ROOT/.github/workflows/scripts"
+          for s in "$_scripts_dir"/*.py; do
+            [ -f "$s" ] || continue
+            install_file "$s" "$PROJECT_ROOT/.github/workflows/scripts/$(basename "$s")"
+          done
         fi
       else
-        echo "  Skip workflow $path (global install — no project root)"
+        echo "WARNING: Workflow template not found: $_wf_src" >&2
       fi
       ;;
     claude-hook)
@@ -772,7 +772,7 @@ for entry in "${INSTALL_LIST[@]}"; do
   esac
 done
 
-if $INSTALL_HAS_COLLAB && [ -n "$TARGET_DIR" ]; then
+if $INSTALL_HAS_COLLAB; then
   ensure_collab_scaffold
 fi
 
