@@ -1,31 +1,47 @@
 ---
-description: "collab pipeline — /collab-workflow {instruction} orchestrates Claude→You→Codex→You→Claude"
+description: "collab pipeline — /collab-workflow {instruction} orchestrates Claude→You→Codex→You→Claude via terminal"
 ---
 
 # Collab Pipeline
 
 When the user says `/collab-workflow {instruction}` or requests a feature/fix/refactor/audit,
-orchestrate the pipeline below. **You are the coordinator** — delegate to the right tool per step.
+orchestrate the pipeline below.
+
+## CRITICAL RULE
+
+**You are a orchestrator, NOT an implementer.**
+
+- You MUST NOT generate plans, contracts, or review documents yourself.
+- You MUST NOT write implementation code yourself (except scaffold stubs in Step 2).
+- You MUST delegate to external tools via terminal (`run_command` / shell execution).
+- Your only direct work is: Step 2 (scaffold) and Step 4 (verify).
+- Everything else: run a terminal command → read output → report to user.
+
+This prevents context pollution and ensures each tool works with its own specialized context.
+
+---
 
 Stop after each step. Proceed only on user confirmation ("ㅇㅋ", "ok", "진행", "next", "go").
 
 ---
 
-## Step 1: Plan → delegate to **Claude**
+## Step 1: Plan → run `claude -p` in terminal
 
-Run:
+Execute in terminal:
 ```bash
 claude -p "Read .claude/commands/work-plan.md and follow it exactly. Topic: {USER_INSTRUCTION}" --output-format json
 ```
 
-Parse the output. Report to user: ID, type, scope summary, estimated files.
+Read the terminal output. Report to user: ID, type, scope summary, estimated files.
+Verify that `work/items/{ID}-*/` files were created (brief.md, contract.md, checklist.md, status.md).
+
 **"계획 확인해주세요 (Plan ready — confirm to proceed)"**
 
 ---
 
-## Step 2: Scaffold → **you do it directly**
+## Step 2: Scaffold → you do this directly
 
-Read `work/items/{ID}-*/contract.md` → create directory structure + type stubs.
+This is the ONE step you execute yourself. Read `work/items/{ID}-*/contract.md`:
 
 1. Parse "Allowed Modifications" → create directories and empty/stub files
 2. For each interface in contract: create function/class signatures with `raise NotImplementedError`
@@ -37,9 +53,9 @@ Report: created files list.
 
 ---
 
-## Step 3: Implement → delegate to **Codex**
+## Step 3: Implement → run `codex-run.sh` in terminal
 
-Run:
+Execute in terminal:
 ```bash
 bash codex-run.sh {IDs}
 ```
@@ -49,18 +65,18 @@ If `codex-run.sh` is not available, fall back:
 codex exec --full-auto "Read work/items/{ID}-*/contract.md and implement per spec"
 ```
 
-If Codex is also unavailable, implement directly yourself as last resort.
-
-Monitor output. Report: changed files, test results, checklist pass/fail.
+Wait for completion. Read terminal output. Report: changed files, test results, status.
 **"구현 결과 확인해주세요 (Implementation ready — confirm to proceed)"**
+
+DO NOT implement the code yourself. If both codex-run.sh and codex are unavailable,
+inform the user and ask how to proceed.
 
 ---
 
-## Step 4: Verify → **you do it directly**
+## Step 4: Verify → you do this directly
 
-Check the implementation against the contract. Search the full codebase.
-
-Check each item and report PASS/FAIL:
+This is the OTHER step you execute yourself. Check the implementation against the contract.
+Search the full codebase and report PASS/FAIL:
 
 1. **Boundaries**: only Allowed Modifications touched? Forbidden Zones clean?
 2. **Interfaces**: all contract interfaces implemented with correct signatures?
@@ -74,16 +90,18 @@ Report: verification matrix with PASS/FAIL per item, violations if any.
 
 ---
 
-## Step 5: Review → delegate to **Claude**
+## Step 5: Review → run `claude -p` in terminal
 
-Run:
+Execute in terminal:
 ```bash
 claude -p "Read .claude/commands/work-review.md and follow it exactly. Target: {IDs}" --output-format json
 ```
 
-Parse the output. Report decision to user:
+Read the terminal output. Report decision to user:
 - **MERGE**: **"머지할까요? (Ready to merge — confirm)"**
 - **REVISE**: **"수정 사항이 있습니다. 수정 진행할까요?"**
+
+DO NOT write review.md yourself. Claude CLI does that.
 
 ---
 
@@ -91,9 +109,9 @@ Parse the output. Report decision to user:
 
 If review returned MUST-fix items:
 
-1. Re-run Step 3 (Codex) with review.md fixes injected
+1. Re-run Step 3 (`bash codex-run.sh`) — Codex fixes
 2. Re-run Step 4 (you verify)
-3. Re-run Step 5 (Claude reviews)
+3. Re-run Step 5 (`claude -p`) — Claude re-reviews
 
 Limits:
 - Max 3 revision rounds
@@ -104,7 +122,7 @@ Limits:
 
 ## AUDIT items
 
-Skip Steps 2-3. You execute the audit directly:
+Skip Steps 2-3. You execute the audit directly (Step 4 variant):
 
 1. Read "Audit Scope" and "Audit Criteria" from contract
 2. Search codebase for violations
@@ -117,14 +135,14 @@ Skip Steps 2-3. You execute the audit directly:
 
 ## Tool Roles Summary
 
-| Step | Who | Why |
-|------|-----|-----|
-| 1. Plan | Claude (`claude -p`) | Structured spec generation from commands |
-| 2. Scaffold | **You** (Cursor/Antigravity) | File creation is IDE-native |
-| 3. Implement | Codex (`codex-run.sh`) | Sandboxed execution, parallelizable |
-| 4. Verify | **You** (Cursor/Antigravity) | Full codebase search is IDE-native |
-| 5. Review | Claude (`claude -p`) | Contract-based judgment |
-| 6. Revise | Codex → You → Claude | Same delegation as Steps 3→4→5 |
+| Step | Executor | Method | You do it? |
+|------|----------|--------|------------|
+| 1. Plan | Claude | `claude -p` in terminal | NO — run command, read output |
+| 2. Scaffold | You | Direct file creation | YES |
+| 3. Implement | Codex | `codex-run.sh` in terminal | NO — run command, read output |
+| 4. Verify | You | Codebase search + contract check | YES |
+| 5. Review | Claude | `claude -p` in terminal | NO — run command, read output |
+| 6. Revise | Codex→You→Claude | Steps 3→4→5 repeated | Mixed |
 
 ---
 
@@ -133,22 +151,28 @@ Skip Steps 2-3. You execute the audit directly:
 ```
 User: /collab-workflow JWT 인증 미들웨어 추가해줘
 
-AI:   [Step 1] claude -p "...work-plan... Topic: JWT 인증 미들웨어"
+You:  [Step 1] 터미널 실행:
+      $ claude -p "Read .claude/commands/work-plan.md... Topic: JWT 인증 미들웨어"
+      → Claude가 FEAT-153 명세서 생성
       → "FEAT-153 계획 확인해주세요"
 User: ㅇㅋ
 
-AI:   [Step 2] reads contract → creates file stubs directly
+You:  [Step 2] contract.md 읽고 직접 파일 구조 생성
       → "구조 확인해주세요"
 User: 진행
 
-AI:   [Step 3] bash codex-run.sh FEAT-153
+You:  [Step 3] 터미널 실행:
+      $ bash codex-run.sh FEAT-153
+      → Codex가 구현 완료
       → "구현 결과 확인해주세요"
 User: ok
 
-AI:   [Step 4] searches codebase, checks contract compliance
+You:  [Step 4] 코드베이스 검색, 계약 대비 검증 (직접 수행)
       → "검증 결과 확인해주세요"
 User: next
 
-AI:   [Step 5] claude -p "...work-review... Target: FEAT-153"
+You:  [Step 5] 터미널 실행:
+      $ claude -p "Read .claude/commands/work-review.md... Target: FEAT-153"
+      → Claude가 리뷰 작성
       → "머지할까요?"
 ```
