@@ -752,8 +752,8 @@ for entry in "${INSTALL_LIST[@]}"; do
       ;;
     agent-rule)
       if [ -n "$PROJECT_ROOT" ] && [ "$PROJECT_ROOT" != "$HOME" ]; then
-        mkdir -p "$PROJECT_ROOT/.agents/workflows"
-        install_file "$REPO_DIR/templates/agent-rules/$path" "$PROJECT_ROOT/.agents/workflows/$path"
+        mkdir -p "$PROJECT_ROOT/.agent/rules"
+        install_file "$REPO_DIR/templates/agent-rules/$path" "$PROJECT_ROOT/.agent/rules/$path"
       else
         echo "  SKIP agent-rule:$path (requires per-project install with --collab /path/to/project)"
       fi
