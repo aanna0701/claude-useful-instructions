@@ -345,6 +345,20 @@ install_skill_dir() {
     relative="${file#$src}"
     install_file "$file" "$dst/$relative"
   done
+
+  # Also install into Antigravity standard path (.agents/skills) if project-level
+  if [ -n "$PROJECT_ROOT" ] && [ "$PROJECT_ROOT" != "$HOME" ]; then
+    local dst_ag="$PROJECT_ROOT/.agents/skills/$skill_name"
+    mkdir -p "$dst_ag"
+    find "$src" -type d | while read -r dir; do
+      relative="${dir#$src}"
+      [ -n "$relative" ] && mkdir -p "$dst_ag/$relative" || true
+    done
+    find "$src" -type f | while read -r file; do
+      relative="${file#$src}"
+      install_file "$file" "$dst_ag/$relative"
+    done
+  fi
 }
 
 install_template_dir() {
@@ -494,6 +508,10 @@ remove_skill_dir() {
   local dst="$CLAUDE_DIR/skills/$skill_name"
   if [ -d "$dst" ]; then
     rm -rv "$dst"
+  fi
+  local dst_ag="$PROJECT_ROOT/.agents/skills/$skill_name"
+  if [ -d "$dst_ag" ]; then
+    rm -rv "$dst_ag"
   fi
 }
 
@@ -686,7 +704,7 @@ if $UNINSTALL; then
       workflow)     remove_file "$PROJECT_ROOT/.github/workflows/$path" ;;
       root-file)   remove_root_file "$path" ;;
       cursor-rule) remove_file "$PROJECT_ROOT/.cursor/rules/$path" ;;
-      agent-rule)  remove_file "$PROJECT_ROOT/.agent/rules/$path" ;;
+      agent-rule)  remove_file "$PROJECT_ROOT/.agents/workflows/$path" ;;
       script)      remove_file "$PROJECT_ROOT/$path" ;;
       hook)        remove_hook "$path" ;;
       claude-hook) remove_claude_hook "$path" ;;
@@ -752,8 +770,8 @@ for entry in "${INSTALL_LIST[@]}"; do
       ;;
     agent-rule)
       if [ -n "$PROJECT_ROOT" ] && [ "$PROJECT_ROOT" != "$HOME" ]; then
-        mkdir -p "$PROJECT_ROOT/.agent/rules"
-        install_file "$REPO_DIR/templates/agent-rules/$path" "$PROJECT_ROOT/.agent/rules/$path"
+        mkdir -p "$PROJECT_ROOT/.agents/workflows"
+        install_file "$REPO_DIR/templates/agent-rules/$path" "$PROJECT_ROOT/.agents/workflows/$path"
       else
         echo "  SKIP agent-rule:$path (requires per-project install with --collab /path/to/project)"
       fi
