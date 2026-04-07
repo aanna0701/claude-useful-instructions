@@ -303,8 +303,7 @@ Claude-Codex collaboration workflow for structured design-implement-review cycle
 |-------------|----------|
 | Plan work items | `/work-plan` |
 | Scaffold file structure (Cursor) | `/work-scaffold` |
-| Verify implementation (Cursor) | `/work-verify` |
-| Ingest verification results | `/work-verify --ingest` |
+| Codebase audit (AUDIT only) | `/work-verify` [→ `--ingest`] |
 | Check status | `/work-status` |
 | Review + merge | `/work-review` |
 | Implement in worktree | `/work-impl` |
@@ -317,8 +316,8 @@ Claude-Codex collaboration workflow for structured design-implement-review cycle
 
 | Type | Flow |
 |------|------|
-| **FEAT** | `/work-plan` → `/work-scaffold` → `codex-run.sh` → `/work-verify` [`--ingest`] → `/work-review` |
-| **REFACTOR** | `/work-plan` → `/work-scaffold` → `codex-run.sh` → `/work-verify` [`--ingest`] → `/work-review` |
+| **FEAT** | `/work-plan` → `/work-scaffold` → `codex-run.sh` → `/work-review` |
+| **REFACTOR** | `/work-plan` → `/work-scaffold` → `codex-run.sh` → `/work-review` |
 | **AUDIT** | `/work-plan --type=audit` → `/work-verify` [`--ingest`] → (issues or fix) |
 
 ### Cursor Rules (v2)

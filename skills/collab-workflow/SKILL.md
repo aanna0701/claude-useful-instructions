@@ -23,12 +23,11 @@ description: >
 | Show branch state / freshness | `/branch-status` |
 | Audit / fix / generate CI workflows | `/gha-branch-sync` |
 | Scaffold file structure (Cursor) | `/work-scaffold FEAT-NNN` or `/work-scaffold REFAC-NNN` |
-| Verify implementation (Cursor) | `/work-verify FEAT-NNN` or `/work-verify AUDIT-NNN` |
-| Ingest verification results | `/work-verify FEAT-NNN --ingest` |
+| Codebase audit (Cursor) | `/work-verify AUDIT-NNN` [→ `--ingest`] |
 | Boundary check / dispatch | `codex-run.sh` (suggest command) |
 | Implement in worktree | `/work-impl #<issue>` or `/work-impl FEAT-NNN` |
 | Re-dispatch failed review | `/work-revise FEAT-NNN` |
-| Code audit / consistency check | `/work-plan --type=audit` then `/work-verify AUDIT-NNN` |
+| Code audit / consistency check | `/work-plan --type=audit` → `/work-verify AUDIT-NNN` |
 
 ## References
 

@@ -17,16 +17,16 @@ Extract the type prefix from `item_id`:
 
 | Prefix | Type | Scaffold Template | Verify Template |
 |--------|------|-------------------|-----------------|
-| `FEAT` | New feature | `scaffold-feat.md` | `verify-feat.md` |
-| `REFAC` | Refactoring | `scaffold-refactor.md` | `verify-refactor.md` |
+| `FEAT` | New feature | `scaffold-feat.md` | _(use /work-review)_ |
+| `REFAC` | Refactoring | `scaffold-refactor.md` | _(use /work-review)_ |
 | `AUDIT` | Code audit | _(skip scaffold)_ | `verify-audit.md` |
-| `FIX` | Bug fix | `scaffold-feat.md` | `verify-feat.md` |
-| `CHORE` | Maintenance | `scaffold-feat.md` | `verify-feat.md` |
-| `PERF` | Performance | `scaffold-feat.md` | `verify-feat.md` |
-| `TEST` | Test addition | `scaffold-feat.md` | `verify-feat.md` |
+| `FIX` | Bug fix | `scaffold-feat.md` | _(use /work-review)_ |
+| `CHORE` | Maintenance | `scaffold-feat.md` | _(use /work-review)_ |
+| `PERF` | Performance | `scaffold-feat.md` | _(use /work-review)_ |
+| `TEST` | Test addition | `scaffold-feat.md` | _(use /work-review)_ |
 | `DOCS` | Documentation | _(skip scaffold)_ | `verify-audit.md` |
 
-Default: `scaffold-feat.md` / `verify-feat.md` for unrecognized prefixes.
+Default scaffold: `scaffold-feat.md`. Verify mode is AUDIT/DOCS only.
 
 ## Steps
 
@@ -79,12 +79,12 @@ Default: `scaffold-feat.md` / `verify-feat.md` for unrecognized prefixes.
 10. Fill `boundary-alert.mdc.md` template → write to `{worktree_path}/.cursor/rules/{SLUG}-forbidden.mdc`
 11. Stage and commit: `chore({SLUG}): add .cursor/rules/ for contract enforcement`
 
-### Mode: verify
+### Mode: verify (AUDIT/DOCS only)
 
 1. Detect type from ID prefix
-2. Select verify template based on type
-3. For REFACTOR type: parse migration pairs from contract (same as scaffold)
-4. For AUDIT type: use `scope_in` as `scope_description`
+2. If NOT AUDIT or DOCS: return redirect message (`use /work-review`)
+3. Use `verify-audit.md` template
+4. Use `scope_in` as `scope_description`
 5. Fill template variables from parsed data
 
 ## Output

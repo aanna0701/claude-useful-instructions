@@ -158,30 +158,22 @@ Also generates `.cursor/rules/*.mdc` (glob-based contract enforcement) in the wo
 
 ## /work-verify
 
-Generate Cursor Chat `@Codebase` verification prompts, and optionally ingest results for auto-routing.
+Codebase audit via Cursor Chat `@Codebase`. **AUDIT type only** — FEAT/REFAC go directly to `/work-review`.
 
 **Usage**:
 ```
-/work-verify FEAT-001                     # Generate verification prompt
-/work-verify FEAT-001 --ingest            # Parse Cursor output → PASS/FAIL → route
-/work-verify FEAT-001 --ingest @file.md   # Read results from file
+/work-verify AUDIT-001                     # Generate audit prompt
+/work-verify AUDIT-001 --ingest            # Parse Cursor output → verdict → route
+/work-verify FEAT-001                      # → redirects to /work-review
 ```
-
-### Type → Verification Focus
-
-| Type Prefix | Verification Focus |
-|-------------|-------------------|
-| `FEAT`, `FIX`, `CHORE`, `PERF`, `TEST` | Interface compliance, boundary, type safety |
-| `REFAC` | Dead imports, broken calls, config references |
-| `AUDIT`, `DOCS` | Pattern violations, naming, security, dead code |
 
 ### `--ingest` Verdict Logic
 
 | Condition | Verdict | Action |
 |-----------|---------|--------|
-| 0 CRITICAL, 0 HIGH | PASS | Status → `ready-for-review` (or `audited` for AUDIT) |
-| 0 CRITICAL, 1+ HIGH | PASS_WITH_WARNINGS | User chooses: proceed or revise |
-| 1+ CRITICAL | FAIL | Suggests `/work-revise` |
+| 0 CRITICAL, 0 HIGH | PASS | Status → `audited` |
+| 0 CRITICAL, 1+ HIGH | PASS_WITH_WARNINGS | Status → `audited`, print warnings |
+| 1+ CRITICAL | FAIL | Status stays, print action items |
 
 > See [Cursor Integration](cursor-integration.md) for the full guide.
 

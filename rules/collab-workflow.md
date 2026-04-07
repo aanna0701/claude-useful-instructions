@@ -13,7 +13,7 @@ planned → [scaffolded] → implementing → ready-for-review → reviewing →
              ↑ optional                                       ↓
              (skip OK)                                      revising
 
-planned → auditing → audited   ← AUDIT type only (no implementation)
+planned → auditing → audited   ← AUDIT type only (/work-verify → --ingest)
 ```
 
 Valid transitions:
@@ -62,4 +62,4 @@ Worktree copy is authoritative. Bootstrap: resolve slug → read `Worktree Path`
 - AUDIT type items skip implementation: `planned → auditing → audited`
 - `/work-scaffold` and `/work-verify` auto-detect type from ID prefix (FEAT/REFAC/AUDIT)
 - `/work-scaffold` generates `.cursor/rules/*.mdc` for glob-based contract enforcement
-- `/work-verify --ingest` parses Cursor verification output → `verify-result.md` → auto-routes to next action
+- `/work-verify` is AUDIT-only — FEAT/REFAC go directly to `/work-review`

@@ -99,9 +99,8 @@ bash codex-run.sh {non-audit IDs}
 # Or implement manually:
 /work-impl {ID}
 
-# After implementation, verify with Cursor:
-/work-verify {ID}
-# → after Cursor responds: /work-verify {ID} --ingest
+# After implementation, review directly:
+/work-review {ID}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 

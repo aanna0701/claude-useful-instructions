@@ -30,12 +30,6 @@ TOUCH 1 — Human: bash codex-run.sh FEAT-001 FEAT-002 FEAT-003
   → Codex implements per contract, records doc changes in status.md
   → prints: /work-review FEAT-001 FEAT-002 FEAT-003
                                           ↓
-[OPTIONAL] — Human: /work-verify FEAT-001 FEAT-002
-  → Copy prompt to Cursor Chat (@Codebase) → full project verification
-                                          ↓
-[OPTIONAL] — Human: /work-verify FEAT-001 FEAT-002 --ingest
-  → Paste Cursor output → auto-parsed → PASS/FAIL → auto-route
-                                          ↓
 TOUCH 2 — Human: /work-review FEAT-001 FEAT-002 FEAT-003
   → Claude reviews in parallel, handles doc changes
   → MERGE: asks confirm → git merge + delete branch
@@ -50,10 +44,6 @@ Claude: /work-plan --type=audit "naming convention check"
                                           ↓
 Human: /work-verify AUDIT-001
   → Copy prompt to Cursor Chat (@Codebase) → codebase audit
-                                          ↓
-Human: /work-verify AUDIT-001 --ingest
-  → Paste Cursor output → auto-parsed → audited status
-  → Create issues from findings or /work-plan --type=fix to address them
 ```
 
 Review follow-up policy:
@@ -342,8 +332,8 @@ Before merge:
 The collab workflow supports optional Cursor phases for multi-file scaffolding and codebase-wide verification.
 
 - **`/work-scaffold`**: Generates Cursor Composer prompts + `.cursor/rules/*.mdc` (glob-based contract enforcement)
-- **`/work-verify`**: Generates verification prompts; `--ingest` parses Cursor output → PASS/FAIL → auto-routes
-- **AUDIT type**: Dedicated workflow without implementation — `/work-plan --type=audit` → `/work-verify` [→ `--ingest`]
+- **`/work-verify`**: AUDIT-only — codebase audit via Cursor @Codebase; `--ingest` parses results
+- **FEAT/REFAC**: Skip `/work-verify` — go directly from `codex-run.sh` to `/work-review`
 
 All Cursor phases are optional. Skip them to use the original 2-touch workflow.
 
