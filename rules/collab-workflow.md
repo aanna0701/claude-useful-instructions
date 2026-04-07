@@ -3,11 +3,27 @@
 ## Roles
 
 - **Claude**: spec owner, integrator — designs work items, reviews, merges, handles doc changes
+- **Cursor**: structure propagator, verifier — scaffolds multi-file structures (Composer), verifies codebase consistency (Chat @Codebase)
 - **Codex**: implementer — per contract only, never modifies docs (records in `status.md`)
 
 ## State Machine
 
-Valid transitions only. Illegal shortcuts:
+```
+planned → [scaffolded] → implementing → ready-for-review → reviewing → merged
+             ↑ optional                                       ↓
+             (skip OK)                                      revising
+
+planned → auditing → audited   ← AUDIT type only (no implementation)
+```
+
+Valid transitions:
+- `planned → scaffolded` — `/work-scaffold` (optional, Cursor integration)
+- `planned → implementing` — `codex-run.sh` (direct, without scaffold)
+- `scaffolded → implementing` — `codex-run.sh` (after Cursor scaffolding)
+- `planned → auditing` — `/work-verify` (AUDIT type only)
+- `auditing → audited` — manual or after Cursor @Codebase audit
+
+Illegal shortcuts:
 - `planned → reviewing` (must implement first)
 - `implementing → merged` (must review first)
 - `reviewing → implementing` (only via REVISE → `revising`)
@@ -42,3 +58,6 @@ Worktree copy is authoritative. Bootstrap: resolve slug → read `Worktree Path`
 - Ambiguities recorded in `status.md`, never resolved by implementer
 - Draft PR creation happens at implementation stage, not review stage
 - Human intervention: dispatch + review only
+- Cursor integration is optional — all workflows work without Cursor
+- AUDIT type items skip implementation: `planned → auditing → audited`
+- `/work-scaffold` and `/work-verify` auto-detect type from ID prefix (FEAT/REFAC/AUDIT)

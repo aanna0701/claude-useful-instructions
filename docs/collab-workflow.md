@@ -11,25 +11,42 @@ The `collab` bundle enables structured handoff between **Claude** (design/review
 | Agent | Role | Writes |
 |-------|------|--------|
 | **Claude** | spec owner, integrator, final authority | brief.md, contract.md (signed), checklist.md, review.md |
+| **Cursor** | structure propagator, verifier (optional) | scaffolded files via Composer, verification reports via @Codebase |
 | **Codex** | implementer farm | code, status.md |
 
-## 2-Touch Workflow
-
-Human intervention is minimized to exactly **2 points**:
+## Workflow (with optional Cursor phases)
 
 ```
 Claude: /work-plan topic1, topic2, topic3
   → parallel agent generation + boundary check + dispatch manifest
+                                          ↓
+[OPTIONAL] — Human: /work-scaffold FEAT-001 FEAT-002
+  → Copy prompt to Cursor Composer (Cmd+I) → scaffolds file structure
+  → .cursorrules generated in worktree
                                           ↓
 TOUCH 1 — Human: bash codex-run.sh FEAT-001 FEAT-002 FEAT-003
   → auto: boundary check → seed artifacts → parallel codex exec → monitor
   → Codex implements per contract, records doc changes in status.md
   → prints: /work-review FEAT-001 FEAT-002 FEAT-003
                                           ↓
+[OPTIONAL] — Human: /work-verify FEAT-001 FEAT-002
+  → Copy prompt to Cursor Chat (@Codebase) → full project verification
+                                          ↓
 TOUCH 2 — Human: /work-review FEAT-001 FEAT-002 FEAT-003
   → Claude reviews in parallel, handles doc changes
   → MERGE: asks confirm → git merge + delete branch
-  → REVISE: writes `review.md` MUST-fix items + re-runs `codex-run.sh`, which injects `review.md` into the next Codex prompt
+  → REVISE: writes `review.md` MUST-fix items + re-runs `codex-run.sh`
+```
+
+### AUDIT Workflow (no implementation)
+
+```
+Claude: /work-plan --type=audit "naming convention check"
+  → generates AUDIT-001 with Audit Scope + Audit Criteria
+                                          ↓
+Human: /work-verify AUDIT-001
+  → Copy prompt to Cursor Chat (@Codebase) → codebase audit
+  → Create issues from findings or /work-plan --type=fix to address them
 ```
 
 Review follow-up policy:
@@ -55,6 +72,7 @@ Use one overall state per work item:
 | State | Meaning | Primary owner |
 |------|---------|---------------|
 | `planned` | Contract signed, not yet dispatched | Claude |
+| `scaffolded` | Cursor Composer scaffolding done (optional) | Cursor |
 | `implementing` | Codex actively working | Codex |
 | `blocked` | Preconditions or verification failed | Codex or Claude |
 | `ready-for-review` | Implementation finished and verified | Codex |
@@ -62,14 +80,17 @@ Use one overall state per work item:
 | `revising` | Review requested changes | Claude then Codex |
 | `merged` | PR merged and branch cleaned up | Claude |
 | `rejected` | Item closed without merge | Claude |
+| `auditing` | Cursor @Codebase audit in progress (AUDIT only) | Cursor |
+| `audited` | Audit complete (AUDIT only) | Claude |
 
-Keep the transition graph simple:
+Transition graph:
 
 ```
-planned -> implementing -> ready-for-review -> reviewing -> merged
-                             |                    |
-                             v                    v
-                           blocked             revising -> implementing
+planned -> [scaffolded] -> implementing -> ready-for-review -> reviewing -> merged
+              ↑ optional      |                    |
+                            blocked             revising -> implementing
+
+planned -> auditing -> audited   ← AUDIT type only (no implementation)
 ```
 
 `unknown` is not a valid business state. If tooling cannot determine a final outcome, it should write `blocked`.
@@ -120,11 +141,12 @@ project/
 ├── work/items/                        # Work items (created by install.sh)
 ├── work/dispatch.json                 # Parallel dispatch manifest (created by /work-plan)
 └── .claude/
-    ├── rules/collab-workflow.md       # Auto-loaded 2-agent rules
-    ├── commands/work-{plan,review,impl,revise,status}.md
-    ├── agents/{issue-creator,work-reviser}.md
+    ├── rules/collab-workflow.md       # Auto-loaded 3-agent rules (Claude, Cursor, Codex)
+    ├── commands/work-{plan,scaffold,verify,review,impl,revise,status}.md
+    ├── agents/{issue-creator,work-reviser,cursor-prompt-builder}.md
     ├── skills/collab-workflow/
-    └── templates/work-item/*.md       # Brief, contract, checklist, status, review
+    ├── templates/work-item/*.md       # Brief, contract, checklist, status, review
+    └── templates/cursor/*.md          # Cursor Composer/Chat prompt templates + .cursorrules
 ```
 
 `/work-plan` seeds each worktree with its work item files and `AGENTS.md` by committing them on the feature branch. `codex-run.sh` re-seeds as a fallback if artifacts are missing.
@@ -303,6 +325,22 @@ Before merge:
 - parent freshness passes
 - PR exists and matches the feature branch
 - cleanup targets only the reviewed item
+
+---
+
+---
+
+## Cursor Integration
+
+The collab workflow supports optional Cursor phases for multi-file scaffolding and codebase-wide verification.
+
+- **`/work-scaffold`**: Generates Cursor Composer prompts from contracts (FEAT → file stubs, REFAC → migration map)
+- **`/work-verify`**: Generates Cursor Chat @Codebase prompts (implementation check, regression check, or standalone audit)
+- **AUDIT type**: Dedicated workflow without implementation — `/work-plan --type=audit` → `/work-verify`
+
+All Cursor phases are optional. Skip them to use the original 2-touch workflow.
+
+> Full guide: [Cursor Integration](cursor-integration.md)
 
 ---
 

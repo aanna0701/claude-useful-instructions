@@ -55,7 +55,7 @@ cui-install --collab /path/to/my-project
 | `core` | smart-git-commit-push, optimize-tokens, debug-guide, what-to-do, token analyzers, git-auto-pull hook | Global (`~/.claude/`) |
 | `docs` | diataxis-doc-system, diagram-architect, doc/diagram agents, write-doc, init-docs, sync-docs | Global |
 | `data-pipeline` | data-pipeline-architect skill | Global |
-| `collab` | Claude-Codex collaboration, work items, CI audit, guard-trunk hook, codex-run, AGENTS.md, CLAUDE.md | Per-project |
+| `collab` | Claude-Codex collaboration, work items, Cursor integration (scaffold/verify), CI audit, guard-trunk hook, codex-run, AGENTS.md, CLAUDE.md | Per-project |
 | `career` | career-docs skill, career agents | Either |
 | `presentation` | html-presentation skill, create/format/edit/export-pdf commands | Global |
 | `worknote` | Work journal with Notion sync (daily log, review, planning) | Global |
@@ -152,7 +152,7 @@ Auto-triggered by Claude Code based on conversation context.
 | `data-pipeline-architect` | "Design data pipeline", "ETL architecture" |
 | `html-presentation` | "PPT format", "Slide conversion", "format-presentation" |
 | `career-docs` | "자소서 써줘", "Cover letter", "경력기술서" |
-| `collab-workflow` | "Work item", "Codex", "Hand off", "Delegate" |
+| `collab-workflow` | "Work item", "Codex", "Hand off", "Delegate", "scaffold", "verify", "audit" |
 | `ppt-generation` | "템플릿에 내용 넣어줘", "베이스 PPT에 채워줘", "fill template", ".potx" |
 | `worknote` | "업무일지", "업무 기록", "오늘 뭐했", "work note" |
 
@@ -172,7 +172,7 @@ Subagents delegated by Claude for specific tasks.
 | Work Journal | `worknote-sync`, `-review`, `-plan` | 3 |
 | Token Analysis | `token-duplication-detector`, `-load-measurer`, `-mcp-analyzer`, `-split-detector` | 4 |
 | Career Docs | `career-docs-writer`, `-reviewer`, `-reviser` | 3 |
-| Collab Workflow | `issue-creator`, `pr-reviewer`, `work-reviser` | 3 |
+| Collab Workflow | `issue-creator`, `pr-reviewer`, `work-reviser`, `cursor-prompt-builder` | 4 |
 | CI Audit | `ci-audit-agent` | 1 |
 | PPT Generation | `ppt-density-checker`, `ppt-format-reviewer` | 2 |
 | DL Pipeline | `dl-capture`, `-data`, `-model`, `-train`, `-eval`, `-infra` | 6 |
@@ -189,6 +189,8 @@ Subagents delegated by Claude for specific tasks.
 | `/work-status` | Check work item progress |
 | `/work-impl` | Implement a work item in its worktree per contract |
 | `/work-review` | Review Codex implementation against contract |
+| `/work-scaffold` | Generate Cursor Composer prompts from contracts (type auto-detected) |
+| `/work-verify` | Generate Cursor Chat @Codebase verification prompts (type auto-detected) |
 | `/work-revise` | Re-dispatch REVISE items from review to agent or Codex |
 | `/gha-branch-sync` | Audit GitHub Actions against branch map |
 | `/write-doc` | Diataxis-based document writing |
@@ -250,6 +252,7 @@ claude-useful-instructions/
 │   ├── issue-creator.md             # GitHub Issue creation from work items
 │   ├── pr-reviewer.md               # PR review against work item contract
 │   ├── work-reviser.md              # Re-dispatch REVISE items from review
+│   ├── cursor-prompt-builder.md     # Contract → Cursor Composer/Chat prompts
 │   ├── ci-audit-agent.md            # GitHub Actions topology audit
 │   ├── career-docs-*.md             # Career document writer & reviewer
 │   └── dl-*.md                      # DL pipeline agents (6 domains)
@@ -271,6 +274,7 @@ claude-useful-instructions/
 ├── templates/                       # Installable templates
 │   ├── branch-map/                  # branch-map.yaml bootstrap config
 │   ├── work-item/                   # brief, contract, checklist, status, review
+│   ├── cursor/                      # Cursor Composer/Chat prompt templates + .cursorrules
 │   ├── workflows/                   # GitHub Actions workflow templates
 │   ├── codex/AGENTS.md
 │   └── claude/CLAUDE.md
@@ -289,6 +293,7 @@ claude-useful-instructions/
 | Guide | Description |
 |-------|-------------|
 | [Collab Workflow](docs/collab-workflow.md) | Claude-Codex architecture, setup, and walkthrough |
+| [Cursor Integration](docs/cursor-integration.md) | Cursor as structure propagator and codebase verifier |
 | [Skills Reference](docs/skills.md) | Full skill documentation |
 | [Agents Reference](docs/agents.md) | Full agent documentation |
 | [Commands Reference](docs/commands.md) | Full command documentation |

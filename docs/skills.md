@@ -245,7 +245,7 @@ worknote-plan agent → prioritized work plan
 
 Korean career document generation & refinement skill. NotebookLM drafts; AI refines through a 6-step checklist and iterative Writer-Reviewer loop.
 
-**Triggers**: "자소서 써줘", "경력기술서 작성", "포트폴리오 정리", "커버레터 작성", "cover letter", "career description", "portfolio"
+**Triggers**: "자소서 써줘", "경력기술서 작성", "커버레터", "포트폴리오 정리", "커버레터 작성", "cover letter", "career description", "portfolio"
 
 ### Supported Document Types
 
@@ -288,3 +288,41 @@ User Input (doc type + JD/context + constraints)
 - **`career-docs-writer`** agent: 6-step refinement
 - **`career-docs-reviewer`** agent: Evaluation scoring
 - **`career-docs-reviser`** agent: Targeted fix application
+
+---
+
+## collab-workflow
+
+Claude-Codex collaboration workflow for structured design-implement-review cycles. Now includes optional Cursor integration for multi-file scaffolding and codebase verification.
+
+**Triggers**: "work item", "work plan", "work review", "work status", "codex", "hand off", "delegate", "FEAT-", "REFAC-", "AUDIT-", "scaffold", "verify", "cursor", "audit", "consistency check", "code audit", "multi-agent", "parallel", "dispatch", "worktree", "branch map"
+
+### Routing
+
+| User Intent | Route To |
+|-------------|----------|
+| Plan work items | `/work-plan` |
+| Scaffold file structure (Cursor) | `/work-scaffold` |
+| Verify implementation (Cursor) | `/work-verify` |
+| Check status | `/work-status` |
+| Review + merge | `/work-review` |
+| Implement in worktree | `/work-impl` |
+| Re-dispatch failed review | `/work-revise` |
+| Code audit / consistency check | `/work-plan --type=audit` then `/work-verify` |
+| Set up branch hierarchy | `/branch-init` |
+| Audit CI workflows | `/gha-branch-sync` |
+
+### Scenario Workflows
+
+| Type | Flow |
+|------|------|
+| **FEAT** | `/work-plan` → `/work-scaffold` → `codex-run.sh` → `/work-verify` → `/work-review` |
+| **REFACTOR** | `/work-plan` → `/work-scaffold` → `codex-run.sh` → `/work-verify` → `/work-review` |
+| **AUDIT** | `/work-plan --type=audit` → `/work-verify` → (issues or fix) |
+
+### Related
+
+- **[Cursor Integration](cursor-integration.md)**: Full Cursor integration guide
+- **[Collab Workflow](collab-workflow.md)**: Architecture, setup, and walkthrough
+- **`cursor-prompt-builder`** agent: Contract → Cursor prompt assembly
+- **Commands**: `/work-plan`, `/work-scaffold`, `/work-verify`, `/work-review`, `/work-impl`, `/work-revise`, `/work-status`

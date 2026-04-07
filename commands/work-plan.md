@@ -26,8 +26,11 @@ Split topics into parallelizable work items with contract boundaries for Codex/C
 | refactor | `REFAC-NNN` | `refactor/` | `refactor` | Code restructuring |
 | test | `TEST-NNN` | `test/` | `test` | Test additions |
 | perf | `PERF-NNN` | `perf/` | `perf` | Performance tuning |
+| audit | `AUDIT-NNN` | `audit/` | `audit` | Code audit, consistency check |
 
 **Type resolution order**: explicit `--type=` flag > infer from topic keywords > ask user.
+
+**Audit keyword detection**: "감사", "검증", "정합성", "audit", "check", "consistency", "convention", "code review" → `--type=audit`
 
 ---
 
@@ -74,6 +77,13 @@ Sequential `{TYPE}-NNN` (3-digit, zero-padded). Slug: lowercase kebab-case, max 
 ### Step 4: Generate Work Items (parallel)
 
 Spawn parallel agents (one per item). Each generates `brief.md`, `contract.md`, `checklist.md`, `status.md` from `.claude/templates/work-item/`. Ensure Allowed Modifications are **disjoint** across siblings. Fill contract's "## Branch Map" section from Step 1.5.
+
+**AUDIT type contract variation**: Use alternative section names:
+- "Allowed Modifications" → "Audit Scope" (files/directories to audit)
+- "Forbidden Zones" → "Out of Scope"
+- "Interfaces" → "Audit Criteria" (what to check)
+- "Test Requirements" → "Expected Output Format" (report structure)
+- "Invariants" → kept as-is (rules/standards to check against)
 
 Write to `work/items/{TYPE}-NNN-slug/`.
 
@@ -136,26 +146,30 @@ Always release `work/locks/planning.lock`, even on failure.
 
 ### Step 9: Summary
 
-Print summary table, then **all dispatch options**:
+Print summary table, then **type-aware next steps**:
 
 ```
 Work Plan Ready
 ──────────────────────────────────────────────
-  FEAT-001  schema-cleanup   #42  ../project-FEAT-001-schema-cleanup
-  CHORE-002 dep-upgrade      #43  ../project-CHORE-002-dep-upgrade
+  FEAT-001   schema-cleanup   #42  ../project-FEAT-001-schema-cleanup
+  REFAC-002  split-logger     #43  ../project-REFAC-002-split-logger
+  AUDIT-003  naming-check     #44  ../project-AUDIT-003-naming-check
 ──────────────────────────────────────────────
 Batch: work/batches/2026-04-03-schema-cleanup.json
 
-Next Steps — pick one:
+Next Steps — by type:
 ──────────────────────────────────────────────
-# Batch dispatch
-bash codex-run.sh FEAT-001 CHORE-002
+# FEAT / REFAC — Scaffold with Cursor, then dispatch to Codex
+/work-scaffold FEAT-001 REFAC-002
+bash codex-run.sh FEAT-001 REFAC-002
+
+# AUDIT — Verify directly with Cursor (no Codex needed)
+/work-verify AUDIT-003
+
+# Or skip Cursor — dispatch directly
+bash codex-run.sh FEAT-001 REFAC-002
 
 # Single item via Claude
 /work-impl FEAT-001
-
-# Direct codex exec (per item)
-codex exec --full-auto --cd <worktree_path> \
-  "Implement {ID}. Read work/items/{SLUG}/contract.md and follow AGENTS.md."
 ──────────────────────────────────────────────
 ```

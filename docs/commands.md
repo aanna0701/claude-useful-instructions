@@ -130,6 +130,57 @@ Re-dispatch a work item that failed review with targeted fix instructions.
 
 ---
 
+## /work-scaffold
+
+Generate Cursor Composer prompts from work item contracts. Auto-detects type from ID prefix.
+
+**Usage**:
+```
+/work-scaffold FEAT-001              # New feature: file structure + type stubs
+/work-scaffold REFAC-002             # Refactoring: migration map + rename list
+/work-scaffold FEAT-001 REFAC-002    # Multiple items (parallel)
+/work-scaffold AUDIT-003             # Skip — redirects to /work-verify
+```
+
+### Type → Behavior
+
+| Type Prefix | Action |
+|-------------|--------|
+| `FEAT`, `FIX`, `CHORE`, `PERF`, `TEST` | File structure + type/interface stubs |
+| `REFAC` | Before→after migration map + affected references |
+| `AUDIT`, `DOCS` | Skip — prints redirect to `/work-verify` |
+
+Also generates `.cursorrules` in the worktree root and updates `status.md` → `scaffolded`.
+
+> See [Cursor Integration](cursor-integration.md) for the full guide.
+
+---
+
+## /work-verify
+
+Generate Cursor Chat `@Codebase` verification prompts. Auto-detects type from ID prefix.
+
+**Usage**:
+```
+/work-verify FEAT-001               # Implementation verification
+/work-verify REFAC-002              # Regression verification
+/work-verify AUDIT-003              # Standalone codebase audit (no prior implementation)
+```
+
+### Type → Verification Focus
+
+| Type Prefix | Verification Focus |
+|-------------|-------------------|
+| `FEAT`, `FIX`, `CHORE`, `PERF`, `TEST` | Interface compliance, boundary, type safety |
+| `REFAC` | Dead imports, broken calls, config references |
+| `AUDIT`, `DOCS` | Pattern violations, naming, security, dead code |
+
+For AUDIT items, updates `status.md` → `auditing` (no Codex dispatch needed).
+
+> See [Cursor Integration](cursor-integration.md) for the full guide.
+
+---
+
 ## /write-doc
 
 Diátaxis Framework-based technical document writing command.
