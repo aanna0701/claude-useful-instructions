@@ -3,172 +3,50 @@
 When the user says `/collab-workflow {instruction}` or requests a feature/fix/refactor/audit,
 orchestrate the pipeline below.
 
-## CRITICAL RULE
-
-**You are a orchestrator, NOT an implementer.**
-
-- You MUST NOT generate plans, contracts, or review documents yourself.
-- You MUST NOT write implementation code yourself (except scaffold stubs in Step 2).
-- You MUST delegate to external tools via terminal execution.
-- Your only direct work is: Step 2 (scaffold) and Step 4 (verify).
-- Everything else: run a terminal command → read output → report to user.
-
-This prevents context pollution and ensures each tool works with its own specialized context.
-
----
+**You are an orchestrator, NOT an implementer.** Never write implementation code yourself.
 
 Stop after each step. Proceed only on user confirmation ("ㅇㅋ", "ok", "진행", "next", "go").
 
 ---
 
-## Step 1: Plan → run `claude -p` in terminal
+## Steps
 
-Execute in terminal:
-```bash
-claude -p "Read .claude/commands/work-plan.md and follow it exactly. Topic: {USER_INSTRUCTION}" --output-format json
-```
+### 1. Plan → `/work-plan {instruction}`
 
-Read the terminal output. Report to user: ID, type, scope summary, estimated files.
-Verify that `work/items/{ID}-*/` files were created (brief.md, contract.md, checklist.md, status.md).
+→ 📋 `cursor {WT_PATH}` then `/work-scaffold {ID}` (or `--claude`)
 
-**"계획 확인해주세요 (Plan ready — confirm to proceed)"**
+### 2. Scaffold → `/work-scaffold {ID}` → Cursor Composer에 붙여넣기
 
----
+→ 📋 `bash codex-run.sh {ID}` (or `/work-impl {ID}`)
 
-## Step 2: Scaffold → you do this directly
+### 3. Implement → `bash codex-run.sh {IDs}`
 
-This is the ONE step you execute yourself. Read `work/items/{ID}-*/contract.md`:
+→ 📋 `/work-verify {ID}` (or `--claude`)
 
-1. Parse "Allowed Modifications" → create directories and empty/stub files
-2. For each interface in contract: create function/class signatures with `raise NotImplementedError`
-3. Create test file skeletons with `@pytest.mark.skip("not implemented")` or equivalent
-4. Update `status.md` → `status: scaffolded`
+### 4. Verify → `/work-verify {ID}` → Cursor Chat에 붙여넣기
 
-Report: created files list.
-**"구조 확인해주세요 (Scaffold ready — confirm to proceed)"**
+→ 📋 `/work-review {ID}`
 
----
+### 5. Review → `/work-review {IDs}`
 
-## Step 3: Implement → run `codex-run.sh` in terminal
-
-Execute in terminal:
-```bash
-bash codex-run.sh {IDs}
-```
-
-If `codex-run.sh` is not available, fall back:
-```bash
-codex exec --full-auto "Read work/items/{ID}-*/contract.md and implement per spec"
-```
-
-Wait for completion. Read terminal output. Report: changed files, test results, status.
-**"구현 결과 확인해주세요 (Implementation ready — confirm to proceed)"**
-
-DO NOT implement the code yourself. If both codex-run.sh and codex are unavailable,
-inform the user and ask how to proceed.
-
----
-
-## Step 4: Verify → you do this directly
-
-This is the OTHER step you execute yourself. Check the implementation against the contract.
-Search the full codebase and report PASS/FAIL:
-
-1. **Boundaries**: only Allowed Modifications touched? Forbidden Zones clean?
-2. **Interfaces**: all contract interfaces implemented with correct signatures?
-3. **Invariants**: all invariants held?
-4. **Test requirements**: all required tests exist and pass?
-5. **Error handling**: all error cases from contract handled?
-6. **Checklist**: every item in checklist.md satisfied?
-
-Report: verification matrix with PASS/FAIL per item, violations if any.
-**"검증 결과 확인해주세요 (Verification ready — confirm to proceed)"**
-
----
-
-## Step 5: Review → run `claude -p` in terminal
-
-Execute in terminal:
-```bash
-claude -p "Read .claude/commands/work-review.md and follow it exactly. Target: {IDs}" --output-format json
-```
-
-Read the terminal output. Report decision to user:
-- **MERGE**: **"머지할까요? (Ready to merge — confirm)"**
-- **REVISE**: **"수정 사항이 있습니다. 수정 진행할까요?"**
-
-DO NOT write review.md yourself. Claude CLI does that.
-
----
-
-## Step 6: Revise (REVISE only)
-
-If review returned MUST-fix items:
-
-1. Re-run Step 3 (`bash codex-run.sh`) — Codex fixes
-2. Re-run Step 4 (you verify)
-3. Re-run Step 5 (`claude -p`) — Claude re-reviews
-
-Limits:
-- Max 3 revision rounds
-- Same MUST-fix unresolved 2 consecutive rounds → stop, request manual intervention
-- **"수정 완료 — 다시 검증합니다"**
+MERGE → 자동 처리 | REVISE → Step 3부터 반복 (max 3회)
 
 ---
 
 ## AUDIT items
 
-Skip Steps 2-3. You execute the audit directly (Step 4 variant):
+Skip Steps 2-3. `/work-verify AUDIT-NNN` directly.
 
-1. Read "Audit Scope" and "Audit Criteria" from contract
-2. Search codebase for violations
-3. Report findings with severity: CRITICAL / HIGH / MEDIUM / LOW
-4. Write results to review.md
+## Fallback (Cursor/Codex 없을 경우)
 
-**"감사 결과 확인해주세요 (Audit complete — review findings)"**
+| Step | 기본 | Fallback |
+|------|------|----------|
+| 2. Scaffold | `/work-scaffold` → Cursor | `/work-scaffold --claude` |
+| 3. Implement | `bash codex-run.sh` | `/work-impl` |
+| 4. Verify | `/work-verify` → Cursor | `/work-verify --claude` |
 
----
+Steps 1 (Plan) and 5 (Review) are always Claude internal commands.
 
-## Tool Roles Summary
+`{WT_PATH}` = status.md `Worktree Path` (절대경로). See `rules/collab-workflow.md` § Worktree Rules.
 
-| Step | Executor | Method | You do it? |
-|------|----------|--------|------------|
-| 1. Plan | Claude | `claude -p` in terminal | NO — run command, read output |
-| 2. Scaffold | You | Direct file creation | YES |
-| 3. Implement | Codex | `codex-run.sh` in terminal | NO — run command, read output |
-| 4. Verify | You | Codebase search + contract check | YES |
-| 5. Review | Claude | `claude -p` in terminal | NO — run command, read output |
-| 6. Revise | Codex→You→Claude | Steps 3→4→5 repeated | Mixed |
-
----
-
-## Quick Reference
-
-```
-User: /collab-workflow JWT 인증 미들웨어 추가해줘
-
-You:  [Step 1] 터미널 실행:
-      $ claude -p "Read .claude/commands/work-plan.md... Topic: JWT 인증 미들웨어"
-      → Claude가 FEAT-153 명세서 생성
-      → "FEAT-153 계획 확인해주세요"
-User: ㅇㅋ
-
-You:  [Step 2] contract.md 읽고 직접 파일 구조 생성
-      → "구조 확인해주세요"
-User: 진행
-
-You:  [Step 3] 터미널 실행:
-      $ bash codex-run.sh FEAT-153
-      → Codex가 구현 완료
-      → "구현 결과 확인해주세요"
-User: ok
-
-You:  [Step 4] 코드베이스 검색, 계약 대비 검증 (직접 수행)
-      → "검증 결과 확인해주세요"
-User: next
-
-You:  [Step 5] 터미널 실행:
-      $ claude -p "Read .claude/commands/work-review.md... Target: FEAT-153"
-      → Claude가 리뷰 작성
-      → "머지할까요?"
-```
+Tool roles and state machine: see `rules/collab-workflow.md`.

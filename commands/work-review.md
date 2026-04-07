@@ -2,121 +2,36 @@
 
 Compare implementation against contract, checklist, and brief. Supports batch review.
 
----
-
 ## Input
 
 **$ARGUMENTS**: Work item IDs (e.g., `FEAT-001` or `FEAT-001 CHORE-002`).
 
-No arguments: auto-glob `work/items/*/status.md` for all item slugs, then apply Step 1 worktree-first resolution to each — check **worktree** status.md for `ready-for-review` status. If none found: "No work items ready for review."
+No arguments: auto-glob for `ready-for-review` items.
 
-**Batch mode**: Multiple IDs reviewed in parallel with consolidated summary.
+## Steps
 
----
+1. **Resolve worktree**: Per `rules/collab-workflow.md` § Worktree Rules. Set `$WORK_ROOT`. All reads from worktree.
+2. **Pre-flight**: Read brief/contract/checklist/status (parallel). Require `ready-for-review` or `revising`. Acquire lock per § Locks.
+3. **Branch map validation**: Per `rules/review-merge-policy.md` § Merge Gating. Check freshness, merge target, role consistency.
+4. **Resolve PR**: `status.md` PR field > `gh pr list --head <branch>` > create as fallback.
+5. **Review changed files**: From status.md `Changed Files` or `git log --name-only`.
+6. **Generate review**: Spawn `pr-reviewer` agent. Decision: MERGE / REVISE / REJECT. Write `review.md`. Use `git add -f work/items/{SLUG}/`.
 
-## Execution Steps
+### MERGE
 
-### Step 1: Locate & Resolve Worktree
+Per `rules/review-merge-policy.md`: check `merge_policy.ask_confirm_before_merge`, ready PR, submit review, squash-merge, delete branch, close issue, remove worktree, prune refs, doc sync on working parent, remove work item dir.
 
-Per `rules/collab-workflow.md` § Worktree-First File Resolution:
+### REVISE
 
-1. Resolve `$ARGUMENTS` to slug via `work/items/FEAT-NNN-*/` glob
-2. Discover worktree path: `dispatch.json` → cwd `status.md` pointer → convention `../${PROJECT}-${SLUG}/`
-3. Read `status.md` from worktree (authoritative). Fallback to cwd if worktree absent.
-
-Set `$WORK_ROOT` = resolved worktree path. ALL subsequent file reads use `$WORK_ROOT`.
-
-### Step 2: Pre-flight & Read Work Item (parallel)
-
-Using `$WORK_ROOT/work/items/${SLUG}/`:
-- Verify brief.md, contract.md, checklist.md, status.md exist
-- Read all four in parallel
-- Require `Status = ready-for-review` or `revising`
-- Refuse merge/review execution if the item is still `implementing`
-
-### Step 2.1: Review Locks
-
-Before review:
-- Acquire `work/locks/{ID}.lock`
-- Acquire `work/locks/merge.lock` only immediately before merge execution
-- Verify `working_parent` is clean before any merge, cleanup, or doc sync
-
-### Step 2.5: Branch Map Validation
-
-Per `rules/branch-map-policy.md` § Safety Rules and `rules/review-merge-policy.md` § Merge Gating.
-
-From contract.md "## Branch Map" (fallback: `.claude/branch-map.yaml`, then upstream):
-1. **Freshness**: branch must include all parent commits
-2. **Merge target**: use contract's declared target for Step 7 merge
-3. **Role consistency**: changed files must fall within declared role's paths
-
-### Step 3: Resolve PR
-
-Find PR: `status.md` PR field > `gh pr list --head <branch>` > create as fallback (see `/work-impl` Step 7 format).
-
-### Step 4: Review Changed Files
-
-Read each file from "Changed Files" in status.md (already read from `$WORK_ROOT`). Fallback: `git log --name-only` in worktree.
-
-### Step 5: Generate Review
-
-Spawn `doc-writer-review` agent with `bundle: true`, passing contract + checklist + changed files. Decision: MERGE / REVISE / REJECT.
-
-Write to `work/items/{SLUG}/review.md`. Update status.md: Status → `reviewing`, Agent → `Claude`.
-
-**Gitignore note**: Use `git add -f work/items/{SLUG}/` when committing review.md or status.md changes — target projects may gitignore `work/`.
-
-### Step 6: Execute Decision
-
-**MERGE**:
-1. If Step 2.5 flagged freshness issues, block and suggest rebase first
-2. Check `merge_policy.ask_confirm_before_merge` in branch-map.yaml — if true, ask user before proceeding; if false, auto-merge without prompt
-3. Convert draft PR to ready: `gh pr ready <pr>`
-4. Update PR body with review summary: `gh pr edit <pr> --body "..."`
-5. Spawn `pr-reviewer` agent — reviews diff against contract, submits `gh pr review`, if APPROVE auto-merges via `gh pr merge --squash --delete-branch`
-6. Update status.md: Status → `merged`, update PR field
-7. Post-merge cleanup:
-   - Close issue: `gh issue close <num> --comment "Merged via PR <url>"`
-   - Delete remote branch (safety net — `--delete-branch` may silently fail): `git push origin --delete <branch> 2>/dev/null || true`
-   - Remove worktree: `git worktree remove <path> && git branch -d <branch>`
-   - Prune stale remote refs: `git fetch --prune`
-   - Update `work/dispatch.json`: remove merged entry
-8. **Doc sync** (only on a clean working parent):
-   - `git pull` on current branch (working parent) to pick up squash-merged changes
-   - Read "Doc Changes Needed" section from status.md (saved before worktree removal)
-   - If doc changes exist OR merged files touch `docs/`, `README.md`, or config:
-     - Run `/sync-docs` targeting the affected doc paths
-     - Commit doc updates: `docs: sync after {FEAT-ID} merge`
-     - Push to working parent
-   - Remove work item dir last: `rm -r work/items/{SLUG}/`
-
-**REVISE**: Write review.md with explicit `MUST-fix` section. Update status.md to `revising`. Spawn `work-reviser` agent. Print re-dispatch commands:
-```
-REVISE: {ID} (N MUST-fix items)
-──────────────────────────────────────────────
-/work-revise {ID}
-bash codex-run.sh {ID}
-codex exec --full-auto --cd <worktree_path> \
-  "Revise {ID}. Read work/items/{SLUG}/review.md then contract.md. Follow AGENTS.md."
-──────────────────────────────────────────────
-```
-
-**REJECT**: State reason. Close issue (`gh issue close <num> --reason "not planned"`). Remove `work/items/{SLUG}/`.
-
-Release locks before exit.
-
-### Step 7: Batch Summary
+Write MUST-fix to review.md. Status → `revising`. Spawn `work-reviser` agent.
 
 ```
-Review Complete
-──────────────────────────────────────────────
-  FEAT-001  schema-cleanup    PR #51 (merged)   #42 closed
-  DOCS-002  api-reference     PR #52 (merged)   #43 closed
-  FIX-003   null-pointer      PR #53 (revising)   #44 open
-
-Revisions needed:
-  bash codex-run.sh FIX-003
-──────────────────────────────────────────────
+📋 다음 단계 (REVISE)
+  bash codex-run.sh {ID}           # Codex 없으면: /work-impl {ID}
+  /work-verify {ID}                # Cursor 없으면: --claude
+  /work-review {ID}
 ```
 
-Doc changes are applied automatically per item during Step 6 MERGE (no manual action needed).
+### REJECT
+
+State reason. Close issue. Remove `work/items/{SLUG}/`.
