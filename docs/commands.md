@@ -150,7 +150,7 @@ Generate Cursor Composer prompts from work item contracts. Auto-detects type fro
 | `REFAC` | Before→after migration map + affected references |
 | `AUDIT`, `DOCS` | Skip — prints redirect to `/work-verify` |
 
-Also generates `.cursorrules` and `.cursor/rules/*.mdc` (glob-based contract enforcement) in the worktree root. Updates `status.md` → `scaffolded`.
+Also generates `.cursor/rules/*.mdc` (glob-based contract enforcement) in the worktree root. Updates `status.md` → `scaffolded`.
 
 > See [Cursor Integration](cursor-integration.md) for the full guide.
 
@@ -158,13 +158,13 @@ Also generates `.cursorrules` and `.cursor/rules/*.mdc` (glob-based contract enf
 
 ## /work-verify
 
-Generate Cursor Chat `@Codebase` verification prompts. Auto-detects type from ID prefix.
+Generate Cursor Chat `@Codebase` verification prompts, and optionally ingest results for auto-routing.
 
 **Usage**:
 ```
-/work-verify FEAT-001               # Implementation verification
-/work-verify REFAC-002              # Regression verification
-/work-verify AUDIT-003              # Standalone codebase audit (no prior implementation)
+/work-verify FEAT-001                     # Generate verification prompt
+/work-verify FEAT-001 --ingest            # Parse Cursor output → PASS/FAIL → route
+/work-verify FEAT-001 --ingest @file.md   # Read results from file
 ```
 
 ### Type → Verification Focus
@@ -175,31 +175,13 @@ Generate Cursor Chat `@Codebase` verification prompts. Auto-detects type from ID
 | `REFAC` | Dead imports, broken calls, config references |
 | `AUDIT`, `DOCS` | Pattern violations, naming, security, dead code |
 
-For AUDIT items, updates `status.md` → `auditing` (no Codex dispatch needed).
-
-> See [Cursor Integration](cursor-integration.md) for the full guide.
-
----
-
-## /work-verify-ingest
-
-Parse Cursor Chat verification output, save structured results, and auto-route to next action.
-
-**Usage**:
-```
-/work-verify-ingest FEAT-001              # Prompts to paste Cursor output
-/work-verify-ingest FEAT-001 @output.md   # Reads from file
-```
-
-### Verdict Logic
+### `--ingest` Verdict Logic
 
 | Condition | Verdict | Action |
 |-----------|---------|--------|
 | 0 CRITICAL, 0 HIGH | PASS | Status → `ready-for-review` (or `audited` for AUDIT) |
 | 0 CRITICAL, 1+ HIGH | PASS_WITH_WARNINGS | User chooses: proceed or revise |
 | 1+ CRITICAL | FAIL | Suggests `/work-revise` |
-
-Saves parsed findings to `work/items/{ID}-*/verify-result.md`.
 
 > See [Cursor Integration](cursor-integration.md) for the full guide.
 

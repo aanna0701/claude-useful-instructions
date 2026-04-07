@@ -123,8 +123,7 @@ Invoked by `/work-scaffold` and `/work-verify`. Handles the full pipeline:
 2. Parses `brief.md` and `contract.md` into structured data
 3. Selects the type-specific template from `.claude/templates/cursor/`
 4. Fills template variables and returns the rendered prompt
-5. For scaffold mode: generates `.cursorrules` (legacy root-level)
-6. For scaffold mode: derives glob patterns from contract paths and generates `.cursor/rules/{SLUG}-guard.mdc` (contract boundary enforcement) and `{SLUG}-forbidden.mdc` (forbidden zone warning)
+5. For scaffold mode: derives glob patterns from contract paths and generates `.cursor/rules/{SLUG}-guard.mdc` (contract boundary enforcement) and `{SLUG}-forbidden.mdc` (forbidden zone warning)
 
 ---
 

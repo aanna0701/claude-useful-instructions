@@ -295,7 +295,7 @@ User Input (doc type + JD/context + constraints)
 
 Claude-Codex collaboration workflow for structured design-implement-review cycles. Now includes optional Cursor integration for multi-file scaffolding and codebase verification.
 
-**Triggers**: "work item", "work plan", "work review", "work status", "codex", "hand off", "delegate", "FEAT-", "REFAC-", "AUDIT-", "scaffold", "verify", "verify-ingest", "cursor", "cursor rules", "audit", "consistency check", "code audit", "multi-agent", "parallel", "dispatch", "worktree", "branch map", "verification result", "findings"
+**Triggers**: "work item", "work plan", "work review", "work status", "codex", "hand off", "delegate", "FEAT-", "REFAC-", "AUDIT-", "scaffold", "verify", "cursor", "cursor rules", "audit", "consistency check", "code audit", "multi-agent", "parallel", "dispatch", "worktree", "branch map", "verification result", "findings"
 
 ### Routing
 
@@ -304,7 +304,7 @@ Claude-Codex collaboration workflow for structured design-implement-review cycle
 | Plan work items | `/work-plan` |
 | Scaffold file structure (Cursor) | `/work-scaffold` |
 | Verify implementation (Cursor) | `/work-verify` |
-| Ingest verification results | `/work-verify-ingest` |
+| Ingest verification results | `/work-verify --ingest` |
 | Check status | `/work-status` |
 | Review + merge | `/work-review` |
 | Implement in worktree | `/work-impl` |
@@ -317,13 +317,13 @@ Claude-Codex collaboration workflow for structured design-implement-review cycle
 
 | Type | Flow |
 |------|------|
-| **FEAT** | `/work-plan` → `/work-scaffold` → `codex-run.sh` → `/work-verify` → `/work-verify-ingest` → `/work-review` |
-| **REFACTOR** | `/work-plan` → `/work-scaffold` → `codex-run.sh` → `/work-verify` → `/work-verify-ingest` → `/work-review` |
-| **AUDIT** | `/work-plan --type=audit` → `/work-verify` → `/work-verify-ingest` → (issues or fix) |
+| **FEAT** | `/work-plan` → `/work-scaffold` → `codex-run.sh` → `/work-verify` [`--ingest`] → `/work-review` |
+| **REFACTOR** | `/work-plan` → `/work-scaffold` → `codex-run.sh` → `/work-verify` [`--ingest`] → `/work-review` |
+| **AUDIT** | `/work-plan --type=audit` → `/work-verify` [`--ingest`] → (issues or fix) |
 
 ### Cursor Rules (v2)
 
-`/work-scaffold` now generates `.cursor/rules/*.mdc` alongside `.cursorrules`:
+`/work-scaffold` now generates `.cursor/rules/*.mdc`:
 - `{SLUG}-guard.mdc` — contract boundaries auto-applied when editing allowed files
 - `{SLUG}-forbidden.mdc` — warning when opening forbidden zone files
 
@@ -331,7 +331,7 @@ These are glob-based rules that Cursor applies automatically without manual prom
 
 ### Related
 
-- **[Cursor Integration](cursor-integration.md)**: Full Cursor integration guide (rules v2, verify-ingest)
+- **[Cursor Integration](cursor-integration.md)**: Full Cursor integration guide (rules v2, --ingest)
 - **[Collab Workflow](collab-workflow.md)**: Architecture, setup, and walkthrough
 - **`cursor-prompt-builder`** agent: Contract → Cursor prompt + .cursor/rules/ assembly
-- **Commands**: `/work-plan`, `/work-scaffold`, `/work-verify`, `/work-verify-ingest`, `/work-review`, `/work-impl`, `/work-revise`, `/work-status`
+- **Commands**: `/work-plan`, `/work-scaffold`, `/work-verify`, `/work-review`, `/work-impl`, `/work-revise`, `/work-status`

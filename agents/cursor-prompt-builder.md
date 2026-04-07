@@ -1,6 +1,6 @@
 ---
 name: cursor-prompt-builder
-description: Parse work item contract and brief, detect type from ID prefix, assemble Cursor Composer/Chat prompts using type-specific templates, and generate .cursorrules.
+description: Parse work item contract and brief, detect type from ID prefix, assemble Cursor Composer/Chat prompts using type-specific templates, and generate .cursor/rules/*.mdc.
 ---
 
 You build Cursor-ready prompts from work item artifacts. You detect the work item type from its ID prefix and select the appropriate template.
@@ -67,19 +67,17 @@ Default: `scaffold-feat.md` / `verify-feat.md` for unrecognized prefixes.
 3. Select scaffold template based on type
 4. For REFACTOR type: parse `allowed_modifications` entries containing `→` or `->` as migration pairs (`before → after`)
 5. Fill template variables from parsed data
-6. Generate `.cursorrules` content from `cursorrules.md` template
-7. Infer `primary_language` from file extensions in `allowed_modifications`:
+6. Infer `primary_language` from file extensions in `allowed_modifications`:
    - `.py` → Python, `.ts`/`.tsx` → TypeScript, `.go` → Go, `.rs` → Rust, etc.
-8. Derive glob patterns from `allowed_modifications`:
+7. Derive glob patterns from `allowed_modifications`:
    - Directory paths (trailing `/`) → append `**` (e.g., `src/auth/` → `src/auth/**`)
    - File paths → keep as-is (e.g., `src/auth/token.py`)
    - Already-glob patterns → keep as-is (e.g., `src/auth/*.py`)
-9. Derive glob patterns from `forbidden_zones`:
-   - Same rules as step 8
-10. Fill `contract-guard.mdc.md` template → write to `{worktree_path}/.cursor/rules/{SLUG}-guard.mdc`
-11. Fill `boundary-alert.mdc.md` template → write to `{worktree_path}/.cursor/rules/{SLUG}-forbidden.mdc`
-12. Stage and commit all Cursor integration files:
-    `chore({SLUG}): add .cursorrules and .cursor/rules/ for contract enforcement`
+8. Derive glob patterns from `forbidden_zones`:
+   - Same rules as step 7
+9. Fill `contract-guard.mdc.md` template → write to `{worktree_path}/.cursor/rules/{SLUG}-guard.mdc`
+10. Fill `boundary-alert.mdc.md` template → write to `{worktree_path}/.cursor/rules/{SLUG}-forbidden.mdc`
+11. Stage and commit: `chore({SLUG}): add .cursor/rules/ for contract enforcement`
 
 ### Mode: verify
 
@@ -93,15 +91,11 @@ Default: `scaffold-feat.md` / `verify-feat.md` for unrecognized prefixes.
 
 The agent produces TWO outputs:
 
-### 1. Cursor Prompt (printed to terminal + clipboard)
+### 1. Cursor Prompt (printed to terminal)
 
 The fully rendered prompt from the selected template. Print it inside a fenced code block for easy copy-paste.
 
-### 2. .cursorrules file (scaffold mode only)
-
-Write to `{worktree_path}/.cursorrules` (or print if worktree path unavailable).
-
-### 3. .cursor/rules/ files (scaffold mode only)
+### 2. .cursor/rules/ files (scaffold mode only)
 
 Write to `{worktree_path}/.cursor/rules/`:
 - `{SLUG}-guard.mdc` — contract boundaries, applied when editing allowed files

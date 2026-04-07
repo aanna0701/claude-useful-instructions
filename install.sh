@@ -111,7 +111,6 @@ BUNDLE_COLLAB=(
   "agents:cursor-prompt-builder.md"
   "commands:work-scaffold.md"
   "commands:work-verify.md"
-  "commands:work-verify-ingest.md"
   "templates:branch-map"
   "templates:work-item"
   "templates:cursor"

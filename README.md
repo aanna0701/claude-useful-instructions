@@ -190,8 +190,7 @@ Subagents delegated by Claude for specific tasks.
 | `/work-impl` | Implement a work item in its worktree per contract |
 | `/work-review` | Review Codex implementation against contract |
 | `/work-scaffold` | Generate Cursor Composer prompts + .cursor/rules/*.mdc from contracts |
-| `/work-verify` | Generate Cursor Chat @Codebase verification prompts (type auto-detected) |
-| `/work-verify-ingest` | Parse Cursor verification output → verdict → auto-route to next action |
+| `/work-verify` | Cursor verification: prompt generation + `--ingest` for result parsing |
 | `/work-revise` | Re-dispatch REVISE items from review to agent or Codex |
 | `/gha-branch-sync` | Audit GitHub Actions against branch map |
 | `/write-doc` | Diataxis-based document writing |
@@ -275,7 +274,7 @@ claude-useful-instructions/
 ├── templates/                       # Installable templates
 │   ├── branch-map/                  # branch-map.yaml bootstrap config
 │   ├── work-item/                   # brief, contract, checklist, status, review
-│   ├── cursor/                      # Cursor prompt templates + .cursorrules + .cursor/rules/*.mdc
+│   ├── cursor/                      # Cursor prompt templates + .cursor/rules/*.mdc
 │   ├── workflows/                   # GitHub Actions workflow templates
 │   ├── codex/AGENTS.md
 │   └── claude/CLAUDE.md

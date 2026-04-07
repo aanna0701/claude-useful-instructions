@@ -41,12 +41,11 @@ bash codex-run.sh FEAT-001
 # 5. Verify with Cursor (optional)
 /work-verify FEAT-001
 # → Copy the printed prompt → Cursor Chat
-
-# 6. Ingest verification results (optional)
-/work-verify-ingest FEAT-001
+# → After Cursor responds:
+/work-verify FEAT-001 --ingest
 # → Paste Cursor output → auto-parsed → PASS/FAIL verdict
 
-# 7. Review and merge as usual
+# 6. Review and merge as usual
 /work-review FEAT-001
 ```
 
@@ -57,41 +56,35 @@ bash codex-run.sh FEAT-001
 ### FEAT — New Feature
 
 ```
-/work-plan → /work-scaffold → codex-run.sh → /work-verify → /work-verify-ingest → /work-review
-  (계약)     (구조+룰 전파)   (로직 채우기)   (정합성 검증)   (결과 파싱/라우팅)    (머지)
+/work-plan → /work-scaffold → codex-run.sh → /work-verify [--ingest] → /work-review
+  (계약)     (구조+룰 전파)   (로직 채우기)   (검증 + 결과 파싱)         (머지)
 ```
 
-**Scaffold output**: File structure + type stubs + `.cursor/rules/*.mdc` (contract auto-enforcement).
+**Scaffold**: File structure + type stubs + `.cursor/rules/*.mdc` (contract auto-enforcement).
 
-**Verify output**: Interface compliance, boundary violations, dependency conflicts, type safety, invariant compliance.
-
-**Ingest**: Parses findings → PASS/FAIL verdict → auto-routes to review or revision.
+**Verify**: Prompt generation → Cursor Chat → `--ingest` parses results → PASS/FAIL → auto-route.
 
 ### REFACTOR — Code Restructuring
 
 ```
-/work-plan → /work-scaffold → codex-run.sh → /work-verify → /work-verify-ingest → /work-review
-  (계약)     (이동 맵+룰)     (코드 이동)    (회귀 검증)     (결과 파싱/라우팅)    (머지)
+/work-plan → /work-scaffold → codex-run.sh → /work-verify [--ingest] → /work-review
+  (계약)     (이동 맵+룰)     (코드 이동)    (검증 + 결과 파싱)         (머지)
 ```
 
-**Scaffold output**: Before→after migration map + rename list + `.cursor/rules/*.mdc`.
+**Scaffold**: Migration map + rename list + `.cursor/rules/*.mdc`.
 
-**Verify output**: Dead imports (old paths), broken calls, re-export coverage, test path references, config references.
-
-**Ingest**: Parses regression findings → routes to review or revision.
+**Verify**: Regression check → `--ingest` parses findings → auto-route.
 
 ### AUDIT — Code Audit / Consistency Check
 
 ```
-/work-plan → /work-verify → /work-verify-ingest → (create issues or fix)
-  (감사 범위)  (감사 실행)     (결과 파싱/라우팅)
+/work-plan → /work-verify [--ingest] → (create issues or fix)
+  (감사 범위)  (감사 실행 + 결과 파싱)
 ```
 
 **No scaffold or Codex needed.** AUDIT items go directly from planning to verification.
 
-**Verify output**: @Codebase audit prompt with criteria from contract.
-
-**Ingest**: Parses audit findings → `audited` status → options to create issues or plan fixes.
+**Verify**: @Codebase audit → `--ingest` parses findings → `audited` status.
 
 ---
 
@@ -112,7 +105,7 @@ Generates a Cursor Composer prompt from work item contracts.
 1. Reads `brief.md` and `contract.md` from the work item
 2. Auto-detects type from ID prefix (FEAT/REFAC/AUDIT)
 3. Fills the type-specific template with contract data
-4. Generates `.cursorrules` in the worktree root
+4. Generates `.cursor/rules/*.mdc` in the worktree
 5. Updates `status.md` → `scaffolded`
 6. Prints the prompt for clipboard copy
 
@@ -136,19 +129,7 @@ Generates a Cursor Chat `@Codebase` verification prompt.
 
 ## Cursor Rules
 
-`/work-scaffold` generates two layers of Cursor configuration:
-
-### Layer 1: `.cursorrules` (legacy, root-level)
-
-A single file in the worktree root containing:
-- **Forbidden Zones** from contract
-- **Allowed Modifications** → explicit file list
-- **Coding conventions** from AGENTS.md
-- **Tech stack** inferred from contract dependencies
-
-### Layer 2: `.cursor/rules/*.mdc` (glob-based, auto-applied)
-
-Fine-grained rules in `.cursor/rules/` that Cursor applies automatically based on file patterns:
+`/work-scaffold` generates `.cursor/rules/*.mdc` in the worktree — glob-based rules that Cursor applies automatically:
 
 | File | Trigger | Purpose |
 |------|---------|---------|
@@ -175,7 +156,7 @@ globs: ["src/auth/**", "tests/auth/**"]
 ...
 ```
 
-Both layers are generated together. `.cursorrules` provides broad project context; `.cursor/rules/*.mdc` provides file-specific enforcement.
+Cursor reads these files and matches the `globs` frontmatter against the file being edited — no manual prompt copy needed.
 
 ---
 
@@ -186,31 +167,31 @@ The Cursor integration adds optional states and transitions:
 ```
 planned → [scaffolded] → implementing → [verified] → ready-for-review → reviewing → merged
              ↑ optional                    ↑ optional
-             (.cursor/rules/ generated)    (/work-verify-ingest PASS)
+             (.cursor/rules/ generated)    (/work-verify --ingest PASS)
 
-planned → auditing → audited   ← AUDIT only (/work-verify-ingest PASS)
+planned → auditing → audited   ← AUDIT only (/work-verify --ingest PASS)
 ```
 
-- `scaffolded`: Set by `/work-scaffold`. Generates `.cursorrules` + `.cursor/rules/*.mdc`. `codex-run.sh` accepts both `planned` and `scaffolded`.
-- `verified`: Set by `/work-verify-ingest` on PASS verdict. Optional — can go directly to `ready-for-review`.
+- `scaffolded`: Set by `/work-scaffold`. Generates `.cursor/rules/*.mdc`. `codex-run.sh` accepts both `planned` and `scaffolded`.
+- `verified`: Set by `/work-verify --ingest` on PASS verdict. Optional — can go directly to `ready-for-review`.
 - `auditing`: Set by `/work-verify` for AUDIT items. No implementation phase.
-- `audited`: Set by `/work-verify-ingest` for AUDIT items on PASS verdict.
+- `audited`: Set by `/work-verify --ingest` for AUDIT items on PASS verdict.
 
 ---
 
 ## Verify Result Ingestion
 
-After running `/work-verify` and getting Cursor's output, use `/work-verify-ingest` to parse the results:
+After running `/work-verify` and getting Cursor's output, run `/work-verify --ingest` to parse the results:
 
 ```
 /work-verify FEAT-001
 # → Copy prompt → Cursor Chat → get results
 
-/work-verify-ingest FEAT-001
+/work-verify FEAT-001 --ingest
 # → Paste Cursor output → auto-parsed → verdict + routing
 ```
 
-The ingest command:
+The `--ingest` mode:
 1. Parses structured findings (table format from verify templates)
 2. Saves to `work/items/{ID}-*/verify-result.md`
 3. Auto-determines verdict: PASS / PASS_WITH_WARNINGS / FAIL
@@ -234,9 +215,9 @@ Located in `.claude/templates/cursor/`:
 | `verify-feat.md` | FEAT | `/work-verify` |
 | `verify-refactor.md` | REFAC | `/work-verify` |
 | `verify-audit.md` | AUDIT | `/work-verify` |
-| `cursorrules.md` | All | `/work-scaffold` |
 | `contract-guard.mdc.md` | All | `/work-scaffold` |
 | `boundary-alert.mdc.md` | All | `/work-scaffold` |
+| `cursorrules.md` | _(reference only)_ | _(not generated by default)_ |
 
 ---
 
@@ -248,8 +229,7 @@ Every workflow works without Cursor:
 |-------|-------------|----------------|
 | Scaffold | Cursor Composer scaffolds structure | Codex creates files from scratch |
 | Rules | `.cursor/rules/*.mdc` auto-enforces contract | Codex relies on AGENTS.md boundaries |
-| Verify | Cursor @Codebase checks full project | Claude Code reviews in `/work-review` |
-| Ingest | `/work-verify-ingest` parses findings | Manual review in `/work-review` |
+| Verify | Cursor @Codebase checks + `--ingest` parses | Claude Code reviews in `/work-review` |
 | Diff review | Cursor Side-by-Side diff | `git diff` in terminal |
 
 Skip `/work-scaffold` and `/work-verify` — go directly from `/work-plan` to `codex-run.sh` to `/work-review`.

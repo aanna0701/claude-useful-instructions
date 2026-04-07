@@ -61,5 +61,5 @@ Worktree copy is authoritative. Bootstrap: resolve slug → read `Worktree Path`
 - Cursor integration is optional — all workflows work without Cursor
 - AUDIT type items skip implementation: `planned → auditing → audited`
 - `/work-scaffold` and `/work-verify` auto-detect type from ID prefix (FEAT/REFAC/AUDIT)
-- `/work-scaffold` generates `.cursor/rules/*.mdc` alongside `.cursorrules` for glob-based contract enforcement
-- `/work-verify-ingest` parses Cursor verification output → `verify-result.md` → auto-routes to next action
+- `/work-scaffold` generates `.cursor/rules/*.mdc` for glob-based contract enforcement
+- `/work-verify --ingest` parses Cursor verification output → `verify-result.md` → auto-routes to next action

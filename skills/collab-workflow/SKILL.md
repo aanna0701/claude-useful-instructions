@@ -6,7 +6,7 @@ description: >
   "hand off", "delegate", "FEAT-", "REFAC-", "AUDIT-", "multi-agent", "parallel", "dispatch",
   "boundary check", "worktree", "link work", "concurrent", "branch map", "branch init",
   "branch status", "merge target", "trunk chain", "working parent", "CI audit", "gha sync",
-  "workflow audit", "scaffold", "verify", "verify-ingest", "cursor", "cursor rules",
+  "workflow audit", "scaffold", "verify", "cursor", "cursor rules",
   "audit", "code audit", "consistency check", "verification result", "findings".
 ---
 
@@ -24,7 +24,7 @@ description: >
 | Audit / fix / generate CI workflows | `/gha-branch-sync` |
 | Scaffold file structure (Cursor) | `/work-scaffold FEAT-NNN` or `/work-scaffold REFAC-NNN` |
 | Verify implementation (Cursor) | `/work-verify FEAT-NNN` or `/work-verify AUDIT-NNN` |
-| Ingest verification results | `/work-verify-ingest FEAT-NNN` |
+| Ingest verification results | `/work-verify FEAT-NNN --ingest` |
 | Boundary check / dispatch | `codex-run.sh` (suggest command) |
 | Implement in worktree | `/work-impl #<issue>` or `/work-impl FEAT-NNN` |
 | Re-dispatch failed review | `/work-revise FEAT-NNN` |
@@ -41,4 +41,3 @@ description: >
 - Templates: `.claude/templates/work-item/`, `.claude/templates/branch-map/`, `.claude/templates/cursor/`
 - Agent: `cursor-prompt-builder` (contract → Cursor prompt + .cursor/rules/ assembly)
 - Docs: `docs/cursor-integration.md` (Cursor integration guide)
-- Templates: `.claude/templates/cursor/contract-guard.mdc.md`, `boundary-alert.mdc.md`

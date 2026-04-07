@@ -45,17 +45,16 @@ The agent:
 1. Parses `brief.md` and `contract.md`
 2. Selects template based on type
 3. Fills template variables
-4. Returns rendered prompt + `.cursorrules` content
+4. Returns rendered prompt
 
-### Step 3: Generate Cursor Integration Files
+### Step 3: Generate .cursor/rules/
 
 For each non-AUDIT item:
 
-1. Write `.cursorrules` to the worktree root: `{worktree_path}/.cursorrules`
-2. Create `.cursor/rules/` directory: `mkdir -p {worktree_path}/.cursor/rules/`
-3. Write `{SLUG}-guard.mdc` — contract boundary enforcement (auto-applied when editing allowed files)
-4. Write `{SLUG}-forbidden.mdc` — boundary violation warning (auto-applied when opening forbidden zone files)
-5. Stage and commit all files: `chore({SLUG}): add .cursorrules and .cursor/rules/ for contract enforcement`
+1. Create `.cursor/rules/` directory: `mkdir -p {worktree_path}/.cursor/rules/`
+2. Write `{SLUG}-guard.mdc` — contract boundary enforcement (auto-applied when editing allowed files)
+3. Write `{SLUG}-forbidden.mdc` — boundary violation warning (auto-applied when opening forbidden zone files)
+4. Stage and commit: `chore({SLUG}): add .cursor/rules/ for contract enforcement`
 
 ### Step 4: Update Status
 
@@ -100,9 +99,9 @@ bash codex-run.sh {non-audit IDs}
 # Or implement manually:
 /work-impl {ID}
 
-# After implementation, verify and ingest results:
+# After implementation, verify with Cursor:
 /work-verify {ID}
-# → paste Cursor output → /work-verify-ingest {ID}
+# → after Cursor responds: /work-verify {ID} --ingest
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -112,5 +111,5 @@ bash codex-run.sh {non-audit IDs}
 
 - Missing work item directory: `ERROR: {ID} not found in work/items/`
 - Status not `planned`: `WARN: {ID} status is '{status}', expected 'planned'. Proceeding anyway.`
-- Missing worktree: `WARN: Worktree not found at {path}. Printing prompt without .cursorrules generation.`
+- Missing worktree: `WARN: Worktree not found at {path}. Printing prompt without .cursor/rules/ generation.`
 - AUDIT items are not errors — just redirects to `/work-verify`

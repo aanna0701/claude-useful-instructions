@@ -1,17 +1,15 @@
-# work-verify — Generate Cursor Chat Verification Prompts
+# work-verify — Cursor Verification (Prompt + Result Ingest)
 
-Generate Cursor Chat `@Codebase` verification prompts. Type is auto-detected from work item ID prefix.
+Generate Cursor Chat `@Codebase` verification prompts, then optionally ingest the results for auto-routing. Two modes in one command.
 
 ---
 
 ## Input
 
-**$ARGUMENTS**: Work item IDs (space-separated).
-
 ```
-/work-verify FEAT-001
-/work-verify FEAT-001 REFAC-002
-/work-verify AUDIT-003          # → standalone audit (no prior implementation)
+/work-verify FEAT-001                     # Phase 1: generate verification prompt
+/work-verify FEAT-001 --ingest            # Phase 2: paste Cursor output → parse → route
+/work-verify FEAT-001 --ingest @file.md   # Phase 2: read results from file
 ```
 
 ---
@@ -26,7 +24,7 @@ Generate Cursor Chat `@Codebase` verification prompts. Type is auto-detected fro
 
 ---
 
-## Execution Steps
+## Phase 1: Generate Prompt (default)
 
 ### Step 1: Resolve Work Items
 
@@ -53,11 +51,10 @@ The agent:
 
 For AUDIT items:
 - Update `status.md` → `Status = auditing`
-- This is the terminal implementation step for AUDIT (no Codex dispatch)
 
 ### Step 4: Output
 
-Print each prompt in a fenced code block with usage instruction:
+Print each prompt in a fenced code block:
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -67,35 +64,139 @@ FEAT-001 — Cursor Chat Verification Prompt
 <rendered prompt here>
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📋 Copy the prompt above → Cursor Chat
-🔍 Cursor will use @Codebase to check the full project
+Copy the prompt above → Cursor Chat
+Cursor will use @Codebase to check the full project
+
+After Cursor responds, ingest the results:
+  /work-verify {IDs} --ingest
+
+Or skip and proceed directly:
+  /work-review {IDs}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-After all items, print next steps based on type:
+---
 
-For FEAT/REFAC (post-implementation verification):
+## Phase 2: Ingest Results (`--ingest`)
+
+### Step 1: Collect Verification Output
+
+1. If `$ARGUMENTS` contains a file path (starts with `@`): read that file
+2. Otherwise: prompt user to paste Cursor Chat output
+
+### Step 2: Resolve Work Item
+
+1. Locate `work/items/{ID}-*/` directory (glob match)
+2. Read `status.md` from worktree (worktree-first resolution)
+3. Extract type prefix from ID
+
+### Step 3: Parse Findings
+
+Parse the pasted output for structured findings. Accept these formats:
+
+**Table format** (from verify-feat/verify-refactor templates):
 ```
-Next Steps
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# Ingest Cursor results for auto-routing:
-/work-verify-ingest {IDs}
+| File | Line | Issue | Severity |
+|------|------|-------|----------|
+| src/auth/token.py | 42 | Missing null check | HIGH |
+```
 
-# Or skip ingest and proceed directly:
-/work-review {IDs}
+**Audit table format** (from verify-audit template):
+```
+| # | File | Line | Criterion | Issue | Severity | Suggested Fix |
+|---|------|------|-----------|-------|----------|---------------|
+```
+
+**Freeform format** (fallback):
+- Lines containing `CRITICAL`, `HIGH`, `MEDIUM`, `LOW` are parsed as findings
+- Lines starting with `- [ ]` or `- [x]` are parsed as checklist items
+
+### Step 4: Write verify-result.md
+
+Save parsed results to `work/items/{ID}-*/verify-result.md`:
+
+```markdown
+# Verification Result — {ID}
+
+**Verified**: {timestamp}
+**Source**: Cursor Chat @Codebase
+**Total findings**: {count}
+
+## Summary
+
+| Severity | Count |
+|----------|-------|
+| CRITICAL | {n} |
+| HIGH     | {n} |
+| MEDIUM   | {n} |
+| LOW      | {n} |
+
+## Findings
+
+| # | File | Line | Issue | Severity | Fix |
+|---|------|------|-------|----------|-----|
+{parsed findings rows}
+
+## Verdict
+
+{PASS / PASS_WITH_WARNINGS / FAIL}
+```
+
+### Step 5: Determine Verdict & Route
+
+| Condition | Verdict | Action |
+|-----------|---------|--------|
+| 0 CRITICAL, 0 HIGH | `PASS` | Status → `ready-for-review` (FEAT/REFAC) or `audited` (AUDIT) |
+| 0 CRITICAL, 1+ HIGH | `PASS_WITH_WARNINGS` | Print warnings, ask user to proceed or revise |
+| 1+ CRITICAL | `FAIL` | Status stays, print revision instructions |
+
+### Step 6: Output
+
+#### PASS
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FEAT-001 — Verification PASSED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Findings: 0 CRITICAL, 0 HIGH, {n} MEDIUM, {n} LOW
+  Result saved: work/items/FEAT-001-slug/verify-result.md
+
+Next: /work-review FEAT-001
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-For AUDIT (standalone audit):
+#### PASS_WITH_WARNINGS
 ```
-Next Steps
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# Ingest audit results:
-/work-verify-ingest {IDs}
-# → auto-routes to: create issues, plan fixes, or mark audited
+FEAT-001 — Verification PASSED with warnings
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  HIGH findings:
+  1. src/auth/token.py:42 — Missing null check
 
-# Or manually choose:
-/work-plan --type=fix "Fix {audit objective} findings"
+Options:
+  /work-review FEAT-001       # proceed (warnings noted)
+  /work-revise FEAT-001       # fix first
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+#### FAIL
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FEAT-001 — Verification FAILED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  CRITICAL findings:
+  1. src/auth/token.py:42 — SQL injection vulnerability
+
+Next: /work-revise FEAT-001
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+#### AUDIT — PASS
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUDIT-003 — Audit Complete (audited)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Options:
+  /work-plan --type=fix "Fix AUDIT-003 findings"
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -105,5 +206,7 @@ Next Steps
 
 - Missing work item: `ERROR: {ID} not found in work/items/`
 - Wrong status: `WARN: {ID} status is '{status}', expected '{expected}'. Proceeding anyway.`
-- Missing Changed Files (non-AUDIT): `WARN: No changed files recorded in status.md. Verification may be incomplete.`
-- AUDIT with no contract: `ERROR: {ID} missing contract.md — cannot generate audit criteria.`
+- Missing Changed Files (non-AUDIT): `WARN: No changed files recorded in status.md.`
+- AUDIT with no contract: `ERROR: {ID} missing contract.md`
+- Empty paste / no findings parsed: `WARN: No structured findings found. Saving raw output as verify-result.md.`
+- Already has verify-result.md: overwrite with timestamp backup
