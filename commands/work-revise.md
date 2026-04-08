@@ -15,9 +15,10 @@
 
 Per `rules/collab-workflow.md` § Work Item Discovery (searches cwd, worktrees, sibling dirs), then § Worktree Resolution. **Gate: do NOT read `review.md` or `status.md` until `$WT_PATH` is resolved and validated (`$WT_PATH ≠ repo root`).** Read from `$WT_PATH/work/items/{SLUG}/`.
 
-1. **Read relay**: Per `rules/collab-workflow.md` § Relay Protocol — read `relay.md` for review `items` (MUST-fix list). These are the authoritative fix targets; do not re-derive from `review.md` if relay exists.
+1. **Read relay**: Per `rules/collab-workflow.md` § Read Before Act — use MCP `get_pull_request_comments` to read review results (filter `<!-- relay:review: -->`). Parse `items` for MUST-fix list. Fallback: read `relay.md`. These are the authoritative fix targets; do not re-derive from `review.md` if relay exists.
 2. **Dispatch**: Spawn `work-reviser` agent per item (parallel). Each resolves MUST-fix, updates status → `revising`. Same branch and worktree — never create a second worktree.
-3. **Relay**: Append `revise` block to `relay.md` with `fixed` list and `remaining` count. Post PR comment.
+3. **Relay**: Append `revise` block to `relay.md` with `fixed` list and `remaining` count.
+   - **PR Comment Relay**: Use MCP `add_issue_comment` to post relay comment with `<!-- relay:revise:{timestamp} -->` marker (per § PR Comment Relay). Fallback: `gh pr comment`.
 
 ## Summary
 

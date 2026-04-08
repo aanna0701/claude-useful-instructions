@@ -750,6 +750,29 @@ ensure_collab_scaffold() {
   mkdir -p "$PROJECT_ROOT/work/locks"
 }
 
+ensure_cursor_mcp() {
+  local mcp_file="$PROJECT_ROOT/.cursor/mcp.json"
+  if [[ -f "$mcp_file" ]]; then
+    echo "  .cursor/mcp.json already exists — skipping"
+    return
+  fi
+  mkdir -p "$PROJECT_ROOT/.cursor"
+  cat > "$mcp_file" <<'MCPEOF'
+{
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PAT}"
+      }
+    }
+  }
+}
+MCPEOF
+  echo "  Created .cursor/mcp.json (set GITHUB_PAT env var for GitHub MCP)"
+}
+
 # ── Execute uninstall ─────────────────────────────────────────────────────
 if $UNINSTALL; then
   echo "Uninstalling Claude settings from $CLAUDE_DIR"
@@ -787,9 +810,10 @@ if $UNINSTALL; then
     HAS_COLLAB=true
   fi
 
-  # Remove work/ dir if collab bundle is being uninstalled
+  # Remove work/ dir and cursor MCP if collab bundle is being uninstalled
   if $HAS_COLLAB; then
     remove_work_dir
+    remove_file "$PROJECT_ROOT/.cursor/mcp.json"
   fi
 
   # Clean up empty .claude subdirectories
@@ -895,6 +919,7 @@ done
 
 if $INSTALL_HAS_COLLAB; then
   ensure_collab_scaffold
+  ensure_cursor_mcp
 fi
 
 # ── Auto-install branch-map.yaml when guard-trunk is installed ──────────

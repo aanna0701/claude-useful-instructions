@@ -20,9 +20,10 @@ Verify implementation against contract and write results, optionally with Cursor
 ## Steps
 
 1. **Resolve**: Per `rules/collab-workflow.md` § Work Item Discovery (searches cwd, worktrees, sibling dirs), locate `work/items/{ID}-*/`. Resolve worktree per § Worktree Resolution. **Gate: do NOT read `status.md` or any artifact until `$WT_PATH` is resolved and validated (`$WT_PATH ≠ repo root`).** Then read from `$WT_PATH/work/items/{SLUG}/`.
-2. **Read relay**: Per `rules/collab-workflow.md` § Relay Protocol — read `relay.md` for impl results. If impl `result: blocked`, abort with error. Use `changed` files list to scope verification.
+2. **Read relay**: Per `rules/collab-workflow.md` § Read Before Act — use MCP `get_pull_request_comments` to read impl results (filter `<!-- relay:impl: -->`). Fallback: read `relay.md`. If impl `result: blocked`, abort with error. Use `changed` files list to scope verification.
 3. **Verify** (always — both modes): Read code in worktree, verify against contract (boundaries, interfaces, invariants, test requirements, checklist). Write `verify-result.md` in worktree.
-4. **Relay**: Append `verify` block to `relay.md` with passed/failed counts and failure details. Post PR comment.
+4. **Relay**: Append `verify` block to `relay.md` with passed/failed counts and failure details.
+   - **PR Comment Relay**: Use MCP `add_issue_comment` to post relay comment with `<!-- relay:verify:{timestamp} -->` marker (per § PR Comment Relay). Fallback: `gh pr comment`.
 5. **Cursor integration** (default mode only, skip with `--claude`): Also generate Cursor Composer prompt for manual re-verification
 6. **Update status**: AUDIT/DOCS → `auditing`. FEAT/REFAC/FIX → unchanged.
 7. **Output**: Print verification summary. Default mode: also print Composer prompt with absolute `{WT_PATH}`

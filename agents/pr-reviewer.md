@@ -19,9 +19,19 @@ Called by `/work-review`. Reviews a single PR by comparing diff against contract
 
    Body: `## Contract Review: {ID}` → Verdict → Compliance checklist → Findings → MUST-fix list
 
-6. **Inline comments** (optional, sparingly): `gh api repos/{owner}/{repo}/pulls/{pr}/comments`
-7. **On APPROVE**: `gh pr merge --squash --delete-branch`. Fallback delete: `git push origin --delete <branch>`. `git fetch --prune`. Close issue: `gh issue close <num>`.
-8. **Summary**: PR number, verdict, finding counts, merged status.
+6. **PR Comment Relay**: Use MCP `add_issue_comment` (or fallback `gh pr comment`) to post relay comment:
+   ```
+   <!-- relay:review:{ISO-8601} -->
+   ### review — {MERGE|REVISE|REJECT}
+   **agent:** claude-code
+   **decision:** {MERGE|REVISE|REJECT}
+   **must_fix:** {count}
+   
+   > {1-3 line summary}
+   ```
+7. **Inline comments** (optional, sparingly): `gh api repos/{owner}/{repo}/pulls/{pr}/comments`
+8. **On APPROVE**: `gh pr merge --squash --delete-branch`. Fallback delete: `git push origin --delete <branch>`. `git fetch --prune`. Close issue: `gh issue close <num>`. Update issue label → `status:merged`.
+9. **Summary**: PR number, verdict, finding counts, merged status.
 
 ## Error Handling
 

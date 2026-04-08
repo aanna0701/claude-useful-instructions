@@ -29,8 +29,15 @@ Create stub files and test skeletons from contract, optionally with Cursor integ
 
 1. **Resolve**: Per `rules/collab-workflow.md` § Work Item Discovery, locate `work/items/{ID}-*/` (searches cwd, worktrees, sibling dirs). Resolve worktree per § Worktree Resolution. **Gate: do NOT read `status.md` until `$WT_PATH` is resolved and validated (`$WT_PATH ≠ repo root`).** Then read from `$WT_PATH/work/items/{SLUG}/`.
 2. **Scaffold** (always — both modes): Read `contract.md`, create stub files with `NotImplementedError`, create test skeletons in worktree
-3. **Cursor integration** (default mode only, skip with `--claude`): Generate `.cursor/rules/` (`{SLUG}-guard.mdc` + `{SLUG}-forbidden.mdc`) and Cursor Composer prompt
+3. **Cursor integration** (default mode only, skip with `--claude`): Generate `.cursor/rules/` (`{SLUG}-guard.mdc` + `{SLUG}-forbidden.mdc`) and Cursor Composer prompt. Include in `{SLUG}-guard.mdc`:
+   ```
+   ## Cross-AI Relay (MCP)
+   - Before starting: Use GitHub MCP get_pull_request_comments to read prior stage relay comments. Filter for <!-- relay: --> markers.
+   - After completing: Use GitHub MCP add_issue_comment to post relay comment with <!-- relay:{stage}:{timestamp} --> marker and **bold-key:** fields.
+   - Also update local relay.md per existing protocol.
+   ```
 4. **Update status** → `scaffolded` (both control plane and worktree)
+   - **Issue Label**: Use MCP `update_issue` to set `status:scaffolded`. Fallback: `gh issue edit`.
 5. **Output**: Print created files summary. Default mode: also print Composer prompt with absolute worktree path (`{WT_PATH}`)
 
 **MANDATORY NEXT-STEP TEMPLATE** — Print the block below as-is. Fill `«___»` slots with actual IDs. Do NOT add, remove, or reorder lines.

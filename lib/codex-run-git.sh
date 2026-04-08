@@ -141,8 +141,12 @@ post_impl_relay_comment() {
 
   local notes="Implementation completed by Codex."
   local result="success"
+  local changed=""
+  local commits=""
   if [ -f "$relay_file" ]; then
     result=$(grep -m1 '^result:' "$relay_file" | awk '{print $2}' || echo "success")
+    changed=$(grep -m1 '^changed:' "$relay_file" | sed 's/^changed: *//' || true)
+    commits=$(grep -m1 '^commits:' "$relay_file" | sed 's/^commits: *//' || true)
     notes=$(python3 - "$relay_file" <<'PY' 2>/dev/null || echo "Implementation completed.")
 import sys
 from pathlib import Path
@@ -162,8 +166,29 @@ print(" ".join(lines) if lines else "Implementation completed.")
 PY
   fi
 
-  gh pr comment "$pr_number" --body "### impl — $result
-$notes" || true
+  local timestamp
+  timestamp=$(date -u +%Y-%m-%dT%H:%M:%S)
+  local body="<!-- relay:impl:${timestamp} -->
+### impl — ${result}
+**agent:** codex"
+  [ -n "$changed" ] && body+=$'\n'"**changed:** ${changed}"
+  [ -n "$commits" ] && body+=$'\n'"**commits:** ${commits}"
+  body+=$'\n\n'"> ${notes}"
+
+  gh pr comment "$pr_number" --body "$body" || true
+}
+
+update_issue_label() {
+  local issue_num="$1" new_status="$2"
+  [ -n "$issue_num" ] || return 0
+  command -v gh &>/dev/null || return 0
+  local old
+  old=$(gh issue view "$issue_num" --json labels -q '.labels[].name' 2>/dev/null | grep '^status:' || true)
+  for lbl in $old; do
+    gh issue edit "$issue_num" --remove-label "$lbl" 2>/dev/null || true
+  done
+  gh label create "status:$new_status" --color 0E8A16 2>/dev/null || true
+  gh issue edit "$issue_num" --add-label "status:$new_status" 2>/dev/null || true
 }
 
 preflight_target_dir() {

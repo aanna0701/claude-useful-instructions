@@ -114,26 +114,68 @@ Stage-specific fields:
 
 ### Read Before Act
 
-Each stage MUST read `relay.md` (if it exists) before starting:
+Each stage MUST read prior relay results before starting:
 - **verify**: Check impl stage result — skip if `blocked`.
 - **review**: Check verify failures — factor into review severity.
 - **revise**: Read review `items` — these are the MUST-fix list.
 
-### PR Comment
+**Read sources (priority order):**
+1. MCP `get_pull_request_comments` — freshest, works across AIs (Claude Code, Codex, Cursor)
+2. Local `relay.md` — fallback if MCP unavailable or PR not yet created
 
-After writing `relay.md`, post a summary comment on the PR (if PR exists in `status.md`):
+### PR Comment Relay (Cross-AI via MCP)
 
-```bash
-gh pr comment {PR_NUMBER} --body "$(cat <<EOF
-### {Stage} — {result}
-{1-3 line summary from relay.md notes}
-{for verify: passed/failed counts}
-{for review: decision + must_fix count}
-EOF
-)"
+PR comments are the **universal relay** readable by all AIs (Claude Code, Codex, Cursor) via GitHub MCP server (`@modelcontextprotocol/server-github`).
+
+#### Write (after each stage)
+
+After writing local `relay.md`, use MCP `add_issue_comment` (or fallback `gh pr comment`) to post a structured comment on the PR:
+
+```markdown
+<!-- relay:{stage}:{ISO-8601} -->
+### {stage} — {result}
+**agent:** {codex|claude-code|cursor|human}
+**{field1}:** value1
+**{field2}:** value2
+
+> Summary notes as blockquote.
 ```
 
-Skip PR comment if no PR exists yet (e.g., during impl before push).
+Stage-specific fields:
+
+| Stage | Required Fields |
+|-------|----------------|
+| impl | `changed`, `commits` |
+| verify | `passed`, `failed`, `failures` (if any) |
+| review | `decision` (MERGE/REVISE/REJECT), `must_fix`, `items` (if any) |
+| revise | `fixed`, `remaining` |
+
+#### Read (before each stage)
+
+Use MCP `get_pull_request_comments` to fetch PR comments. Filter by `<!-- relay:{prev_stage}: -->` marker. Use the last matching comment (handles revise cycles).
+
+```
+PR_NUMBER = extract from status.md PR field
+comments = MCP get_pull_request_comments(owner, repo, PR_NUMBER)
+prev_relay = last comment containing "<!-- relay:{prev_stage}:"
+Parse: result, changed, failures, etc. from **bold-key:** lines
+```
+
+Fallback if MCP unavailable: read local `relay.md`.
+
+#### Issue Status Labels
+
+Use MCP `update_issue` to swap `status:*` labels at each state transition:
+
+```
+status:planned → status:scaffolded → status:implementing →
+status:ready-for-review → status:revising → status:merged
+```
+
+Any AI can use MCP `get_issue` to check current status before acting.
+Fallback: `gh issue edit --remove-label/--add-label`.
+
+Skip if no Issue exists in `status.md`.
 
 ## Locks
 

@@ -305,6 +305,13 @@ cmd_dispatch() {
     echo "Posting impl relay comments on PRs..."
     for fid in "${review_ids[@]}"; do
       post_impl_relay_comment "$fid" 2>/dev/null || true
+      local _wdir
+      _wdir=$(resolve_work_dir "$fid" 2>/dev/null) || true
+      if [ -n "$_wdir" ]; then
+        local _issue
+        _issue=$(grep -oP '^\| Issue \| #\K\d+' "$_wdir/status.md" 2>/dev/null || true)
+        update_issue_label "$_issue" "ready-for-review" 2>/dev/null || true
+      fi
     done
   fi
 

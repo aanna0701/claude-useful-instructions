@@ -414,7 +414,10 @@ Non-negotiables:
 - Stay inside contract boundaries only.
 - Update $wdir/status.md on every state change.
 - Run the checklist verification commands before marking done.
-- Before starting, read $wdir/relay.md (if it exists) for context from prior stages.
+- Before starting, read prior stage results for context:
+  1. If MCP GitHub is available: use get_pull_request_comments to read PR comments.
+     Filter for comments containing <!-- relay: --> markers.
+  2. Fallback: read $wdir/relay.md (if it exists).
 - On completion, append an impl block to $wdir/relay.md:
   ## impl @ {timestamp}
   result: {success|partial|blocked}
@@ -422,6 +425,15 @@ Non-negotiables:
   commits: [{commit hashes}]
   notes: |
     {1-3 line summary}
+- After writing relay.md, also post a PR relay comment if MCP GitHub is available:
+  Use add_issue_comment with body format:
+  <!-- relay:impl:{ISO-8601-timestamp} -->
+  ### impl — {result}
+  **agent:** codex
+  **changed:** {files}
+  **commits:** {hashes}
+  > {summary notes}
+  If MCP is unavailable, skip — codex-run.sh will post for you.
 - Print the following as your final output:
   /work-verify $feat_id
   /work-review $feat_id

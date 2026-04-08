@@ -20,7 +20,9 @@ Resolve a work item to its worktree and implement per contract. Claude fallback 
 3. **Sync preflight**: Preferred via `codex-run.sh` (auto-sync + `uv sync --frozen`). Manual: verify `git merge-base --is-ancestor`. Missing deps → `blocked` with `needs-sync`.
 4. **Implement**: Acquire lock per `rules/collab-workflow.md` § Locks. Status → `implementing`. Follow contract strictly: Allowed Modifications only, never Forbidden Zones, satisfy tests, preserve invariants. If `revising`: resolve MUST-fix from review.md first.
 5. **Complete & Push**: Status → `ready-for-review`. Update Changed Files, Verification, Doc Changes. Use `git add -f work/items/${SLUG}/`. Commit with `{type}({ID}): <description>`, push with `-u`. Create draft PR targeting contract's merge target. Update status.md with PR.
-6. **Relay**: Per `rules/collab-workflow.md` § Relay Protocol — append `impl` block to `relay.md` with changed files, commit hashes, and notes. Post PR comment if PR exists.
+6. **Relay**: Per `rules/collab-workflow.md` § Relay Protocol — append `impl` block to `relay.md` with changed files, commit hashes, and notes.
+   - **PR Comment Relay**: Use MCP `add_issue_comment` to post relay comment with `<!-- relay:impl:{timestamp} -->` marker (per § PR Comment Relay). Fallback: `gh pr comment`.
+   - **Issue Label**: Use MCP `update_issue` to set `status:ready-for-review`. Fallback: `gh issue edit`.
 
 **MANDATORY NEXT-STEP TEMPLATE** — Print the block below as-is. Fill `«___»` slots with actual ID. Do NOT add, remove, or reorder lines.
 

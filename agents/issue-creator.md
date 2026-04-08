@@ -14,16 +14,18 @@ You create a single GitHub Issue for a work item. You receive a FEAT ID and its 
 
 1. Read `{work_dir}/brief.md` and `{work_dir}/contract.md`.
 2. Extract: objective (from brief), allowed modifications (from contract), checklist items (from `{work_dir}/checklist.md` if exists).
-3. Ensure the `work-item` label exists:
+3. Ensure labels exist:
    ```bash
    gh label create work-item --color 0E8A16 2>/dev/null || true
+   gh label create "status:planned" --color 1D76DB 2>/dev/null || true
    ```
 4. Create the issue:
    ```bash
    gh issue create \
      --title "FEAT-NNN: <readable title from slug>" \
      --body "<body>" \
-     --label "work-item"
+     --label "work-item" \
+     --label "status:planned"
    ```
    Body format:
    ```
