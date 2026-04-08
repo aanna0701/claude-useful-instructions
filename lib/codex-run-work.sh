@@ -422,7 +422,9 @@ Non-negotiables:
   commits: [{commit hashes}]
   notes: |
     {1-3 line summary}
-- Print /work-review $feat_id as your final output.
+- Print the following as your final output:
+  /work-verify $feat_id
+  /work-review $feat_id
 - If git commit fails due to sandbox restrictions, leave files saved; codex-run.sh will rescue the commit.
 
 Begin implementation.
