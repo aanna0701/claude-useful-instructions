@@ -8,9 +8,18 @@ Compare implementation against contract, checklist, and brief. Supports batch re
 
 No arguments: auto-glob for `ready-for-review` items.
 
+## CRITICAL: Worktree-First Gate
+
+**Before reading ANY work item file**, you MUST resolve the worktree path. The cwd copy of `status.md` is a stale seed — it does NOT reflect Codex/agent progress.
+
+❌ WRONG: `Read work/items/FEAT-001-foo/status.md` (cwd — stale, shows `open` even when done)
+✅ RIGHT: Resolve worktree path FIRST → `Read /abs/path/to/worktree/work/items/FEAT-001-foo/status.md`
+
+**Validation**: After resolving `$WT_PATH`, confirm the path does NOT equal `$(git rev-parse --show-toplevel)`. If it does, you are reading from main repo — STOP and re-resolve via `git worktree list`.
+
 ## Steps
 
-1. **Resolve worktree**: Per `rules/collab-workflow.md` § Work Item Discovery (searches cwd, worktrees, sibling dirs), then § Worktree Resolution. Set `$WORK_ROOT`. All reads from worktree.
+1. **Resolve worktree**: Per `rules/collab-workflow.md` § Work Item Discovery (searches cwd, worktrees, sibling dirs), then § Worktree Resolution. Set `$WT_PATH` (absolute). **Gate: do NOT proceed to step 2 until `$WT_PATH` is resolved and validated.** All subsequent reads use `$WT_PATH/work/items/{SLUG}/`.
 2. **Read relay**: Per `rules/collab-workflow.md` § Relay Protocol — read `relay.md` for impl + verify results. Factor verify failures into review (raise severity if tests failed). Include relay summary in PR reviewer context.
 3. **Pre-flight**: Read brief/contract/checklist/status (parallel). Require `ready-for-review` or `revising`. Acquire lock per § Locks.
 4. **Branch map validation**: Per `rules/review-merge-policy.md` § Merge Gating. Check freshness, merge target, role consistency.

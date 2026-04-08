@@ -6,9 +6,16 @@ Resolve a work item to its worktree and implement per contract. Claude fallback 
 
 **$ARGUMENTS**: Issue number (`#42`), work item ID (`FEAT-001`), or `all`.
 
+## CRITICAL: Worktree-First Gate
+
+**Before reading ANY work item file**, you MUST resolve the worktree path. The cwd copy of `status.md` is a stale seed — it does NOT reflect Codex/agent progress.
+
+❌ WRONG: `Read work/items/FEAT-001-foo/status.md` (cwd — stale, shows `open` even when done)
+✅ RIGHT: Resolve worktree path FIRST → `Read /abs/path/to/worktree/work/items/FEAT-001-foo/status.md`
+
 ## Steps
 
-1. **Resolve**: Per `rules/collab-workflow.md` § Work Item Discovery (searches cwd, worktrees, sibling dirs). `#42` → scan status.md for issue number. `FEAT-001` → find `work/items/FEAT-001-*/`. `all` → find planned/revising items.
+1. **Resolve**: Per `rules/collab-workflow.md` § Work Item Discovery (searches cwd, worktrees, sibling dirs). `#42` → scan status.md for issue number. `FEAT-001` → find `work/items/FEAT-001-*/`. `all` → find planned/revising items. **Gate: do NOT proceed to step 2 until worktree path is resolved and validated (`$WT_PATH ≠ repo root`).**
 2. **Switch to worktree**: Per `rules/collab-workflow.md` § Worktree Rules. All operations run in worktree. Never on `working_parent`.
 3. **Sync preflight**: Preferred via `codex-run.sh` (auto-sync + `uv sync --frozen`). Manual: verify `git merge-base --is-ancestor`. Missing deps → `blocked` with `needs-sync`.
 4. **Implement**: Acquire lock per `rules/collab-workflow.md` § Locks. Status → `implementing`. Follow contract strictly: Allowed Modifications only, never Forbidden Zones, satisfy tests, preserve invariants. If `revising`: resolve MUST-fix from review.md first.

@@ -18,9 +18,16 @@ Create stub files and test skeletons from contract, optionally with Cursor integ
 | `REFAC` | Migration map + rename list | `scaffold-refactor.md` |
 | `AUDIT`, `DOCS` | Skip → redirect `/work-verify` | — |
 
+## CRITICAL: Worktree-First Gate
+
+**Before reading ANY work item file**, you MUST resolve the worktree path. The cwd copy of `status.md` is a stale seed — it does NOT reflect Codex/agent progress.
+
+❌ WRONG: `Read work/items/FEAT-001-foo/status.md` (cwd — stale, shows `open` even when done)
+✅ RIGHT: Resolve worktree path FIRST → `Read /abs/path/to/worktree/work/items/FEAT-001-foo/status.md`
+
 ## Steps
 
-1. **Resolve**: Per `rules/collab-workflow.md` § Work Item Discovery, locate `work/items/{ID}-*/` (searches cwd, worktrees, sibling dirs). Read `status.md` (planned/scaffolded), resolve worktree per § Worktree Resolution
+1. **Resolve**: Per `rules/collab-workflow.md` § Work Item Discovery, locate `work/items/{ID}-*/` (searches cwd, worktrees, sibling dirs). Resolve worktree per § Worktree Resolution. **Gate: do NOT read `status.md` until `$WT_PATH` is resolved and validated (`$WT_PATH ≠ repo root`).** Then read from `$WT_PATH/work/items/{SLUG}/`.
 2. **Scaffold** (always — both modes): Read `contract.md`, create stub files with `NotImplementedError`, create test skeletons in worktree
 3. **Cursor integration** (default mode only, skip with `--claude`): Generate `.cursor/rules/` (`{SLUG}-guard.mdc` + `{SLUG}-forbidden.mdc`) and Cursor Composer prompt
 4. **Update status** → `scaffolded` (both control plane and worktree)

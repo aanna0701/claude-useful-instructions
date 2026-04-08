@@ -4,9 +4,16 @@
 
 **$ARGUMENTS**: Work item IDs (e.g., `FIX-003`). No arguments: auto-glob items with REVISE decision.
 
+## CRITICAL: Worktree-First Gate
+
+**Before reading ANY work item file**, you MUST resolve the worktree path. The cwd copy of `status.md` is a stale seed — it does NOT reflect Codex/agent progress.
+
+❌ WRONG: `Read work/items/FEAT-001-foo/status.md` (cwd — stale, shows `open` even when done)
+✅ RIGHT: Resolve worktree path FIRST → `Read /abs/path/to/worktree/work/items/FEAT-001-foo/status.md`
+
 ## Execution
 
-Per `rules/collab-workflow.md` § Work Item Discovery (searches cwd, worktrees, sibling dirs), then § Worktree Resolution. Read review.md and status.md from worktree.
+Per `rules/collab-workflow.md` § Work Item Discovery (searches cwd, worktrees, sibling dirs), then § Worktree Resolution. **Gate: do NOT read `review.md` or `status.md` until `$WT_PATH` is resolved and validated (`$WT_PATH ≠ repo root`).** Read from `$WT_PATH/work/items/{SLUG}/`.
 
 1. **Read relay**: Per `rules/collab-workflow.md` § Relay Protocol — read `relay.md` for review `items` (MUST-fix list). These are the authoritative fix targets; do not re-derive from `review.md` if relay exists.
 2. **Dispatch**: Spawn `work-reviser` agent per item (parallel). Each resolves MUST-fix, updates status → `revising`. Same branch and worktree — never create a second worktree.

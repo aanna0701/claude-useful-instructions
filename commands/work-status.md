@@ -4,6 +4,13 @@
 
 **$ARGUMENTS**: Optional work item ID (e.g., `FEAT-001`).
 
+## CRITICAL: Worktree-First Gate
+
+**Before reading ANY `status.md`**, you MUST resolve its worktree path. The main repo copy is a stale seed — it does NOT reflect Codex/agent progress.
+
+❌ WRONG: `Read work/items/FEAT-001-foo/status.md` (cwd — stale, shows `open` even when done)
+✅ RIGHT: Resolve worktree path FIRST → `Read /abs/path/to/worktree/work/items/FEAT-001-foo/status.md`
+
 ## Worktree Discovery (critical)
 
 Work items live in worktrees, NOT the main repo. Discovery order:
