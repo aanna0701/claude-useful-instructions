@@ -1,0 +1,11 @@
+# C++ formatting — installed by claude-useful-instructions core bundle
+BasedOnStyle: Google
+Standard: c++17
+ColumnLimit: 120
+IndentWidth: 4
+UseTab: Never
+BreakBeforeBraces: Attach
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: WithoutElse
+SortIncludes: CaseInsensitive
+IncludeBlocks: Regroup
