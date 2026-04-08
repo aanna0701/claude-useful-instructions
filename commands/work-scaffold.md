@@ -31,11 +31,12 @@ Create stub files and test skeletons from contract, optionally with Cursor integ
 2. **Scaffold** (always — both modes): Read `contract.md`, create stub files with `NotImplementedError`, create test skeletons in worktree
 3. **Cursor integration** (default mode only, skip with `--claude`): Generate `.cursor/rules/` (`{SLUG}-guard.mdc` + `{SLUG}-forbidden.mdc`) and Cursor Composer prompt. Include in `{SLUG}-guard.mdc`:
    ```
-   ## Cross-AI Relay (MCP)
-   - Before starting: Use GitHub MCP get_pull_request_comments to read prior stage relay comments. Filter for <!-- relay: --> markers.
-   - After completing: Use GitHub MCP add_issue_comment to post relay comment with <!-- relay:{stage}:{timestamp} --> marker and **bold-key:** fields.
+   ## Cross-AI Relay
+   - Before starting: Read work/items/{SLUG}/pr-relay.md for prior stage results. Filter for <!-- relay: --> markers.
+   - After completing: Use GitHub MCP add_issue_comment to post relay comment with <!-- relay:{stage}:{timestamp} --> marker and **bold-key:** fields. If MCP unavailable, update relay.md only.
    - Also update local relay.md per existing protocol.
    ```
+   Also pre-fetch PR relay: `gh api .../issues/{PR}/comments` → `pr-relay.md` in worktree.
 4. **Update status** → `scaffolded` (both control plane and worktree)
    - **Issue Label**: Use MCP `update_issue` to set `status:scaffolded`. Fallback: `gh issue edit`.
 5. **Output**: Print created files summary. Default mode: also print Composer prompt with absolute worktree path (`{WT_PATH}`)

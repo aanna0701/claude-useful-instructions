@@ -142,6 +142,13 @@ dispatch_group() {
     prompt=$(build_codex_prompt "$fid")
     update_status_state_everywhere "$fid" "$wdir" "in-progress" "Codex"
 
+    # Pre-fetch PR relay comments for Codex to read
+    local _pr_num
+    _pr_num=$(grep -oP '^\| PR \| .*/pull/\K\d+' "$wdir/status.md" 2>/dev/null || true)
+    if [ -n "$_pr_num" ]; then
+      fetch_pr_relay "$_pr_num" "$wdir/pr-relay.md"
+    fi
+
     if command -v codex &>/dev/null; then
       if ! preflight_target_dir "$fid" "$wdir" "$git_dir"; then
         echo "  Blocked: $slug → target preflight failed; skipping Codex spawn"

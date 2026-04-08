@@ -415,8 +415,8 @@ Non-negotiables:
 - Update $wdir/status.md on every state change.
 - Run the checklist verification commands before marking done.
 - Before starting, read prior stage results for context:
-  1. If MCP GitHub is available: use get_pull_request_comments to read PR comments.
-     Filter for comments containing <!-- relay: --> markers.
+  1. Read $wdir/pr-relay.md if it exists (pre-fetched PR relay comments).
+     Filter for blocks containing <!-- relay: --> markers.
   2. Fallback: read $wdir/relay.md (if it exists).
 - On completion, append an impl block to $wdir/relay.md:
   ## impl @ {timestamp}

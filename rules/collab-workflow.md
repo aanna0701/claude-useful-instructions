@@ -120,16 +120,25 @@ Each stage MUST read prior relay results before starting:
 - **revise**: Read review `items` — these are the MUST-fix list.
 
 **Read sources (priority order):**
-1. MCP `get_pull_request_comments` — freshest, works across AIs (Claude Code, Codex, Cursor)
-2. Local `relay.md` — fallback if MCP unavailable or PR not yet created
+1. `gh api` direct — freshest (Claude Code, codex-run.sh)
+2. `pr-relay.md` in worktree — pre-fetched snapshot (Codex, Cursor)
+3. Local `relay.md` — fallback if PR not yet created
 
-### PR Comment Relay (Cross-AI via MCP)
+### PR Comment Relay (Cross-AI Hybrid)
 
-PR comments are the **universal relay** readable by all AIs (Claude Code, Codex, Cursor) via GitHub MCP server (`@modelcontextprotocol/server-github`).
+PR comments are the **universal relay**. Write via MCP `add_issue_comment` or `gh pr comment`. Read via `gh api` (direct) or pre-fetched `pr-relay.md` (for sandboxed AIs).
+
+**Note:** MCP `get_pull_request_comments` returns **review comments only** (inline code comments), NOT issue comments. Use `gh api` to read relay comments.
+
+| AI | Write | Read |
+|----|-------|------|
+| Claude Code | MCP `add_issue_comment` or `gh pr comment` | `gh api .../issues/{n}/comments` direct |
+| Codex | MCP `add_issue_comment` (if available) or relay.md only → codex-run.sh posts | `pr-relay.md` (pre-fetched by codex-run.sh) |
+| Cursor | MCP `add_issue_comment` (if available) or relay.md only → user triggers post | `pr-relay.md` (pre-fetched during scaffold/verify) |
 
 #### Write (after each stage)
 
-After writing local `relay.md`, use MCP `add_issue_comment` (or fallback `gh pr comment`) to post a structured comment on the PR:
+After writing local `relay.md`, post a structured comment on the PR:
 
 ```markdown
 <!-- relay:{stage}:{ISO-8601} -->
@@ -140,6 +149,8 @@ After writing local `relay.md`, use MCP `add_issue_comment` (or fallback `gh pr 
 
 > Summary notes as blockquote.
 ```
+
+Methods (try in order): MCP `add_issue_comment` → `gh pr comment` → skip (relay.md suffices).
 
 Stage-specific fields:
 
@@ -152,16 +163,27 @@ Stage-specific fields:
 
 #### Read (before each stage)
 
-Use MCP `get_pull_request_comments` to fetch PR comments. Filter by `<!-- relay:{prev_stage}: -->` marker. Use the last matching comment (handles revise cycles).
-
+**Claude Code** (direct):
+```bash
+PR_NUMBER=$(grep -oP '^\| PR \| .*/pull/\K\d+' "$WT_PATH/work/items/$SLUG/status.md")
+OWNER_REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
+gh api "repos/${OWNER_REPO}/issues/${PR_NUMBER}/comments" \
+  --jq '[.[] | select(.body | contains("<!-- relay:")) | .body] | last'
 ```
-PR_NUMBER = extract from status.md PR field
-comments = MCP get_pull_request_comments(owner, repo, PR_NUMBER)
-prev_relay = last comment containing "<!-- relay:{prev_stage}:"
-Parse: result, changed, failures, etc. from **bold-key:** lines
+
+**Codex / Cursor** (pre-fetched file):
+Read `$WT_PATH/work/items/{SLUG}/pr-relay.md`. Filter for `<!-- relay:{prev_stage}: -->` marker. Use the last matching block.
+
+#### Pre-fetch (for Codex/Cursor)
+
+Before dispatching to Codex or generating Cursor prompt, codex-run.sh / work-* command runs:
+```bash
+gh api "repos/${OWNER_REPO}/issues/${PR_NUMBER}/comments" \
+  --jq '[.[] | select(.body | contains("<!-- relay:")) | .body] | join("\n\n---\n\n")' \
+  > "$WT_PATH/work/items/$SLUG/pr-relay.md"
 ```
 
-Fallback if MCP unavailable: read local `relay.md`.
+Fallback: skip if `gh` unavailable or no PR yet (relay.md local is sufficient).
 
 #### Issue Status Labels
 

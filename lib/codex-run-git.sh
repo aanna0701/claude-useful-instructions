@@ -191,6 +191,24 @@ update_issue_label() {
   gh issue edit "$issue_num" --add-label "status:$new_status" 2>/dev/null || true
 }
 
+fetch_pr_relay() {
+  local pr_number="$1" output_file="$2"
+  command -v gh &>/dev/null || return 0
+  [ -n "$pr_number" ] || return 0
+  local owner_repo
+  owner_repo=$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || true)
+  [ -n "$owner_repo" ] || return 0
+  local tmp
+  tmp=$(mktemp)
+  if gh api "repos/${owner_repo}/issues/${pr_number}/comments" \
+    --jq '[.[] | select(.body | contains("<!-- relay:")) | .body] | join("\n\n---\n\n")' \
+    > "$tmp" 2>/dev/null; then
+    mv "$tmp" "$output_file"
+  else
+    rm -f "$tmp"
+  fi
+}
+
 preflight_target_dir() {
   local feat_id="$1"
   local wdir="$2"
