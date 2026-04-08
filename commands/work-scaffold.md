@@ -1,12 +1,12 @@
 # work-scaffold — Scaffold File Structures from Contracts
 
-Generate Cursor Composer prompts for scaffolding, or execute directly with `--claude`.
+Create stub files and test skeletons from contract, optionally with Cursor integration.
 
 ## Input
 
 ```
-/work-scaffold FEAT-001                    # Cursor 프롬프트 생성
-/work-scaffold FEAT-001 --claude           # Claude가 직접 scaffold
+/work-scaffold FEAT-001                    # scaffold + Cursor 프롬프트
+/work-scaffold FEAT-001 --claude           # scaffold only (no Cursor)
 /work-scaffold AUDIT-003                   # skip → /work-verify
 ```
 
@@ -21,12 +21,10 @@ Generate Cursor Composer prompts for scaffolding, or execute directly with `--cl
 ## Steps
 
 1. **Resolve**: Per `rules/collab-workflow.md` § Work Item Discovery, locate `work/items/{ID}-*/` (searches cwd, worktrees, sibling dirs). Read `status.md` (planned/scaffolded), resolve worktree per § Worktree Resolution
-2. **Scaffold**:
-   - **Default**: Spawn `cursor-prompt-builder` agent (`mode=scaffold`). Returns Cursor Composer prompt.
-   - **`--claude`**: Read `contract.md`, create stub files with `NotImplementedError`, create test skeletons. Skip `.cursor/rules/`.
-3. **Generate `.cursor/rules/`** (Cursor mode only): `{SLUG}-guard.mdc` + `{SLUG}-forbidden.mdc` in worktree
+2. **Scaffold** (always — both modes): Read `contract.md`, create stub files with `NotImplementedError`, create test skeletons in worktree
+3. **Cursor integration** (default mode only, skip with `--claude`): Generate `.cursor/rules/` (`{SLUG}-guard.mdc` + `{SLUG}-forbidden.mdc`) and Cursor Composer prompt
 4. **Update status** → `scaffolded` (both control plane and worktree)
-5. **Output**: Print prompt with absolute worktree path (`{WT_PATH}`)
+5. **Output**: Print created files summary. Default mode: also print Composer prompt with absolute worktree path (`{WT_PATH}`)
 
 **MANDATORY NEXT-STEP TEMPLATE** — Print the block below as-is. Fill `«___»` slots with actual IDs. Do NOT add, remove, or reorder lines.
 
