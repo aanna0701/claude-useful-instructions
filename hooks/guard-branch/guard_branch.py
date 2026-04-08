@@ -30,7 +30,8 @@ from pathlib import Path
 
 # Add hooks/lib to path for shared utilities
 _HOOK_DIR = Path(__file__).resolve().parent
-_LIB_DIR = _HOOK_DIR.parent / "lib"
+# Support both dev layout (hooks/{name}/) and installed layout (~/.claude/hooks/)
+_LIB_DIR = _HOOK_DIR / "lib" if (_HOOK_DIR / "lib").is_dir() else _HOOK_DIR.parent / "lib"
 if str(_LIB_DIR) not in sys.path:
     sys.path.insert(0, str(_LIB_DIR))
 
