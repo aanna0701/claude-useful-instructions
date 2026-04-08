@@ -55,10 +55,15 @@ def _git_info_for(directory: Path) -> tuple[Path | None, str]:
 
 
 def _parse_trunk_chain(root: Path) -> list[str]:
-    """Parse trunk_chain from branch-map.yaml without PyYAML."""
+    """Parse trunk_chain from branch-map.yaml without PyYAML.
+
+    If no branch-map.yaml exists, default to protecting 'main' (and 'master').
+    This ensures guard-trunk works immediately after core bundle install
+    without requiring a separate /branch-init or branch-map.yaml setup.
+    """
     bmap = root / ".claude" / "branch-map.yaml"
     if not bmap.exists():
-        return []
+        return ["main", "master"]
     chains: list[str] = []
     in_trunk = False
     for line in bmap.read_text().splitlines():

@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # install.sh — Copy Claude settings (commands, agents, rules, skills) into <TARGET>/.claude/
 # Skills install only to .claude/skills/ (Claude Code). No .cursor/skills or .agent/skills copies.
-# Usage: ./install.sh [OPTIONS] [TARGET_DIR]
-#   TARGET_DIR: project root to install into (default: ~, i.e. ~/.claude)
+# Usage: ./install.sh [OPTIONS] TARGET_DIR
+#   TARGET_DIR: project root to install into (REQUIRED)
 #
 # Options:
 #   --all           Install all bundles (default if no bundle flags given)
-#   --core          Core utilities (smart-git-commit-push, optimize-tokens)
+#   --core          Core utilities (smart-git-commit-push, optimize-tokens, guard-trunk)
 #   --docs          Documentation & diagrams (diataxis, write-doc, init-docs, sync-docs, doc/diagram agents)
 #   --data-pipeline Data pipeline architect skill
 #   --career        Career document tools (career-docs skill, career agents)
@@ -20,9 +20,9 @@
 #   -y, --yes       Skip confirmation prompts (e.g. work/ directory removal)
 #
 # Examples:
-#   ./install.sh                                  # Install all to ~/.claude
-#   ./install.sh --core --docs                    # Install core + docs only
-#   ./install.sh --exclude career --exclude dl    # Install all except career and dl
+#   ./install.sh ~/proj                           # Install all bundles
+#   ./install.sh --core --docs ~/proj             # Install core + docs only
+#   ./install.sh --exclude career ~/proj          # Install all except career
 #   ./install.sh --interactive ~/proj             # Interactive selection
 #   ./install.sh --uninstall ~/proj               # Uninstall all from ~/proj
 #   ./install.sh --uninstall --collab ~/proj      # Uninstall collab bundle only
@@ -176,6 +176,7 @@ LIST_ONLY=false
 UNINSTALL=false
 FORCE_YES=false
 INSTALL_HAS_COLLAB=false
+INSTALL_HAS_CORE=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -280,24 +281,24 @@ if printf '%s\n' "${SELECTED_BUNDLES[@]}" | grep -qx "collab"; then
   INSTALL_HAS_COLLAB=true
 fi
 
-# ── Resolve target directory ────────────────────────────────────────────────
-if [ -z "$TARGET_DIR" ]; then
-  if $INSTALL_HAS_COLLAB; then
-    echo "ERROR: --collab needs a project directory." >&2
-    echo "" >&2
-    echo "  The collab bundle installs project-specific files (AGENTS.md, codex-run.sh," >&2
-    echo "  work/ directory, .github/workflows/) that belong in a project root, not ~/" >&2
-    echo "" >&2
-    echo "  Usage:" >&2
-    echo "    ./install.sh --collab /path/to/project" >&2
-    echo "" >&2
-    echo "  Global bundles (--core, --docs, etc.) can be installed without a path." >&2
-    exit 1
-  fi
-  PROJECT_ROOT="$HOME"
-else
-  PROJECT_ROOT="$(cd "$TARGET_DIR" 2>/dev/null && pwd || echo "$TARGET_DIR")"
+if printf '%s\n' "${SELECTED_BUNDLES[@]}" | grep -qx "core"; then
+  INSTALL_HAS_CORE=true
 fi
+
+# ── Resolve target directory (REQUIRED) ─────────────────────────────────────
+# All bundles install into a project directory. Global (~/) install is not supported.
+if [ -z "$TARGET_DIR" ]; then
+  echo "ERROR: project directory is required." >&2
+  echo "" >&2
+  echo "  All bundles install into a project's .claude/ directory." >&2
+  echo "" >&2
+  echo "  Usage:" >&2
+  echo "    ./install.sh /path/to/project                  # install all bundles" >&2
+  echo "    ./install.sh --core --collab /path/to/project   # specific bundles" >&2
+  exit 1
+fi
+
+PROJECT_ROOT="$(cd "$TARGET_DIR" 2>/dev/null && pwd || echo "$TARGET_DIR")"
 
 CLAUDE_DIR="$PROJECT_ROOT/.claude"
 
@@ -843,36 +844,20 @@ for entry in "${INSTALL_LIST[@]}"; do
       install_root_file "$path"
       ;;
     cursor-rule)
-      if [ -n "$PROJECT_ROOT" ] && [ "$PROJECT_ROOT" != "$HOME" ]; then
-        mkdir -p "$PROJECT_ROOT/.cursor/rules"
-        install_file "$REPO_DIR/templates/cursor/$path" "$PROJECT_ROOT/.cursor/rules/$path"
-      else
-        echo "  SKIP cursor-rule:$path (requires per-project install with --collab /path/to/project)"
-      fi
+      mkdir -p "$PROJECT_ROOT/.cursor/rules"
+      install_file "$REPO_DIR/templates/cursor/$path" "$PROJECT_ROOT/.cursor/rules/$path"
       ;;
     collab-pipeline)
-      if [ -n "$PROJECT_ROOT" ] && [ "$PROJECT_ROOT" != "$HOME" ]; then
-        mkdir -p "$PROJECT_ROOT/.cursor/rules" "$PROJECT_ROOT/.agent/workflows"
-        install_collab_pipeline_project_artifacts
-      else
-        echo "  SKIP collab-pipeline:$path (requires per-project install with --collab /path/to/project)"
-      fi
+      mkdir -p "$PROJECT_ROOT/.cursor/rules" "$PROJECT_ROOT/.agent/workflows"
+      install_collab_pipeline_project_artifacts
       ;;
     cursor-command)
-      if [ -n "$PROJECT_ROOT" ] && [ "$PROJECT_ROOT" != "$HOME" ]; then
-        mkdir -p "$PROJECT_ROOT/.cursor/commands"
-        install_file "$REPO_DIR/templates/cursor-commands/$path" "$PROJECT_ROOT/.cursor/commands/$path"
-      else
-        echo "  SKIP cursor-command:$path (requires per-project install with --collab /path/to/project)"
-      fi
+      mkdir -p "$PROJECT_ROOT/.cursor/commands"
+      install_file "$REPO_DIR/templates/cursor-commands/$path" "$PROJECT_ROOT/.cursor/commands/$path"
       ;;
     agent-rule)
-      if [ -n "$PROJECT_ROOT" ] && [ "$PROJECT_ROOT" != "$HOME" ]; then
-        mkdir -p "$PROJECT_ROOT/.agent/workflows"
-        install_file "$REPO_DIR/templates/agent-rules/$path" "$PROJECT_ROOT/.agent/workflows/$path"
-      else
-        echo "  SKIP agent-rule:$path (requires per-project install with --collab /path/to/project)"
-      fi
+      mkdir -p "$PROJECT_ROOT/.agent/workflows"
+      install_file "$REPO_DIR/templates/agent-rules/$path" "$PROJECT_ROOT/.agent/workflows/$path"
       ;;
     script)
       install_file "$REPO_DIR/$path" "$PROJECT_ROOT/$path"
@@ -910,6 +895,81 @@ done
 
 if $INSTALL_HAS_COLLAB; then
   ensure_collab_scaffold
+fi
+
+# ── Auto-install branch-map.yaml when guard-trunk is installed ──────────
+# guard-trunk (core bundle) needs branch-map.yaml to know which branches to
+# protect. Without it the hook silently does nothing — easy to forget.
+# If a project directory was given and branch-map.yaml doesn't exist yet,
+# copy the default template so trunk protection is active immediately.
+ensure_branch_map() {
+  local bmap="$PROJECT_ROOT/.claude/branch-map.yaml"
+  local tmpl="$REPO_DIR/templates/branch-map/branch-map.yaml"
+
+  if [[ -f "$bmap" ]]; then
+    echo "  branch-map.yaml already exists — skipping"
+    return
+  fi
+
+  if [[ ! -f "$tmpl" ]]; then
+    echo "  WARN: branch-map template not found at $tmpl" >&2
+    return
+  fi
+
+  # Auto-detect working parent from existing branches
+  local working_parent="main"
+  if [[ -d "$PROJECT_ROOT/.git" ]] || git -C "$PROJECT_ROOT" rev-parse --git-dir &>/dev/null; then
+    local branches
+    branches="$(git -C "$PROJECT_ROOT" branch --format='%(refname:short)' 2>/dev/null)"
+    # Check for deeper integration branches (ordered by depth)
+    for candidate in develop development research staging; do
+      if echo "$branches" | grep -qx "$candidate"; then
+        working_parent="$candidate"
+      fi
+    done
+  fi
+
+  mkdir -p "$PROJECT_ROOT/.claude"
+
+  # Copy template and uncomment trunk_chain entries up to working_parent
+  if [[ "$working_parent" == "main" ]]; then
+    cp "$tmpl" "$bmap"
+  else
+    # Build trunk_chain: uncomment only branches that exist, up to working_parent
+    local in_chain=true
+    while IFS= read -r line; do
+      if [[ "$line" =~ ^[[:space:]]*#[[:space:]]*-[[:space:]]+(develop|development|research|staging) ]]; then
+        local branch_name="${BASH_REMATCH[1]}"
+        if $in_chain; then
+          # Only uncomment if this branch actually exists
+          if echo "$branches" | grep -qx "$branch_name"; then
+            echo "$line" | sed 's/^[[:space:]]*#[[:space:]]*/  /'
+          else
+            echo "$line"
+          fi
+          if [[ "$branch_name" == "$working_parent" ]]; then
+            in_chain=false
+          fi
+        else
+          echo "$line"
+        fi
+      elif [[ "$line" =~ ^working_parent: ]]; then
+        echo "working_parent: $working_parent"
+      elif [[ "$line" =~ ^default_merge_target: ]]; then
+        echo "default_merge_target: $working_parent"
+      else
+        echo "$line"
+      fi
+    done < "$tmpl" > "$bmap"
+  fi
+
+  echo "  ✓ Created $bmap (working_parent: $working_parent)"
+  echo "    guard-trunk will protect: trunk_chain branches"
+  echo "    Customize with: /branch-init or edit .claude/branch-map.yaml"
+}
+
+if $INSTALL_HAS_CORE; then
+  ensure_branch_map
 fi
 
 echo "────────────────────────────────────────────────────────"
