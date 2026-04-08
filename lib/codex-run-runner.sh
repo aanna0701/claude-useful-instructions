@@ -326,6 +326,8 @@ cmd_dispatch() {
       if [ -n "$_wdir" ]; then
         local _issue
         _issue=$(grep -oP '^\| Issue \| #\K\d+' "$_wdir/status.md" 2>/dev/null || true)
+        # Fallback: extract issue number from full URL (e.g., .../issues/233 → 233)
+        [ -z "$_issue" ] && _issue=$(grep -oP '^\| Issue \| .*?/issues/\K\d+' "$_wdir/status.md" 2>/dev/null || true)
         update_issue_label "$_issue" "ready-for-review" 2>/dev/null || true
       fi
     done

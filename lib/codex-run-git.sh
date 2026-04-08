@@ -396,6 +396,10 @@ push_and_create_pr() {
   merge_target=$(resolve_merge_target "$wdir")
   local issue=""
   issue=$(grep -oP '^\| Issue \| #\K\d+' "$wdir/status.md" 2>/dev/null || true)
+  # Fallback: extract issue number from full URL (e.g., .../issues/233 → 233)
+  if [ -z "$issue" ]; then
+    issue=$(grep -oP '^\| Issue \| .*?/issues/\K\d+' "$wdir/status.md" 2>/dev/null || true)
+  fi
 
   local title="$feat_id"
   if [ -f "$wdir/brief.md" ]; then
