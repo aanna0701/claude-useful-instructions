@@ -973,8 +973,17 @@ ensure_pre_commit() {
   fi
 
   if command -v pre-commit &>/dev/null; then
-    (cd "$PROJECT_ROOT" && pre-commit install 2>/dev/null) || true
-    echo "  ✓ pre-commit hooks installed"
+    # Unset core.hooksPath if it points elsewhere — conflicts with pre-commit install
+    _hooks_path=$(git -C "$PROJECT_ROOT" config --get core.hooksPath 2>/dev/null || true)
+    if [[ -n "$_hooks_path" ]]; then
+      echo "  Unsetting core.hooksPath (was: $_hooks_path) for pre-commit compatibility"
+      git -C "$PROJECT_ROOT" config --unset-all core.hooksPath 2>/dev/null || true
+    fi
+    if (cd "$PROJECT_ROOT" && pre-commit install 2>&1); then
+      echo "  ✓ pre-commit hooks installed"
+    else
+      echo "  WARNING: pre-commit install failed" >&2
+    fi
   fi
 }
 
