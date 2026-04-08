@@ -10,7 +10,7 @@ No arguments: auto-glob for `ready-for-review` items.
 
 ## Steps
 
-1. **Resolve worktree**: Per `rules/collab-workflow.md` § Worktree Rules. Set `$WORK_ROOT`. All reads from worktree.
+1. **Resolve worktree**: Per `rules/collab-workflow.md` § Work Item Discovery (searches cwd, worktrees, sibling dirs), then § Worktree Resolution. Set `$WORK_ROOT`. All reads from worktree.
 2. **Read relay**: Per `rules/collab-workflow.md` § Relay Protocol — read `relay.md` for impl + verify results. Factor verify failures into review (raise severity if tests failed). Include relay summary in PR reviewer context.
 3. **Pre-flight**: Read brief/contract/checklist/status (parallel). Require `ready-for-review` or `revising`. Acquire lock per § Locks.
 4. **Branch map validation**: Per `rules/review-merge-policy.md` § Merge Gating. Check freshness, merge target, role consistency.

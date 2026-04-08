@@ -20,7 +20,7 @@ Generate Cursor Composer prompts for scaffolding, or execute directly with `--cl
 
 ## Steps
 
-1. **Resolve**: Locate `work/items/{ID}-*/`, read `status.md` (planned/scaffolded), resolve worktree per `rules/collab-workflow.md` § Worktree Rules
+1. **Resolve**: Per `rules/collab-workflow.md` § Work Item Discovery, locate `work/items/{ID}-*/` (searches cwd, worktrees, sibling dirs). Read `status.md` (planned/scaffolded), resolve worktree per § Worktree Resolution
 2. **Scaffold**:
    - **Default**: Spawn `cursor-prompt-builder` agent (`mode=scaffold`). Returns Cursor Composer prompt.
    - **`--claude`**: Read `contract.md`, create stub files with `NotImplementedError`, create test skeletons. Skip `.cursor/rules/`.

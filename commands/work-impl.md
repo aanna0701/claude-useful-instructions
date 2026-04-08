@@ -8,7 +8,7 @@ Resolve a work item to its worktree and implement per contract. Claude fallback 
 
 ## Steps
 
-1. **Resolve**: `#42` → scan status.md. `FEAT-001` → find `work/items/FEAT-001-*/`. `all` → find planned/revising items.
+1. **Resolve**: Per `rules/collab-workflow.md` § Work Item Discovery (searches cwd, worktrees, sibling dirs). `#42` → scan status.md for issue number. `FEAT-001` → find `work/items/FEAT-001-*/`. `all` → find planned/revising items.
 2. **Switch to worktree**: Per `rules/collab-workflow.md` § Worktree Rules. All operations run in worktree. Never on `working_parent`.
 3. **Sync preflight**: Preferred via `codex-run.sh` (auto-sync + `uv sync --frozen`). Manual: verify `git merge-base --is-ancestor`. Missing deps → `blocked` with `needs-sync`.
 4. **Implement**: Acquire lock per `rules/collab-workflow.md` § Locks. Status → `implementing`. Follow contract strictly: Allowed Modifications only, never Forbidden Zones, satisfy tests, preserve invariants. If `revising`: resolve MUST-fix from review.md first.

@@ -59,7 +59,19 @@ git branch "$BRANCH" "$PARENT"
 git worktree add "$WT_PATH" "$BRANCH"
 ```
 
-### Resolution (all commands)
+### Work Item Discovery (all commands)
+
+Given an ID (e.g. `PERF-154`), find `work/items/{ID}-*/` in this order:
+
+1. `work/items/{ID}-*/` in cwd (main repo — items not yet dispatched)
+2. `git worktree list` → for each worktree path, check `{WT_PATH}/work/items/{ID}-*/`
+3. Sibling directory fallback: `${PARENT}/${PROJECT}-{ID}-*/work/items/{ID}-*/`
+
+First match wins. If no match: `ERROR: {ID} not found`.
+
+### Worktree Resolution (all commands)
+
+Once the item directory is found, resolve its worktree:
 
 1. Read `Worktree Path` field from `status.md` (primary — always absolute)
 2. Fallback: convention `$(dirname "$REPO_ROOT")/${PROJECT}-${SLUG}`
