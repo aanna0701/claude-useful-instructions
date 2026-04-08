@@ -95,9 +95,9 @@ monitor_group() {
           waited_pids_ref["$fid"]=1
         fi
         local exit_code="${exit_codes_ref[$fid]:-?}"
-        if [[ "$status" == "done" ]]; then
+        if [[ "$status" == "done" || "$status" == "ready-for-review" ]]; then
           ((done_count++)) || true
-          printf "  %-40s ✓ done\n" "$slug"
+          printf "  %-40s ✓ %s\n" "$slug" "$status"
         else
           if [ "$status" = "unknown" ]; then
             mark_status_blocked_everywhere "$fid" "$wdir" "runner-missing-status" "Codex process exited with code $exit_code before recording a final status. Inspect $log_file and update status.md before rerunning."
@@ -228,7 +228,7 @@ collect_dispatch_results() {
     status_source=$(resolve_status_source_dir "$fid" "$wdir")
     local status
     status=$(get_item_status "$status_source")
-    if [[ "$status" == "done" ]]; then
+    if [[ "$status" == "done" || "$status" == "ready-for-review" ]]; then
       if verify_commits "$fid"; then
         ((success_ref++)) || true
         review_ids_ref+=("$fid")
@@ -291,8 +291,17 @@ cmd_dispatch() {
   fi
 
   echo ""
-  echo "Step 3/4: Results + Verification"
+  echo "Step 3/4: Rescue uncommitted + Verification"
   echo "──────────────────────────────────────────────"
+
+  # Always attempt rescue before collecting results — Codex sandbox blocks
+  # .git/worktrees/*/index.lock, so commits almost always fail inside worktrees.
+  # Running rescue unconditionally ensures work is never lost regardless of
+  # what status value Codex wrote.
+  for fid in "${feat_ids[@]}"; do
+    rescue_uncommitted "$fid" 2>/dev/null || true
+  done
+
   local success=0 failed=0 warn=0
   local review_ids=()
   local warn_ids=()
