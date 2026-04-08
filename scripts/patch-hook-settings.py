@@ -3,7 +3,7 @@
 
 Usage: patch-hook-settings.py <hook_name>
 
-Supported hooks: git-auto-pull, guard-trunk
+Supported hooks: git-auto-pull, guard-branch, auto-pr-commit, auto-pr, worknote-stop
 """
 from __future__ import annotations
 
@@ -24,12 +24,30 @@ HOOK_REGISTRY: dict[str, dict] = {
             }],
         },
     },
-    "guard-trunk": {
-        "managed": {"guard_trunk.py"},
+    "branch-naming": {
+        "managed": {"branch_naming.py"},
+        "events": {
+            "PreToolUse": [{
+                "matcher": "Bash",
+                "hooks": [{"type": "command", "command": f"python3 {HOOKS_DIR}/branch_naming.py"}],
+            }],
+        },
+    },
+    "guard-branch": {
+        "managed": {"guard_branch.py"},
         "events": {
             "PreToolUse": [{
                 "matcher": "Edit|Write|NotebookEdit",
-                "hooks": [{"type": "command", "command": f"python3 {HOOKS_DIR}/guard_trunk.py"}],
+                "hooks": [{"type": "command", "command": f"python3 {HOOKS_DIR}/guard_branch.py"}],
+            }],
+        },
+    },
+    "auto-pr-commit": {
+        "managed": {"auto_pr_commit.py"},
+        "events": {
+            "PostToolUse": [{
+                "matcher": "Bash",
+                "hooks": [{"type": "command", "command": f"python3 {HOOKS_DIR}/auto_pr_commit.py"}],
             }],
         },
     },
@@ -39,6 +57,19 @@ HOOK_REGISTRY: dict[str, dict] = {
             "Stop": [{
                 "matcher": "",
                 "hooks": [{"type": "command", "command": f"bash {HOOKS_DIR}/worknote_stop.sh"}],
+            }],
+        },
+    },
+    "worktree-cleanup": {
+        "managed": {"worktree_cleanup.py"},
+        "events": {
+            "PostToolUse": [{
+                "matcher": "Bash",
+                "hooks": [{"type": "command", "command": f"python3 {HOOKS_DIR}/worktree_cleanup.py"}],
+            }],
+            "Stop": [{
+                "matcher": "",
+                "hooks": [{"type": "command", "command": f"python3 {HOOKS_DIR}/worktree_cleanup.py"}],
             }],
         },
     },

@@ -50,8 +50,12 @@ BUNDLE_CORE=(
   "agents:token-mcp-analyzer.md"
   "agents:token-split-detector.md"
   "claude-hook:git-auto-pull"
-  "claude-hook:guard-trunk"
+  "claude-hook:branch-naming"
+  "claude-hook:guard-branch"
+  "claude-hook:auto-pr-commit"
+  "claude-hook:worktree-cleanup"
   "claude-hook:auto-pr"
+  "template:pre-commit"
 )
 
 BUNDLE_DOCS=(
@@ -96,11 +100,8 @@ BUNDLE_DL=(
 )
 
 BUNDLE_COLLAB=(
-  "rules:branch-map-policy.md"
   "rules:collab-workflow.md"
   "rules:review-merge-policy.md"
-  "commands:branch-init.md"
-  "commands:branch-status.md"
   "commands:work-plan.md"
   "commands:work-review.md"
   "commands:work-impl.md"
@@ -115,7 +116,6 @@ BUNDLE_COLLAB=(
   "agents:cursor-prompt-builder.md"
   "commands:work-scaffold.md"
   "commands:work-verify.md"
-  "templates:branch-map"
   "templates:work-item"
   "templates:cursor"
   "collab-pipeline:project"
@@ -156,12 +156,12 @@ BUNDLE_PPT_GENERATION=(
 
 BUNDLE_NAMES=("core" "docs" "data-pipeline" "career" "dl" "collab" "presentation" "worknote" "ppt-generation")
 BUNDLE_DESCRIPTIONS=(
-  "Core utilities (smart-git-commit-push, optimize-tokens, debug-guide, guard-trunk, auto-pr)"
+  "Core utilities (smart-git-commit-push, optimize-tokens, debug-guide, guard-branch, auto-pr, pre-commit)"
   "Documentation & diagrams (diataxis framework, doc agents, diagram-architect)"
   "Data pipeline architect"
   "Career document tools (cover letters, Korean)"
   "PyTorch DL standards + agents (capture, data, model, train, eval, infra)"
-  "Claude-Codex collaboration (work items, branch-map, AGENTS.md, CLAUDE.md)"
+  "Claude-Codex collaboration (work items, AGENTS.md, CLAUDE.md)"
   "HTML presentation generator (16:9 dark theme slides + PDF export)"
   "Work journal with Notion sync (daily log, review, planning)"
   "PPT template-based generation (fill content into base PPT without changing design)"
@@ -513,6 +513,17 @@ install_hook() {
   fi
 }
 
+install_hook_lib() {
+  local src="$REPO_DIR/hooks/lib"
+  local dst="$HOME/.claude/hooks/lib"
+  [ -d "$src" ] || return 0
+  mkdir -p "$dst"
+  for f in "$src"/*.py; do
+    [ -f "$f" ] || continue
+    cp -v "$f" "$dst/$(basename "$f")"
+  done
+}
+
 install_claude_hook() {
   local hook_name="$1"
   local src="$REPO_DIR/hooks/$hook_name"
@@ -521,6 +532,9 @@ install_claude_hook() {
   [ -d "$src" ] || { echo "WARNING: Claude hook dir not found: $src" >&2; return 0; }
 
   mkdir -p "$dst_dir"
+
+  # Always install shared lib alongside hooks
+  install_hook_lib
 
   local copied_files=()
   for f in "$src"/*.py "$src"/*.sh; do
@@ -908,6 +922,26 @@ for entry in "${INSTALL_LIST[@]}"; do
     claude-hook)
       install_claude_hook "$path"
       ;;
+    template)
+      # Copy template files to project root (e.g., .pre-commit-config.yaml)
+      local tmpl_dir="$REPO_DIR/templates/$path"
+      if [ -d "$tmpl_dir" ]; then
+        for tmpl_file in "$tmpl_dir"/.*  "$tmpl_dir"/*; do
+          [ -f "$tmpl_file" ] || continue
+          local fname
+          fname="$(basename "$tmpl_file")"
+          [[ "$fname" == "." || "$fname" == ".." ]] && continue
+          local dst_path="$PROJECT_ROOT/$fname"
+          if [ -f "$dst_path" ]; then
+            echo "  $fname already exists — skipping"
+          else
+            install_file "$tmpl_file" "$dst_path"
+          fi
+        done
+      else
+        echo "WARNING: Template dir not found: $tmpl_dir" >&2
+      fi
+      ;;
     mcp)
       install_mcp_dir "$path"
       ;;
@@ -919,79 +953,22 @@ if $INSTALL_HAS_COLLAB; then
   ensure_cursor_mcp
 fi
 
-# ── Auto-install branch-map.yaml when guard-trunk is installed ──────────
-# guard-trunk (core bundle) needs branch-map.yaml to know which branches to
-# protect. Without it the hook silently does nothing — easy to forget.
-# If a project directory was given and branch-map.yaml doesn't exist yet,
-# copy the default template so trunk protection is active immediately.
-ensure_branch_map() {
-  local bmap="$PROJECT_ROOT/.claude/branch-map.yaml"
-  local tmpl="$REPO_DIR/templates/branch-map/branch-map.yaml"
-
-  if [[ -f "$bmap" ]]; then
-    echo "  branch-map.yaml already exists — skipping"
+# ── Auto-install pre-commit when core bundle is installed ────────────────
+ensure_pre_commit() {
+  if ! command -v pre-commit &>/dev/null; then
+    echo "  NOTE: pre-commit not found. Install with: pip install pre-commit"
+    echo "        Then run: cd $PROJECT_ROOT && pre-commit install"
     return
   fi
 
-  if [[ ! -f "$tmpl" ]]; then
-    echo "  WARN: branch-map template not found at $tmpl" >&2
-    return
+  if [[ -f "$PROJECT_ROOT/.pre-commit-config.yaml" ]]; then
+    (cd "$PROJECT_ROOT" && pre-commit install 2>/dev/null) || true
+    echo "  ✓ pre-commit hooks installed"
   fi
-
-  # Auto-detect working parent from existing branches
-  local working_parent="main"
-  if [[ -d "$PROJECT_ROOT/.git" ]] || git -C "$PROJECT_ROOT" rev-parse --git-dir &>/dev/null; then
-    local branches
-    branches="$(git -C "$PROJECT_ROOT" branch --format='%(refname:short)' 2>/dev/null)"
-    # Check for deeper integration branches (ordered by depth)
-    for candidate in develop development research staging; do
-      if echo "$branches" | grep -qx "$candidate"; then
-        working_parent="$candidate"
-      fi
-    done
-  fi
-
-  mkdir -p "$PROJECT_ROOT/.claude"
-
-  # Copy template and uncomment trunk_chain entries up to working_parent
-  if [[ "$working_parent" == "main" ]]; then
-    cp "$tmpl" "$bmap"
-  else
-    # Build trunk_chain: uncomment only branches that exist, up to working_parent
-    local in_chain=true
-    while IFS= read -r line; do
-      if [[ "$line" =~ ^[[:space:]]*#[[:space:]]*-[[:space:]]+(develop|development|research|staging) ]]; then
-        local branch_name="${BASH_REMATCH[1]}"
-        if $in_chain; then
-          # Only uncomment if this branch actually exists
-          if echo "$branches" | grep -qx "$branch_name"; then
-            echo "$line" | sed 's/^[[:space:]]*#[[:space:]]*/  /'
-          else
-            echo "$line"
-          fi
-          if [[ "$branch_name" == "$working_parent" ]]; then
-            in_chain=false
-          fi
-        else
-          echo "$line"
-        fi
-      elif [[ "$line" =~ ^working_parent: ]]; then
-        echo "working_parent: $working_parent"
-      elif [[ "$line" =~ ^default_merge_target: ]]; then
-        echo "default_merge_target: $working_parent"
-      else
-        echo "$line"
-      fi
-    done < "$tmpl" > "$bmap"
-  fi
-
-  echo "  ✓ Created $bmap (working_parent: $working_parent)"
-  echo "    guard-trunk will protect: trunk_chain branches"
-  echo "    Customize with: /branch-init or edit .claude/branch-map.yaml"
 }
 
 if $INSTALL_HAS_CORE; then
-  ensure_branch_map
+  ensure_pre_commit
 fi
 
 echo "────────────────────────────────────────────────────────"
