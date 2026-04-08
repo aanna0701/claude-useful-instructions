@@ -30,10 +30,22 @@ Illegal shortcuts:
 
 ## Ownership
 
-- `working_parent` is orchestration-only. Never implement there.
+- The **current project branch** is orchestration-only. Never implement there directly.
 - Feature worktrees are the only implementation workspace.
 - `status.md` in the active worktree is authoritative while work is in progress.
 - Contract = single source of truth for boundaries.
+- No `branch-map.yaml` needed — base branch = `git rev-parse --abbrev-ref HEAD`.
+
+## Hook-Enforced Workflow
+
+All code modifications go through hooks that enforce the worktree + issue + PR pattern:
+
+1. **branch-naming** (PreToolUse): Enforces `feature-*` naming on all new branches. `feat` → `feature-{slug}`, others → `feature-{type}-{slug}`.
+2. **guard-branch** (PreToolUse): Blocks code edits on the main repo. Auto-creates a worktree + GitHub Issue. Worktrees are exempt.
+3. **auto-pr-commit** (PostToolUse): On first `git commit` in a worktree, pushes the branch and creates a draft PR (base = branch the worktree was created from).
+4. **worktree-cleanup** (PostToolUse + Stop): After `gh pr merge` or on session end, deletes merged worktrees, local branches, and remote branches.
+5. **auto-pr** (Stop): Fallback PR creation if the PostToolUse hook didn't fire.
+6. **pre-commit** (git hook): Runs ruff, pyright, mypy, clang-format before every commit.
 
 ## Worktree Rules (canonical)
 
@@ -44,9 +56,12 @@ All commands reference this section for worktree operations.
 ```bash
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 PROJECT=$(basename "$REPO_ROOT")
-SLUG="{TYPE}-NNN-slug"            # e.g. FEAT-001-user-auth
-BRANCH="${TYPE_PREFIX}${SLUG}"    # e.g. feat/FEAT-001-user-auth
-WT_PATH="$(dirname "$REPO_ROOT")/${PROJECT}-${SLUG}"
+SLUG="user-auth"                         # kebab-case, max 30 chars
+# feat → feature-{slug}, others → feature-{type}-{slug}
+BRANCH="feature-${SLUG}"                 # e.g. feature-user-auth
+BRANCH="feature-fix-${SLUG}"             # e.g. feature-fix-login-crash
+BRANCH="feature-refac-${SLUG}"           # e.g. feature-refac-db-schema
+WT_PATH="$(dirname "$REPO_ROOT")/${PROJECT}-${BRANCH}"
 # e.g. /home/leo/projects/myapp-FEAT-001-user-auth
 ```
 

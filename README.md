@@ -52,10 +52,10 @@ cui-install --collab /path/to/my-project
 
 | Bundle | Contents | Recommended Scope |
 |--------|----------|-------------------|
-| `core` | smart-git-commit-push, optimize-tokens, debug-guide, what-to-do, token analyzers, git-auto-pull hook | Global (`~/.claude/`) |
+| `core` | smart-git-commit-push, optimize-tokens, debug-guide, what-to-do, token analyzers, **hooks** (git-auto-pull, guard-branch, branch-naming, auto-pr-commit, worktree-cleanup, auto-pr), pre-commit templates | Global (`~/.claude/`) |
 | `docs` | diataxis-doc-system, diagram-architect, doc/diagram agents, write-doc, init-docs, sync-docs | Global |
 | `data-pipeline` | data-pipeline-architect skill | Global |
-| `collab` | Claude-Codex collaboration, work items, AI IDE integration (pipeline rule for Cursor/Antigravity, scaffold/verify), CI audit, guard-trunk hook, codex-run, AGENTS.md, CLAUDE.md | Per-project |
+| `collab` | Claude-Codex collaboration, work items, AI IDE integration (pipeline rule for Cursor/Antigravity, scaffold/verify), CI audit, codex-run, AGENTS.md, CLAUDE.md | Per-project |
 | `career` | career-docs skill, career agents | Either |
 | `presentation` | html-presentation skill, create/format/edit/export-pdf commands | Global |
 | `worknote` | Work journal with Notion sync (daily log, review, planning) | Global |
@@ -64,6 +64,60 @@ cui-install --collab /path/to/my-project
 
 > **Global** (`~/.claude/`): language-agnostic tools usable everywhere.
 > **Per-project** (`project/.claude/`): CLAUDE.md, AGENTS.md, work items, MCP are project-specific.
+
+## Git Workflow (Hook-Enforced)
+
+The `core` bundle installs hooks that enforce a strict worktree-based git workflow:
+
+```
+Code edit on main repo
+  → guard-branch blocks it
+  → creates worktree (feature-*) + GitHub Issue
+  → redirects edit to worktree
+
+First git commit in worktree
+  → auto-pr-commit pushes branch
+  → creates draft PR (Closes #issue)
+
+PR merged
+  → worktree-cleanup deletes:
+    - worktree directory
+    - local branch
+    - remote branch
+```
+
+### Branch Naming Convention
+
+All branches must follow `feature-*` pattern:
+
+| Type | Branch Pattern | Example |
+|------|---------------|---------|
+| feat | `feature-{slug}` | `feature-user-auth` |
+| fix | `feature-fix-{slug}` | `feature-fix-login-crash` |
+| refactor | `feature-refac-{slug}` | `feature-refac-db-schema` |
+| docs | `feature-docs-{slug}` | `feature-docs-api-guide` |
+| perf | `feature-perf-{slug}` | `feature-perf-query-cache` |
+| adhoc | `feature-adhoc-{MMDD-HHMM}` | `feature-adhoc-0408-1530` |
+
+### Hooks Summary
+
+| Hook | Event | What It Does |
+|------|-------|-------------|
+| `branch-naming` | PreToolUse (Bash) | Blocks non-`feature-*` branch names |
+| `guard-branch` | PreToolUse (Edit/Write) | Redirects code edits to worktree + creates Issue |
+| `auto-pr-commit` | PostToolUse (Bash) | Draft PR on first `git commit` |
+| `worktree-cleanup` | PostToolUse (Bash) + Stop | Deletes merged worktrees + remote branches |
+| `auto-pr` | Stop | Fallback PR creation if hook missed |
+| `git-auto-pull` | PreToolUse (Edit/Write) | Auto `git pull` once per session |
+
+### Pre-commit (Code Quality)
+
+The `core` bundle installs `.pre-commit-config.yaml` with:
+
+| Language | Formatting | Lint | Type Check |
+|----------|-----------|------|-----------|
+| Python | ruff-format | ruff | pyright, mypy |
+| C++ | clang-format | — | — |
 
 ### Prerequisites
 
@@ -183,8 +237,6 @@ Subagents delegated by Claude for specific tasks.
 
 | Command | Description |
 |---------|-------------|
-| `/branch-init` | Detect/configure branch hierarchy for the project |
-| `/branch-status` | Show branch map, freshness, and work item mapping |
 | `/work-plan` | Create work item for Codex delegation |
 | `/work-status` | Check work item progress |
 | `/work-impl` | Implement a work item in its worktree per contract |
@@ -215,8 +267,7 @@ Shared code standards installed to `.claude/rules/`.
 
 | File | Bundle | Content |
 |------|--------|---------|
-| `branch-map-policy.md` | collab | Branch hierarchy selection, safety rules, worktree routing |
-| `collab-workflow.md` | collab | Claude-Codex role separation, work item protocol |
+| `collab-workflow.md` | collab | Claude-Codex role separation, hook-enforced workflow, work item protocol |
 | `review-merge-policy.md` | collab | Merge gating: freshness, CI checks, MUST-fix resolution |
 | `pytorch-dl-standards.md` | dl | PyTorch DL standards: config/DTO, frozen patterns, kornia, tech stack |
 
@@ -272,7 +323,7 @@ claude-useful-instructions/
 │   ├── codex-run-boundary.sh        # Boundary check (changed-files audit)
 │   └── codex-run-runner.sh          # Codex execution with stall detection
 ├── templates/                       # Installable templates
-│   ├── branch-map/                  # branch-map.yaml bootstrap config
+│   ├── pre-commit/                  # .pre-commit-config.yaml, .clang-format templates
 │   ├── work-item/                   # brief, contract, checklist, status, review, relay
 │   ├── collab-pipeline-body.md      # Single source for `/collab-workflow` pipeline (assembled by install.sh)
 │   ├── cursor/                      # Cursor/Antigravity prompt templates + per-item .mdc patterns
@@ -280,8 +331,13 @@ claude-useful-instructions/
 │   ├── codex/AGENTS.md
 │   └── claude/CLAUDE.md
 ├── hooks/                           # Claude Code hooks
+│   ├── lib/                         # Shared utilities (gh_utils, worktree_state)
 │   ├── git-auto-pull/               # Pre-edit auto-pull hook
-│   ├── guard-trunk/                 # Trunk protection worktree redirect
+│   ├── branch-naming/               # Enforce feature-* branch naming
+│   ├── guard-branch/                # Redirect code edits to worktree + auto-create Issue
+│   ├── auto-pr-commit/              # Draft PR on first commit
+│   ├── worktree-cleanup/            # Delete merged worktrees + remote branches
+│   ├── auto-pr/                     # Fallback PR creation on session end
 │   └── worknote-stop/               # Session-end work journal capture
 ├── install.sh                       # Bundle-based installer (+ --uninstall)
 └── codex-run.sh                     # Codex runner (single + parallel + boundary check)

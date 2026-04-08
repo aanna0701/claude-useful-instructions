@@ -13,16 +13,18 @@ Split topics into parallelizable work items with contract boundaries for Codex/C
 
 ## Work Types
 
-| Type | ID Prefix | Branch Prefix | Commit Prefix |
-|------|-----------|---------------|---------------|
-| feat | `FEAT-NNN` | `feat/` | `feat` |
-| fix | `FIX-NNN` | `fix/` | `fix` |
-| docs | `DOCS-NNN` | `docs/` | `docs` |
-| chore | `CHORE-NNN` | `chore/` | `chore` |
-| refactor | `REFAC-NNN` | `refactor/` | `refactor` |
-| test | `TEST-NNN` | `test/` | `test` |
-| perf | `PERF-NNN` | `perf/` | `perf` |
-| audit | `AUDIT-NNN` | `audit/` | `audit` |
+| Type | ID Prefix | Branch Pattern | Commit Prefix |
+|------|-----------|----------------|---------------|
+| feat | `FEAT-NNN` | `feature-{slug}` | `feat` |
+| fix | `FIX-NNN` | `feature-fix-{slug}` | `fix` |
+| docs | `DOCS-NNN` | `feature-docs-{slug}` | `docs` |
+| chore | `CHORE-NNN` | `feature-chore-{slug}` | `chore` |
+| refactor | `REFAC-NNN` | `feature-refac-{slug}` | `refactor` |
+| test | `TEST-NNN` | `feature-test-{slug}` | `test` |
+| perf | `PERF-NNN` | `feature-perf-{slug}` | `perf` |
+| audit | `AUDIT-NNN` | `feature-audit-{slug}` | `audit` |
+
+**Branch naming rule:** All branches start with `feature-`. For `feat` type, use `feature-{slug}` directly. For all other types, use `feature-{type}-{slug}`.
 
 Type resolution: explicit `--type=` > infer from keywords > ask user.
 Audit keywords: "감사", "검증", "정합성", "audit", "check", "consistency", "convention".
@@ -33,13 +35,17 @@ Audit keywords: "감사", "검증", "정합성", "audit", "check", "consistency"
 
 Read `$ARGUMENTS` (file or topic). For each: Objective, Source, Scope (in/out), Boundaries.
 
-### Step 2: Resolve Branch Map
+### Step 2: Resolve Base Branch
 
-Per `rules/branch-map-policy.md`. Read `.claude/branch-map.yaml`: `working_parent`, `default_merge_target`, `branch_prefixes`, `roles`. Default to `main` if absent.
+Use the **current branch** as the base for all worktrees. No branch-map needed.
+
+```bash
+BASE_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+```
 
 ### Step 3: Preflight
 
-Acquire `work/locks/planning.lock`. Verify current branch = `working_parent`, worktree clean. Refuse if another planning run active.
+Acquire `work/locks/planning.lock`. Verify worktree clean. Refuse if another planning run active.
 
 ### Step 4: Decompose
 
@@ -70,11 +76,17 @@ Per `rules/collab-workflow.md` § Worktree Rules (Creation):
 ```bash
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 PROJECT=$(basename "$REPO_ROOT")
-SLUG="{TYPE}-NNN-slug"
-BRANCH="${TYPE_PREFIX}${SLUG}"
-WT_PATH="$(dirname "$REPO_ROOT")/${PROJECT}-${SLUG}"
+SLUG="{slug}"                       # e.g. user-auth
+# feat → feature-{slug}, others → feature-{type}-{slug}
+if [[ "$TYPE" == "feat" ]]; then
+  BRANCH="feature-${SLUG}"
+else
+  BRANCH="feature-${TYPE_SHORT}-${SLUG}"  # e.g. feature-fix-login-crash
+fi
+WT_PATH="$(dirname "$REPO_ROOT")/${PROJECT}-${BRANCH}"
 
-git branch "$BRANCH" "$PARENT"
+BASE_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+git branch "$BRANCH" "$BASE_BRANCH"
 git worktree add "$WT_PATH" "$BRANCH"
 ```
 
@@ -82,7 +94,18 @@ Seed artifacts into worktree, commit. Update `status.md` with absolute `Worktree
 
 ### Step 9: GitHub Issues + Batch Manifest
 
-Spawn `issue-creator` agent per item (parallel). Write `work/batches/{batch_id}.json`. Release planning lock.
+For each item, create a GitHub Issue directly (not via agent — avoids silent failures):
+
+```bash
+OWNER_REPO="$(gh repo view --json nameWithOwner -q '.nameWithOwner')"
+ISSUE_URL=$(gh issue create \
+  --repo "$OWNER_REPO" \
+  --title "{TYPE}-NNN: {readable title}" \
+  --body "## Objective\n...\n## Scope\n...\n## Checklist\n..." \
+  --label "work-item" --label "status:planned")
+```
+
+Store issue number in `status.md`. Write `work/batches/{batch_id}.json`. Release planning lock.
 
 ### Step 10: Summary
 

@@ -13,9 +13,9 @@ Before any merge:
 
 ## After Merge
 
-Per `merge_policy` in branch-map.yaml:
-- Confirm with user if `ask_confirm_before_merge` is true (check **before** merge).
-- Delete branch if `delete_branch_after_merge` is true.
+Post-merge policy:
+- Always confirm with user before merge.
+- Delete branch after merge.
 - Remove worktree, prune stale refs.
 - Auto doc sync: pull working parent → read "Doc Changes Needed" → `/sync-docs` → commit.
 

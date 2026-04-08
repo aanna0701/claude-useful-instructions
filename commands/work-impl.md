@@ -19,7 +19,7 @@ Resolve a work item to its worktree and implement per contract. Claude fallback 
 2. **Switch to worktree**: Per `rules/collab-workflow.md` § Worktree Rules. All operations run in worktree. Never on `working_parent`.
 3. **Sync preflight**: Preferred via `codex-run.sh` (auto-sync + `uv sync --frozen`). Manual: verify `git merge-base --is-ancestor`. Missing deps → `blocked` with `needs-sync`.
 4. **Implement**: Acquire lock per `rules/collab-workflow.md` § Locks. Status → `implementing`. Follow contract strictly: Allowed Modifications only, never Forbidden Zones, satisfy tests, preserve invariants. If `revising`: resolve MUST-fix from review.md first.
-5. **Complete & Push**: Status → `ready-for-review`. Update Changed Files, Verification, Doc Changes. Use `git add -f work/items/${SLUG}/`. Commit with `{type}({ID}): <description>`, push with `-u`. Create draft PR targeting contract's merge target. Update status.md with PR.
+5. **Complete & Push**: Status → `ready-for-review`. Update Changed Files, Verification, Doc Changes. Use `git add -f work/items/${SLUG}/`. Commit with `{type}({ID}): <description>`. A draft PR is created automatically by the `auto-pr-commit` hook on first commit (base = the branch the worktree was created from). If running in Codex sandbox where hooks don't fire, `codex-run.sh` handles push + PR.
 6. **Relay**: Per `rules/collab-workflow.md` § Relay Protocol — append `impl` block to `relay.md` with changed files, commit hashes, and notes.
    - **PR Comment Relay**: Use MCP `add_issue_comment` to post relay comment with `<!-- relay:impl:{timestamp} -->` marker (per § PR Comment Relay). Fallback: `gh pr comment`.
    - **Issue Label**: Use MCP `update_issue` to set `status:ready-for-review`. Fallback: `gh issue edit`.

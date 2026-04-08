@@ -19,9 +19,11 @@ You create a single GitHub Issue for a work item. You receive a FEAT ID and its 
    gh label create work-item --color 0E8A16 2>/dev/null || true
    gh label create "status:planned" --color 1D76DB 2>/dev/null || true
    ```
-4. Create the issue:
+4. Create the issue (always use `--repo` to avoid cwd issues):
    ```bash
+   OWNER_REPO="$(gh repo view --json nameWithOwner -q '.nameWithOwner')"
    gh issue create \
+     --repo "$OWNER_REPO" \
      --title "FEAT-NNN: <readable title from slug>" \
      --body "<body>" \
      --label "work-item" \

@@ -13,7 +13,7 @@ updated: YYYY-MM-DD
 | Field | Value |
 |-------|-------|
 | Role | [docs/backend/frontend/infra/cross-cutting] |
-| Parent Branch | [from branch-map.yaml working_parent] |
+| Parent Branch | [current branch at planning time] |
 | Merge Target | [same as parent branch unless overridden] |
 | Target Worktree | [worktree name if using worktrees, else —] |
 | CI Scope | [lint, typecheck, test — inferred from affected paths] |
