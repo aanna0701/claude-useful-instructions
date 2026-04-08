@@ -102,6 +102,20 @@ def patch(hook_name: str) -> None:
     managed = config["managed"]
     existing = settings.get("hooks", {})
 
+    # Clean up deprecated hooks when their replacement is installed
+    DEPRECATED = {
+        "guard-branch": {"guard_trunk.py"},  # guard-branch replaces guard-trunk
+    }
+    deprecated_files = DEPRECATED.get(hook_name, set())
+    if deprecated_files:
+        def is_deprecated(cmd: str) -> bool:
+            return any(s in cmd for s in deprecated_files)
+        for event in list(existing.keys()):
+            existing[event] = [
+                e for e in existing[event]
+                if not any(is_deprecated(h.get("command", "")) for h in e.get("hooks", []))
+            ]
+
     def is_managed(cmd: str) -> bool:
         return any(s in cmd for s in managed)
 

@@ -924,22 +924,21 @@ for entry in "${INSTALL_LIST[@]}"; do
       ;;
     template)
       # Copy template files to project root (e.g., .pre-commit-config.yaml)
-      local tmpl_dir="$REPO_DIR/templates/$path"
-      if [ -d "$tmpl_dir" ]; then
-        for tmpl_file in "$tmpl_dir"/.*  "$tmpl_dir"/*; do
-          [ -f "$tmpl_file" ] || continue
-          local fname
-          fname="$(basename "$tmpl_file")"
-          [[ "$fname" == "." || "$fname" == ".." ]] && continue
-          local dst_path="$PROJECT_ROOT/$fname"
-          if [ -f "$dst_path" ]; then
-            echo "  $fname already exists — skipping"
+      _tmpl_dir="$REPO_DIR/templates/$path"
+      if [ -d "$_tmpl_dir" ]; then
+        for _tmpl_file in "$_tmpl_dir"/.*  "$_tmpl_dir"/*; do
+          [ -f "$_tmpl_file" ] || continue
+          _fname="$(basename "$_tmpl_file")"
+          [[ "$_fname" == "." || "$_fname" == ".." ]] && continue
+          _dst_path="$PROJECT_ROOT/$_fname"
+          if [ -f "$_dst_path" ]; then
+            echo "  $_fname already exists — skipping"
           else
-            install_file "$tmpl_file" "$dst_path"
+            install_file "$_tmpl_file" "$_dst_path"
           fi
         done
       else
-        echo "WARNING: Template dir not found: $tmpl_dir" >&2
+        echo "WARNING: Template dir not found: $_tmpl_dir" >&2
       fi
       ;;
     mcp)
