@@ -954,13 +954,25 @@ fi
 
 # ── Auto-install pre-commit when core bundle is installed ────────────────
 ensure_pre_commit() {
-  if ! command -v pre-commit &>/dev/null; then
-    echo "  NOTE: pre-commit not found. Install with: pip install pre-commit"
-    echo "        Then run: cd $PROJECT_ROOT && pre-commit install"
+  if [[ ! -f "$PROJECT_ROOT/.pre-commit-config.yaml" ]]; then
     return
   fi
 
-  if [[ -f "$PROJECT_ROOT/.pre-commit-config.yaml" ]]; then
+  # Install pre-commit if not available
+  if ! command -v pre-commit &>/dev/null; then
+    if command -v uv &>/dev/null; then
+      echo "  Installing pre-commit via uv..."
+      uv tool install pre-commit 2>/dev/null || uv pip install pre-commit 2>/dev/null || true
+    elif command -v pip &>/dev/null; then
+      echo "  Installing pre-commit via pip..."
+      pip install pre-commit 2>/dev/null || true
+    else
+      echo "  NOTE: pre-commit not found. Install with: uv tool install pre-commit"
+      return
+    fi
+  fi
+
+  if command -v pre-commit &>/dev/null; then
     (cd "$PROJECT_ROOT" && pre-commit install 2>/dev/null) || true
     echo "  ✓ pre-commit hooks installed"
   fi
