@@ -167,6 +167,29 @@ After writing local `relay.md`, post a structured comment on the PR:
 
 Methods (try in order): MCP `add_issue_comment` → `gh pr comment` → skip (relay.md suffices).
 
+**CRITICAL: Use the PR number, NOT the Issue number.** GitHub's API treats PRs as issues internally, so `add_issue_comment` works on PR numbers. Posting to the Issue number scatters relay history away from the code.
+
+Resolve PR number: parse `status.md` PR field → extract number from URL (e.g., `.../pull/42` → `42`). If no PR yet, skip relay comment.
+
+❌ WRONG — posting to Issue number:
+```
+# Issue field: https://github.com/org/repo/issues/233
+add_issue_comment(issue_number=233, body="<!-- relay:verify:... -->")
+# → comment lands on ISSUE, not on PR
+```
+
+✅ RIGHT — posting to PR number:
+```
+# PR field: https://github.com/org/repo/pull/234
+add_issue_comment(issue_number=234, body="<!-- relay:verify:... -->")
+# → comment lands on PR where all relay lives
+```
+
+✅ RIGHT — fallback with gh CLI:
+```bash
+gh pr comment 234 --body "<!-- relay:verify:... -->"
+```
+
 Stage-specific fields:
 
 | Stage | Required Fields |

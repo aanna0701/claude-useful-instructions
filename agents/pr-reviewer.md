@@ -19,7 +19,7 @@ Called by `/work-review`. Reviews a single PR by comparing diff against contract
 
    Body: `## Contract Review: {ID}` → Verdict → Compliance checklist → Findings → MUST-fix list
 
-6. **PR Comment Relay**: Use MCP `add_issue_comment` (or fallback `gh pr comment`) to post relay comment:
+6. **PR Comment Relay** (per § PR Comment Relay — use **PR number** from `pr_number` input, NOT Issue number). Use MCP `add_issue_comment(issue_number={pr_number})` or fallback `gh pr comment {pr_number}`. Post relay comment:
    ```
    <!-- relay:review:{ISO-8601} -->
    ### review — {MERGE|REVISE|REJECT}

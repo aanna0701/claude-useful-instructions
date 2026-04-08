@@ -21,7 +21,13 @@ Resolve a work item to its worktree and implement per contract. Claude fallback 
 4. **Implement**: Acquire lock per `rules/collab-workflow.md` § Locks. Status → `implementing`. Follow contract strictly: Allowed Modifications only, never Forbidden Zones, satisfy tests, preserve invariants. If `revising`: resolve MUST-fix from review.md first.
 5. **Complete & Push**: Status → `ready-for-review`. Update Changed Files, Verification, Doc Changes. Use `git add -f work/items/${SLUG}/`. Commit with `{type}({ID}): <description>`. A draft PR is created automatically by the `auto-pr-commit` hook on first commit (base = the branch the worktree was created from). If running in Codex sandbox where hooks don't fire, `codex-run.sh` handles push + PR.
 6. **Relay**: Per `rules/collab-workflow.md` § Relay Protocol — append `impl` block to `relay.md` with changed files, commit hashes, and notes.
-   - **PR Comment Relay**: Use MCP `add_issue_comment` to post relay comment with `<!-- relay:impl:{timestamp} -->` marker (per § PR Comment Relay). Fallback: `gh pr comment`.
+   - **PR Comment Relay** (per § PR Comment Relay — use **PR number**, NOT Issue number):
+     ```
+     # Extract PR number from status.md PR field URL (e.g., .../pull/42 → 42)
+     add_issue_comment(issue_number={PR_NUMBER}, body="<!-- relay:impl:{timestamp} --> ...")
+     # Fallback: gh pr comment {PR_NUMBER} --body "..."
+     # No PR yet? Skip relay comment (relay.md suffices).
+     ```
    - **Issue Label**: Use MCP `update_issue` to set `status:ready-for-review`. Fallback: `gh issue edit`.
 
 **MANDATORY NEXT-STEP TEMPLATE** — Print the block below as-is. Fill `«___»` slots with actual ID. Do NOT add, remove, or reorder lines.

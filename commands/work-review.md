@@ -27,7 +27,13 @@ No arguments: auto-glob for `ready-for-review` items.
 6. **Review changed files**: From status.md `Changed Files` or `git log --name-only`.
 7. **Generate review**: Spawn `pr-reviewer` agent. Decision: MERGE / REVISE / REJECT. Write `review.md`. Use `git add -f work/items/{SLUG}/`.
 8. **Relay**: Append `review` block to `relay.md` with decision, must_fix/optional counts, and items list.
-   - **PR Comment Relay**: Use MCP `add_issue_comment` to post relay comment with `<!-- relay:review:{timestamp} -->` marker (per § PR Comment Relay). Fallback: `gh pr comment`.
+   - **PR Comment Relay** (per § PR Comment Relay — use **PR number**, NOT Issue number):
+     ```
+     # Extract PR number from status.md PR field URL (e.g., .../pull/42 → 42)
+     add_issue_comment(issue_number={PR_NUMBER}, body="<!-- relay:review:{timestamp} --> ...")
+     # Fallback: gh pr comment {PR_NUMBER} --body "..."
+     # No PR yet? Skip relay comment (relay.md suffices).
+     ```
    - **Issue Label**: On MERGE → `status:merged`. On REVISE → `status:revising`. Use MCP `update_issue`. Fallback: `gh issue edit`.
 
 ### MERGE
