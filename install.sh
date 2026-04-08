@@ -761,16 +761,13 @@ ensure_cursor_mcp() {
 {
   "mcpServers": {
     "github": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-github"],
-      "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PAT}"
-      }
+      "command": "bash",
+      "args": ["-lc", "token=$(gh auth token 2>/dev/null || true); if [ -n \"$token\" ]; then export GITHUB_PERSONAL_ACCESS_TOKEN=\"$token\"; fi; exec npx -y @modelcontextprotocol/server-github"]
     }
   }
 }
 MCPEOF
-  echo "  Created .cursor/mcp.json (set GITHUB_PAT env var for GitHub MCP)"
+  echo "  Created .cursor/mcp.json (uses gh auth token automatically)"
 }
 
 # ── Execute uninstall ─────────────────────────────────────────────────────
