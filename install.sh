@@ -764,6 +764,42 @@ ensure_collab_scaffold() {
   mkdir -p "$PROJECT_ROOT/work/locks"
 }
 
+ensure_github_labels() {
+  # Create status labels used by the collab workflow (work-scaffold, work-impl, etc.)
+  if ! command -v gh &>/dev/null; then
+    echo "  NOTE: gh CLI not found — skipping GitHub label creation"
+    return
+  fi
+
+  # Detect repo from PROJECT_ROOT git remote
+  local repo
+  repo=$(git -C "$PROJECT_ROOT" remote get-url origin 2>/dev/null | sed -E 's#.*github\.com[:/]##; s/\.git$//')
+  if [[ -z "$repo" ]]; then
+    echo "  NOTE: No GitHub remote detected — skipping label creation"
+    return
+  fi
+
+  echo "  Creating collab status labels on $repo..."
+  local -A labels=(
+    ["status:planned"]="0E8A16"
+    ["status:scaffolded"]="1D76DB"
+    ["status:implementing"]="FBCA04"
+    ["status:ready-for-review"]="D93F0B"
+    ["status:revising"]="BFD4F2"
+    ["status:merged"]="6F42C1"
+  )
+
+  for label in "${!labels[@]}"; do
+    local color="${labels[$label]}"
+    if gh label create "$label" --color "$color" --repo "$repo" 2>/dev/null; then
+      echo "    ✓ $label"
+    else
+      # Label already exists — not an error
+      true
+    fi
+  done
+}
+
 ensure_cursor_mcp() {
   local mcp_file="$PROJECT_ROOT/.cursor/mcp.json"
   if [[ -f "$mcp_file" ]]; then
@@ -950,6 +986,7 @@ done
 if $INSTALL_HAS_COLLAB; then
   ensure_collab_scaffold
   ensure_cursor_mcp
+  ensure_github_labels
 fi
 
 # ── Auto-install pre-commit when core bundle is installed ────────────────
