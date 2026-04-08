@@ -73,14 +73,16 @@ fi
 
 # ── 4. Resolve base branch ─────────────────────────────────────────────
 if [[ -z "$BASE_BRANCH" ]]; then
-    # Try common candidates
-    for candidate in research develop main master; do
-        if git -C "$WORK_DIR" rev-parse --verify "$candidate" &>/dev/null; then
-            BASE_BRANCH="$candidate"
-            break
-        fi
-    done
-    BASE_BRANCH="${BASE_BRANCH:-main}"
+    # Derive from the main repo's current branch
+    MAIN_REPO=$(echo "$WT_DIR" | sed -E 's/-(feature-[a-z0-9-]+|tmp-guard-[0-9]+)$//')
+    if [[ -d "$MAIN_REPO/.git" ]]; then
+        BASE_BRANCH=$(git -C "$MAIN_REPO" rev-parse --abbrev-ref HEAD 2>/dev/null || true)
+    fi
+    if [[ -z "$BASE_BRANCH" || "$BASE_BRANCH" == "HEAD" ]]; then
+        echo "[auto_pr] Could not determine base branch. Skipping PR creation." >&2
+        rm -rf "$STATE_DIR" "$OLD_MARKER" 2>/dev/null
+        exit 0
+    fi
 fi
 
 # ── 5. Check for commits ahead of base ─────────────────────────────────

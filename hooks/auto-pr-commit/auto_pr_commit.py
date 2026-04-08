@@ -28,6 +28,7 @@ if str(_LIB_DIR) not in sys.path:
 from gh_utils import (  # noqa: E402
     create_draft_pr,
     get_current_branch,
+    get_main_repo_from_worktree,
     get_repo_root,
     push_branch,
     resolve_owner_repo,
@@ -191,23 +192,13 @@ def main() -> None:
     # Determine base branch
     base = state.base_branch()
     if not base:
-        # Try to infer from branch pattern
-        # adhoc/* branches → need to check git merge-base
-        result = subprocess.run(
-            ["git", "log", "--format=%D", "--all", "--ancestry-path", f"{branch}.."],
-            capture_output=True, text=True, cwd=str(root),
-        )
-        # Fallback: check common base branches
-        for candidate in ("research", "develop", "main", "master"):
-            check = subprocess.run(
-                ["git", "rev-parse", "--verify", candidate],
-                capture_output=True, text=True, cwd=str(root),
-            )
-            if check.returncode == 0:
-                base = candidate
-                break
-        if not base:
-            base = "main"
+        # Derive from main repo's current branch
+        main_repo = get_main_repo_from_worktree(root)
+        if main_repo:
+            base = get_current_branch(main_repo)
+        if not base or base == "HEAD":
+            print("[auto-pr-commit] No base branch recorded and could not infer. Skipping.", file=sys.stderr)
+            return
 
     # Push branch
     if not push_branch(root, branch):

@@ -202,7 +202,7 @@ resolve_merge_target() {
   if [ -z "$merge_target" ] && [ -f ".claude/branch-map.yaml" ]; then
     merge_target=$(grep 'default_merge_target:' .claude/branch-map.yaml | head -1 | awk '{print $2}' || true)
   fi
-  [ -z "$merge_target" ] && merge_target="main"
+  [ -z "$merge_target" ] && merge_target="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo main)"
 
   echo "$merge_target"
 }

@@ -25,7 +25,7 @@ _LIB_DIR = _HOOK_DIR / "lib" if (_HOOK_DIR / "lib").is_dir() else _HOOK_DIR.pare
 if str(_LIB_DIR) not in sys.path:
     sys.path.insert(0, str(_LIB_DIR))
 
-from gh_utils import get_repo_root, resolve_owner_repo  # noqa: E402
+from gh_utils import get_current_branch, get_repo_root, resolve_owner_repo  # noqa: E402
 from worktree_state import WorktreeState  # noqa: E402
 
 
@@ -84,15 +84,15 @@ def _find_merged_worktrees(main_root: Path) -> list[tuple[Path, str]]:
                 current_branch = None
                 continue
 
-            # Check if branch is merged into any common base
-            for base in ("research", "develop", "main", "master"):
+            # Check if branch is merged into the main repo's current branch
+            main_branch = get_current_branch(main_root)
+            if main_branch and main_branch != "HEAD":
                 check = subprocess.run(
-                    ["git", "merge-base", "--is-ancestor", current_branch, base],
+                    ["git", "merge-base", "--is-ancestor", current_branch, main_branch],
                     capture_output=True, text=True, cwd=str(main_root),
                 )
                 if check.returncode == 0:
                     merged.append((current_wt, current_branch))
-                    break
 
             current_wt = None
             current_branch = None
