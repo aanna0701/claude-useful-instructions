@@ -29,6 +29,34 @@ from gh_utils import get_current_branch, get_repo_root, resolve_owner_repo  # no
 from worktree_state import WorktreeState  # noqa: E402
 
 
+def _close_issue(repo: str, issue_num: int) -> None:
+    """Close a GitHub issue and apply status:merged label."""
+    subprocess.run(
+        ["gh", "issue", "close", str(issue_num), "--repo", repo],
+        capture_output=True, text=True, timeout=15,
+    )
+    # Best-effort label update
+    subprocess.run(
+        ["gh", "issue", "edit", str(issue_num), "--repo", repo,
+         "--add-label", "status:merged"],
+        capture_output=True, text=True, timeout=15,
+    )
+    print(f"[worktree-cleanup] Closed issue #{issue_num}", file=sys.stderr)
+
+
+def _extract_issue_from_pr(repo: str, branch: str) -> int | None:
+    """Extract linked issue number from a PR's body (Closes #N pattern)."""
+    result = subprocess.run(
+        ["gh", "pr", "view", branch, "--repo", repo,
+         "--json", "body", "-q", ".body"],
+        capture_output=True, text=True, timeout=15,
+    )
+    if result.returncode != 0:
+        return None
+    m = re.search(r"(?:Closes|Fixes|Resolves)\s+#(\d+)", result.stdout, re.IGNORECASE)
+    return int(m.group(1)) if m else None
+
+
 def _cleanup_worktree(main_root: Path, wt_path: Path, branch: str) -> None:
     """Remove worktree, local branch, and remote branch."""
     wt_str = str(wt_path)
@@ -172,13 +200,25 @@ def main() -> None:
                     # Clean up on MERGED or CLOSED (failed/rejected PRs)
                     if pr_state in ("MERGED", "CLOSED"):
                         _cleanup_worktree(root, wt_path, branch)
+                        issue_num = state.issue_number()
+                        if issue_num and repo:
+                            _close_issue(repo, issue_num)
                         state.cleanup()
                         return
 
     # Scan for any other merged worktrees
     merged = _find_merged_worktrees(root)
+    repo = resolve_owner_repo(root)
     for wt_path, branch in merged:
         _cleanup_worktree(root, wt_path, branch)
+        # Close linked issue from PR body
+        if repo:
+            try:
+                issue_num = _extract_issue_from_pr(repo, branch)
+                if issue_num:
+                    _close_issue(repo, issue_num)
+            except (subprocess.TimeoutExpired, OSError):
+                pass
 
     # Prune stale worktree refs
     subprocess.run(
