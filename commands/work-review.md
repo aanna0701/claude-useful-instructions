@@ -38,7 +38,16 @@ No arguments: auto-glob for `ready-for-review` items.
 
 ### MERGE
 
-Per `rules/review-merge-policy.md`: check `merge_policy.ask_confirm_before_merge`, ready PR, submit review, squash-merge, delete branch, close issue, remove worktree, prune refs, doc sync on working parent, remove work item dir.
+Per `rules/review-merge-policy.md`, execute in order (stop on first failure):
+
+1. **Acquire merge lock**: `source lib/merge-lock.sh && acquire_merge_lock` — serializes concurrent merges.
+2. **Pre-merge fetch**: `git fetch origin {merge_target}` — ensure merge target is current.
+3. **Check mergeability**: `gh pr view {pr} --json mergeable -q .mergeable` — must be `MERGEABLE`. If `CONFLICTING`, report conflicting files and STOP.
+4. **Merge**: Delegate to `pr-reviewer` agent step 8 (squash merge → verify → cleanup).
+5. **Post-merge**: Remove worktree (`git worktree remove`), prune refs, doc sync on working parent, remove `work/items/{SLUG}/` dir.
+6. **Release lock**: Automatic on exit via trap.
+
+**On failure at any step**: preserve branch + worktree, report error, release lock. Never delete branch on merge failure.
 
 ### REVISE
 

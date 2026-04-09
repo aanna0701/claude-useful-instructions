@@ -241,7 +241,7 @@ Skip if no Issue exists in `status.md`.
 
 - `work/locks/planning.lock` — prevents concurrent `/work-plan`
 - `work/locks/{ID}.lock` — prevents concurrent impl and review on same item
-- `work/locks/merge.lock` — one merge-and-cleanup at a time
+- `work/locks/merge.lock` — one merge-and-cleanup at a time (implemented via `lib/merge-lock.sh`, uses `flock`)
 
 ## Review Revision Policy
 

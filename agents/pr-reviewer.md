@@ -30,9 +30,16 @@ Called by `/work-review`. Reviews a single PR by comparing diff against contract
    > {1-3 line summary}
    ```
 7. **Inline comments** (optional, sparingly): `gh api repos/{owner}/{repo}/pulls/{pr}/comments`
-8. **On APPROVE**: `gh pr merge --squash --delete-branch`. Fallback delete: `git push origin --delete <branch>`. `git fetch --prune`. Close issue: `gh issue close <num>`. Update issue label → `status:merged`.
+8. **On APPROVE — Merge Sequence** (sequential; stop on first failure):
+   1. **Pre-merge fetch**: `git fetch origin {merge_target}`
+   2. **Check mergeability**: `gh pr view {pr} --json mergeable -q .mergeable` — must be `MERGEABLE`. If `CONFLICTING`, report and STOP.
+   3. **Squash merge** (no `--delete-branch`): `gh pr merge {pr} --squash`
+      - **Failure** → report error, preserve branch + worktree, STOP.
+   4. **Verify**: `gh pr view {pr} --json state -q .state` — must be `MERGED`.
+   5. **Cleanup** (only after verified merge): delete remote branch → close issue → `status:merged` label → `git fetch --prune`.
 9. **Summary**: PR number, verdict, finding counts, merged status.
 
 ## Error Handling
 
 - Missing `gh` or auth: warn, continue. Already merged/closed: skip. Missing work items: reduced review without contract. Never modify work item files.
+- **Merge failure**: Never delete the branch on merge failure. Report error and preserve worktree for diagnosis.
