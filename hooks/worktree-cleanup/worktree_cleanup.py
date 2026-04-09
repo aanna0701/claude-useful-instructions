@@ -152,6 +152,60 @@ def _find_merged_worktrees(main_root: Path) -> list[tuple[Path, str]]:
     return merged
 
 
+def _cleanup_orphan_branches(main_root: Path, repo: str | None) -> None:
+    """Delete local (and remote) branches that are merged into main but have no worktree.
+
+    Targets feature-* and tmp/guard-* branches only — never touches main/master/develop.
+    """
+    main_branch = get_current_branch(main_root)
+    if not main_branch or main_branch == "HEAD":
+        return
+
+    # Collect branches that are active worktrees (skip those)
+    wt_result = subprocess.run(
+        ["git", "worktree", "list", "--porcelain"],
+        capture_output=True, text=True, cwd=str(main_root),
+    )
+    wt_branches: set[str] = set()
+    for line in (wt_result.stdout or "").splitlines():
+        if line.startswith("branch "):
+            wt_branches.add(line.split(" ", 1)[1].replace("refs/heads/", ""))
+
+    # List local branches merged into main
+    result = subprocess.run(
+        ["git", "branch", "--merged", main_branch, "--format=%(refname:short)"],
+        capture_output=True, text=True, cwd=str(main_root),
+    )
+    if result.returncode != 0:
+        return
+
+    safe_prefixes = ("feature-", "tmp/guard-")
+    protected = {"main", "master", "develop", "research", "staging"}
+
+    for branch in result.stdout.strip().splitlines():
+        branch = branch.strip()
+        if not branch or branch in protected or branch == main_branch:
+            continue
+        if branch in wt_branches:
+            continue
+        if not any(branch.startswith(p) for p in safe_prefixes):
+            continue
+
+        # Delete local branch
+        subprocess.run(
+            ["git", "branch", "-D", branch],
+            capture_output=True, text=True, cwd=str(main_root),
+        )
+        # Delete remote branch if it exists
+        if repo:
+            subprocess.run(
+                ["git", "push", "origin", "--delete", branch],
+                capture_output=True, text=True, cwd=str(main_root),
+                timeout=30,
+            )
+        print(f"[worktree-cleanup] Cleaned orphan branch: {branch}", file=sys.stderr)
+
+
 def main() -> None:
     raw = sys.stdin.read()
     if not raw.strip():
@@ -219,6 +273,9 @@ def main() -> None:
                     _close_issue(repo, issue_num)
             except (subprocess.TimeoutExpired, OSError):
                 pass
+
+    # Clean up merged local branches that have no worktree
+    _cleanup_orphan_branches(root, repo)
 
     # Prune stale worktree refs
     subprocess.run(
