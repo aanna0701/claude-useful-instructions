@@ -58,8 +58,20 @@ def _cleanup_worktree(main_root: Path, wt_path: Path, branch: str) -> None:
         print(f"[worktree-cleanup] Deleted remote branch: {branch}", file=sys.stderr)
 
 
+def _is_pr_done(main_root: Path, branch: str) -> bool:
+    """Check if the branch's PR is merged or closed on GitHub."""
+    repo = resolve_owner_repo(main_root)
+    if not repo:
+        return False
+    check = subprocess.run(
+        ["gh", "pr", "view", branch, "--repo", repo, "--json", "state", "-q", ".state"],
+        capture_output=True, text=True, timeout=15,
+    )
+    return check.returncode == 0 and check.stdout.strip() in ("MERGED", "CLOSED")
+
+
 def _find_merged_worktrees(main_root: Path) -> list[tuple[Path, str]]:
-    """Find worktrees whose branches have been merged (no commits ahead of base)."""
+    """Find worktrees whose branches have been merged or whose PRs are done."""
     result = subprocess.run(
         ["git", "worktree", "list", "--porcelain"],
         capture_output=True, text=True, cwd=str(main_root),
@@ -70,6 +82,7 @@ def _find_merged_worktrees(main_root: Path) -> list[tuple[Path, str]]:
     merged = []
     current_wt = None
     current_branch = None
+    main_branch = get_current_branch(main_root)
 
     for line in result.stdout.splitlines():
         if line.startswith("worktree "):
@@ -84,15 +97,26 @@ def _find_merged_worktrees(main_root: Path) -> list[tuple[Path, str]]:
                 current_branch = None
                 continue
 
-            # Check if branch is merged into the main repo's current branch
-            main_branch = get_current_branch(main_root)
+            should_clean = False
+
+            # Check 1: branch is ancestor of main (locally merged)
             if main_branch and main_branch != "HEAD":
                 check = subprocess.run(
                     ["git", "merge-base", "--is-ancestor", current_branch, main_branch],
                     capture_output=True, text=True, cwd=str(main_root),
                 )
                 if check.returncode == 0:
-                    merged.append((current_wt, current_branch))
+                    should_clean = True
+
+            # Check 2: PR is merged or closed on GitHub
+            if not should_clean:
+                try:
+                    should_clean = _is_pr_done(main_root, current_branch)
+                except (subprocess.TimeoutExpired, OSError):
+                    pass
+
+            if should_clean:
+                merged.append((current_wt, current_branch))
 
             current_wt = None
             current_branch = None
@@ -136,7 +160,6 @@ def main() -> None:
         wt_path = state.worktree_path()
         branch = state.branch_name()
         if wt_path and branch:
-            # Check if PR is merged
             pr_num = state.pr_number()
             if pr_num:
                 repo = state.repo_slug() or resolve_owner_repo(root)
@@ -145,7 +168,9 @@ def main() -> None:
                         ["gh", "pr", "view", str(pr_num), "--repo", repo, "--json", "state", "-q", ".state"],
                         capture_output=True, text=True,
                     )
-                    if check.returncode == 0 and check.stdout.strip() == "MERGED":
+                    pr_state = check.stdout.strip() if check.returncode == 0 else ""
+                    # Clean up on MERGED or CLOSED (failed/rejected PRs)
+                    if pr_state in ("MERGED", "CLOSED"):
                         _cleanup_worktree(root, wt_path, branch)
                         state.cleanup()
                         return
