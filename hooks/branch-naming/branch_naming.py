@@ -37,8 +37,8 @@ EXEMPT_BRANCHES = {"main", "master", "develop", "research", "staging"}
 
 # Patterns to detect branch creation in commands
 BRANCH_CREATE_PATTERNS = [
-    # git branch <name> [base]
-    re.compile(r"git\s+branch\s+(?!-[dDm])(\S+)"),
+    # git branch <name> [base] — name must start with a letter/digit (excludes flags, &&, ||, ;)
+    re.compile(r"git\s+branch\s+(?!-[dDmrRavl]|--list|--remotes|--all|--verbose)([a-zA-Z0-9][^\s;|&]*)"),
     # git checkout -b <name>
     re.compile(r"git\s+checkout\s+-b\s+(\S+)"),
     # git switch -c <name>
