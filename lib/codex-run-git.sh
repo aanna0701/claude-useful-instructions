@@ -68,8 +68,20 @@ sync_branch_from_parent() {
     return 0
   fi
 
+  # Capture conflicting files before aborting
+  local conflict_files=""
+  conflict_files=$(git -C "$git_dir" diff --name-only --diff-filter=U 2>/dev/null || true)
   git -C "$git_dir" merge --abort >/dev/null 2>&1 || true
-  mark_status_blocked_everywhere "$feat_id" "$wdir" "needs-sync" "Runner auto-sync from parent branch '$parent_branch' failed. Resolve branch sync or merge conflicts, then rerun codex-run.sh."
+
+  local blocker="Runner auto-sync from parent '$parent_branch' failed."
+  if [ -n "$conflict_files" ]; then
+    echo "    [sync] conflicting files:"
+    echo "$conflict_files" | head -20 | sed 's/^/      /'
+    blocker="$blocker Conflicts in: $(echo "$conflict_files" | tr '\n' ', ' | sed 's/,$//')."
+  fi
+  blocker="$blocker Resolve merge conflicts, then rerun codex-run.sh."
+
+  mark_status_blocked_everywhere "$feat_id" "$wdir" "needs-sync" "$blocker"
   echo "    [sync] merge failed; status marked blocked"
   return 1
 }
