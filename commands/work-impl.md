@@ -19,7 +19,7 @@ Resolve a work item to its worktree and implement per contract. Claude fallback 
 2. **Switch to worktree**: Per `rules/collab-workflow.md` § Worktree Rules. All operations run in worktree. Never on `working_parent`.
 3. **Sync preflight**: Preferred via `codex-run.sh` (auto-sync + `uv sync --frozen`). Manual: verify `git merge-base --is-ancestor`. Missing deps → `blocked` with `needs-sync`.
 4. **Implement**: Acquire lock per `rules/collab-workflow.md` § Locks. Status → `implementing`. Follow contract strictly: Allowed Modifications only, never Forbidden Zones, satisfy tests, preserve invariants. If `revising`: resolve MUST-fix from review.md first.
-5. **Complete & Push**: Status → `ready-for-review`. Update Changed Files, Verification, Doc Changes. Use `git add -f work/items/${SLUG}/`. Commit with `{type}({ID}): <description>`. The Draft PR already exists (created by `/work-plan`). Push updates the PR diff automatically.
+5. **Complete & Push**: Status → `ready-for-review`. In `status.md` update only: Status, Agent, Intended Commit Message, Blockers. Write Changed Files / Verification / Doc Changes to `relay.md` (not status.md). Use `git add -f work/items/${SLUG}/`. Commit with `{type}({ID}): <description>`. The Draft PR already exists (created by `/work-plan`). Push updates the PR diff automatically.
 6. **Relay**: Per `rules/collab-workflow.md` § Relay Protocol — append `impl` block to `relay.md` with changed files, commit hashes, and notes.
    - **PR Comment Relay** (per § PR Comment Relay):
      ```
