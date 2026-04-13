@@ -92,20 +92,23 @@ git worktree add "$WT_PATH" "$BRANCH"
 
 Seed artifacts into worktree, commit. Update `status.md` with absolute `Worktree Path`.
 
-### Step 9: GitHub Issues + Batch Manifest
+### Step 9: Push Branches, Draft PRs + Batch Manifest
 
-For each item, create a GitHub Issue directly (not via agent — avoids silent failures):
+For each item, push the branch and create a Draft PR (the single coordination hub):
 
 ```bash
 OWNER_REPO="$(gh repo view --json nameWithOwner -q '.nameWithOwner')"
-ISSUE_URL=$(gh issue create \
+git push -u origin "$BRANCH"
+PR_URL=$(gh pr create \
   --repo "$OWNER_REPO" \
+  --base "$BASE_BRANCH" \
+  --head "$BRANCH" \
   --title "{TYPE}-NNN: {readable title}" \
-  --body "## Objective\n...\n## Scope\n...\n## Checklist\n..." \
-  --label "work-item" --label "status:planned")
+  --body "## Work Item: {slug}\n\nWork item: \`work/items/{slug}/\`" \
+  --draft)
 ```
 
-Store issue number in `status.md`. Write `work/batches/{batch_id}.json`. Release planning lock.
+Store PR URL in `status.md`. Write `work/batches/{batch_id}.json`. Release planning lock.
 
 ### Step 10: Summary
 

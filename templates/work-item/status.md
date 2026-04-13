@@ -10,10 +10,8 @@ updated: YYYY-MM-DD HH:MM
 | Field | Value |
 |-------|-------|
 | Status | planned |
-| Issue | — |
 | Agent | TBD |
 | Branch | — |
-| Worktree | — |
 | Worktree Path | — |
 | PR | — |
 | Batch | — |

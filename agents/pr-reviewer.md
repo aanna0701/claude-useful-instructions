@@ -36,7 +36,7 @@ Called by `/work-review`. Reviews a single PR by comparing diff against contract
    3. **Squash merge** (no `--delete-branch`): `gh pr merge {pr} --squash`
       - **Failure** → report error, preserve branch + worktree, STOP.
    4. **Verify**: `gh pr view {pr} --json state -q .state` — must be `MERGED`.
-   5. **Cleanup** (only after verified merge): delete remote branch → close issue → `status:merged` label → `git fetch --prune`.
+   5. **Cleanup** (only after verified merge): delete remote branch → `git fetch --prune`.
 9. **Summary**: PR number, verdict, finding counts, merged status.
 
 ## Error Handling

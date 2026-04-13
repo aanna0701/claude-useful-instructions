@@ -9,7 +9,6 @@
 #   worktree.path  — worktree directory path
 #   branch.name    — worktree branch name
 #   base.branch    — base branch for PR
-#   issue.number   — GitHub issue number (optional)
 #   pr.number      — PR number (set by auto-pr-commit hook)
 #   repo.slug      — owner/repo string
 #
@@ -71,15 +70,26 @@ else
     fi
 fi
 
-# ── 4. Resolve base branch ─────────────────────────────────────────────
+# ── 4. Resolve base branch (never fallback to main repo's current HEAD) ─
 if [[ -z "$BASE_BRANCH" ]]; then
-    # Derive from the main repo's current branch
-    MAIN_REPO=$(echo "$WT_DIR" | sed -E 's/-(feature-[a-z0-9-]+|tmp-guard-[0-9]+)$//')
-    if [[ -d "$MAIN_REPO/.git" ]]; then
-        BASE_BRANCH=$(git -C "$MAIN_REPO" rev-parse --abbrev-ref HEAD 2>/dev/null || true)
+    # Fallback: read from persistent .claude-worktree-meta in worktree
+    META_FILE="${WT_DIR}/.claude-worktree-meta"
+    if [[ -f "$META_FILE" ]]; then
+        BASE_BRANCH=$(python3 -c "import json; print(json.load(open('$META_FILE')).get('base_branch',''))" 2>/dev/null || true)
     fi
     if [[ -z "$BASE_BRANCH" || "$BASE_BRANCH" == "HEAD" ]]; then
-        echo "[auto_pr] Could not determine base branch. Skipping PR creation." >&2
+        echo "[auto_pr] No base branch in state or meta. Create PR manually." >&2
+        rm -rf "$STATE_DIR" "$OLD_MARKER" 2>/dev/null
+        exit 0
+    fi
+fi
+
+# ── 4b. Validate base matches parent repo's current branch ────────────
+MAIN_REPO=$(echo "$WT_DIR" | sed -E 's/-(feature-[a-z0-9-]+|tmp-guard-[0-9]+)$//')
+if [[ -d "$MAIN_REPO/.git" ]]; then
+    PARENT_CURRENT=$(git -C "$MAIN_REPO" rev-parse --abbrev-ref HEAD 2>/dev/null || true)
+    if [[ -n "$PARENT_CURRENT" && "$PARENT_CURRENT" != "HEAD" && "$PARENT_CURRENT" != "$BASE_BRANCH" ]]; then
+        echo "[auto_pr] BASE MISMATCH: stored base '${BASE_BRANCH}' ≠ parent current '${PARENT_CURRENT}'. Skipping." >&2
         rm -rf "$STATE_DIR" "$OLD_MARKER" 2>/dev/null
         exit 0
     fi
@@ -116,16 +126,9 @@ git -C "$WORK_DIR" push -u origin "$WT_BRANCH" 2>/dev/null || {
     exit 0
 }
 
-ISSUE_NUM=$(cat "$STATE_DIR/issue.number" 2>/dev/null || true)
-
 PR_BODY="## Summary
 ${COMMIT_LOG}"
 
-if [[ -n "$ISSUE_NUM" ]]; then
-    PR_BODY="${PR_BODY}
-
-Closes #${ISSUE_NUM}"
-fi
 
 PR_URL=$(gh pr create \
     --repo "$OWNER_REPO" \

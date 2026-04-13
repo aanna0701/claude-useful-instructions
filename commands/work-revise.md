@@ -18,12 +18,11 @@ Per `rules/collab-workflow.md` § Work Item Discovery (searches cwd, worktrees, 
 1. **Read relay**: Per `rules/collab-workflow.md` § Read Before Act — use `gh api .../issues/{PR}/comments` to read review results (filter `<!-- relay:review: -->`). Parse `items` for MUST-fix list. Or read `pr-relay.md` / `relay.md` as fallback. These are the authoritative fix targets; do not re-derive from `review.md` if relay exists.
 2. **Dispatch**: Spawn `work-reviser` agent per item (parallel). Each resolves MUST-fix, updates status → `revising`. Same branch and worktree — never create a second worktree.
 3. **Relay**: Append `revise` block to `relay.md` with `fixed` list and `remaining` count.
-   - **PR Comment Relay** (per § PR Comment Relay — use **PR number**, NOT Issue number):
+   - **PR Comment Relay** (per § PR Comment Relay):
      ```
      # Extract PR number from status.md PR field URL (e.g., .../pull/42 → 42)
      add_issue_comment(issue_number={PR_NUMBER}, body="<!-- relay:revise:{timestamp} --> ...")
      # Fallback: gh pr comment {PR_NUMBER} --body "..."
-     # No PR yet? Skip relay comment (relay.md suffices).
      ```
 
 ## Summary

@@ -85,39 +85,6 @@ def get_main_repo_from_worktree(git_dir: Path) -> Path | None:
     return None
 
 
-def create_issue(
-    git_dir: Path,
-    title: str,
-    body: str,
-    labels: list[str] | None = None,
-) -> int | None:
-    """Create a GitHub issue. Returns issue number or None on failure."""
-    repo = resolve_owner_repo(git_dir)
-    if not repo:
-        return None
-
-    cmd = [
-        "gh", "issue", "create",
-        "--repo", repo,
-        "--title", title,
-        "--body", body,
-    ]
-    for label in labels or []:
-        # Ensure label exists (ignore errors if already exists)
-        subprocess.run(
-            ["gh", "label", "create", label, "--repo", repo, "--color", "0E8A16"],
-            capture_output=True, text=True,
-        )
-        cmd.extend(["--label", label])
-
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
-    if result.returncode != 0:
-        return None
-
-    # gh outputs the issue URL, extract number from end
-    m = re.search(r"/(\d+)\s*$", result.stdout.strip())
-    return int(m.group(1)) if m else None
-
 
 def create_draft_pr(
     git_dir: Path,
@@ -125,15 +92,11 @@ def create_draft_pr(
     head: str,
     title: str,
     body: str,
-    issue_num: int | None = None,
 ) -> str | None:
     """Create a draft PR. Returns PR URL or None on failure."""
     repo = resolve_owner_repo(git_dir)
     if not repo:
         return None
-
-    if issue_num:
-        body = f"{body}\n\nCloses #{issue_num}"
 
     cmd = [
         "gh", "pr", "create",
@@ -159,3 +122,37 @@ def push_branch(git_dir: Path, branch: str) -> bool:
         capture_output=True, text=True, cwd=str(git_dir), timeout=60,
     )
     return result.returncode == 0
+
+
+# ── Worktree meta (persistent base branch) ──────────────────────────
+
+_META_FILENAME = ".claude-worktree-meta"
+
+
+def write_worktree_meta(wt_dir: Path, base_branch: str, **extra: str) -> None:
+    """Write persistent metadata into the worktree directory."""
+    import json
+    data = {"base_branch": base_branch, **extra}
+    (wt_dir / _META_FILENAME).write_text(json.dumps(data) + "\n")
+
+
+def read_worktree_meta(wt_dir: Path) -> dict | None:
+    """Read persistent metadata from the worktree directory. Returns None if missing."""
+    import json
+    meta_file = wt_dir / _META_FILENAME
+    if not meta_file.exists():
+        return None
+    try:
+        return json.loads(meta_file.read_text())
+    except (json.JSONDecodeError, OSError):
+        return None
+
+
+def get_parent_branch(wt_dir: Path) -> str | None:
+    """Resolve base branch for a worktree, with fallback chain:
+
+    1. .claude-worktree-meta file in the worktree directory
+    2. None (never fallback to main repo's current branch)
+    """
+    meta = read_worktree_meta(wt_dir)
+    return meta["base_branch"] if meta else None

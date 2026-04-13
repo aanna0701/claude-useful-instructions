@@ -863,6 +863,13 @@ if $UNINSTALL; then
     remove_file "$PROJECT_ROOT/.cursor/mcp.json"
   fi
 
+  # Remove worktree guard marker if core or collab uninstalled
+  HAS_CORE=false
+  if printf '%s\n' "${SELECTED_BUNDLES[@]}" | grep -qx "core"; then HAS_CORE=true; fi
+  if $HAS_CORE || $HAS_COLLAB; then
+    remove_file "$PROJECT_ROOT/.claude-worktree-enabled"
+  fi
+
   # Clean up empty .claude subdirectories
   for subdir in rules commands agents skills templates; do
     remove_dir_if_empty "$CLAUDE_DIR/$subdir"
@@ -987,6 +994,15 @@ if $INSTALL_HAS_COLLAB; then
   ensure_collab_scaffold
   ensure_cursor_mcp
   ensure_github_labels
+fi
+
+# ── Enable worktree guard for projects that install core or collab ─────────
+if $INSTALL_HAS_CORE || $INSTALL_HAS_COLLAB; then
+  _marker="$PROJECT_ROOT/.claude-worktree-enabled"
+  if [[ ! -f "$_marker" ]]; then
+    touch "$_marker"
+    echo "  ✓ Worktree guard enabled (.claude-worktree-enabled)"
+  fi
 fi
 
 # ── Auto-install pre-commit when core bundle is installed ────────────────
