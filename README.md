@@ -226,7 +226,7 @@ Subagents delegated by Claude for specific tasks.
 | Work Journal | `worknote-sync`, `-review`, `-plan` | 3 |
 | Token Analysis | `token-duplication-detector`, `-load-measurer`, `-mcp-analyzer`, `-split-detector` | 4 |
 | Career Docs | `career-docs-writer`, `-reviewer`, `-reviser` | 3 |
-| Collab Workflow | `issue-creator`, `pr-reviewer`, `work-reviser`, `cursor-prompt-builder` | 4 |
+| Collab Workflow | `pr-reviewer`, `work-reviser`, `cursor-prompt-builder` | 3 |
 | CI Audit | `ci-audit-agent` | 1 |
 | PPT Generation | `ppt-density-checker`, `ppt-format-reviewer` | 2 |
 | DL Pipeline | `dl-capture`, `-data`, `-model`, `-train`, `-eval`, `-infra` | 6 |
@@ -300,7 +300,6 @@ claude-useful-instructions/
 │   ├── worknote-*.md                # Work journal agents (sync, review, plan)
 │   ├── ppt-density-checker.md       # Slide density QA
 │   ├── ppt-format-reviewer.md       # Template format compliance review
-│   ├── issue-creator.md             # GitHub Issue creation from work items
 │   ├── pr-reviewer.md               # PR review against work item contract
 │   ├── work-reviser.md              # Re-dispatch REVISE items from review
 │   ├── cursor-prompt-builder.md     # Contract → Cursor/Antigravity prompts

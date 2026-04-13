@@ -33,5 +33,5 @@ Tool roles, state machine, worktree rules: `rules/collab-workflow.md`
 - Config: `.claude/branch-map.yaml`
 - Scripts: `codex-run.sh`, `lib/codex-run-*.sh`
 - Templates: `.claude/templates/{work-item,branch-map,cursor}/`
-- Agents: `cursor-prompt-builder`, `issue-creator`, `work-reviser`, `pr-reviewer`, `ci-audit-agent`
+- Agents: `cursor-prompt-builder`, `work-reviser`, `pr-reviewer`, `ci-audit-agent`
 - Pipeline: `templates/collab-pipeline-body.md` → installed to `.cursor/rules/collab-pipeline.mdc` + `.agent/workflows/collab-pipeline.md`

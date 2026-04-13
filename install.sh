@@ -110,7 +110,6 @@ BUNDLE_COLLAB=(
   "commands:gha-branch-sync.md"
   "skills:collab-workflow"
   "agents:ci-audit-agent.md"
-  "agents:issue-creator.md"
   "agents:work-reviser.md"
   "agents:pr-reviewer.md"
   "agents:cursor-prompt-builder.md"
