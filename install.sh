@@ -672,15 +672,10 @@ remove_claude_hook() {
   local src="$REPO_DIR/hooks/$hook_name"
   [ -d "$src" ] || return 0
 
-  for f in "$src"/*.py "$src"/*.sh "$src"/*.json.example; do
-    [ -f "$f" ] || continue
-    local filename
-    filename="$(basename "$f")"
-    if [ -f "$dst_dir/$filename" ]; then
-      rm -v "$dst_dir/$filename"
-    fi
-  done
-
+  # settings.json FIRST — deregister hooks before deleting files.
+  # If files are deleted first, any Bash PostToolUse hook that fires in
+  # the window between file deletion and settings.json cleanup will fail
+  # with "No such file or directory".
   local settings_file="$HOME/.claude/settings.json"
   if [ -f "$settings_file" ]; then
     python3 - "$hook_name" "$REPO_DIR/scripts/patch-hook-settings.py" <<'PYEOF'
@@ -734,6 +729,16 @@ if changed:
     print(f"  Removed {hook_name} hooks from settings.json")
 PYEOF
   fi
+
+  # Delete hook files AFTER settings.json is updated
+  for f in "$src"/*.py "$src"/*.sh "$src"/*.json.example; do
+    [ -f "$f" ] || continue
+    local filename
+    filename="$(basename "$f")"
+    if [ -f "$dst_dir/$filename" ]; then
+      rm -v "$dst_dir/$filename"
+    fi
+  done
 }
 
 remove_work_dir() {
