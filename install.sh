@@ -52,6 +52,7 @@ BUNDLE_CORE=(
   "claude-hook:git-auto-pull"
   "claude-hook:branch-naming"
   "claude-hook:guard-branch"
+  "claude-hook:guard-merge"
   "claude-hook:auto-pr-commit"
   "claude-hook:worktree-cleanup"
   "claude-hook:auto-pr"

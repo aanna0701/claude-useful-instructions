@@ -3,7 +3,7 @@
 
 Usage: patch-hook-settings.py <hook_name>
 
-Supported hooks: git-auto-pull, guard-branch, auto-pr-commit, auto-pr, worknote-stop
+Supported hooks: git-auto-pull, guard-branch, guard-merge, auto-pr-commit, auto-pr, worknote-stop
 """
 from __future__ import annotations
 
@@ -79,6 +79,15 @@ HOOK_REGISTRY: dict[str, dict] = {
             "Stop": [{
                 "matcher": "",
                 "hooks": [{"type": "command", "command": f"bash {HOOKS_DIR}/auto_pr.sh"}],
+            }],
+        },
+    },
+    "guard-merge": {
+        "managed": {"guard_merge.py"},
+        "events": {
+            "PreToolUse": [{
+                "matcher": "Bash|mcp__plugin_ecc_github__merge_pull_request",
+                "hooks": [{"type": "command", "command": f"python3 {HOOKS_DIR}/guard_merge.py"}],
             }],
         },
     },
