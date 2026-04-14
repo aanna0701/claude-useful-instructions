@@ -30,7 +30,15 @@ Verify implementation against contract and write results, optionally with Cursor
      # Fallback: gh pr comment {PR_NUMBER} --body "..."
      ```
 5. **Cursor integration** (default mode only, skip with `--claude`): Also generate Cursor Composer prompt for manual re-verification
-6. **Update status**: AUDIT/DOCS → `auditing`. FEAT/REFAC/FIX → unchanged.
+6. **Update status**:
+   - AUDIT/DOCS → `auditing`.
+   - FEAT/REFAC/FIX, **all checks passed** → `ready-for-review`. Then promote PR from Draft:
+     ```bash
+     # Extract PR number from status.md PR field (e.g. https://.../pull/42 → 42)
+     PR_NUM=$(grep -oP '(?<=/pull/)\d+' "$WT_PATH/work/items/$SLUG/status.md" | head -1)
+     [ -n "$PR_NUM" ] && gh pr ready "$PR_NUM"
+     ```
+   - FEAT/REFAC/FIX, **any check failed** → status unchanged (re-impl required). Do NOT run `gh pr ready`.
 7. **Output**: Print verification summary. Default mode: also print Composer prompt with absolute `{WT_PATH}`
 
 ## Verification Items
