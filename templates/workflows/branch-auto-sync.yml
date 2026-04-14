@@ -1,13 +1,13 @@
 # Branch Auto-Sync — hub-and-spoke merge workflow
-# Reads .claude/branch-map.yaml; branches: section optional.
-# Install: copy to .github/workflows/ (with scripts/ alongside)
+# Hub branch is read from the PR's base branch (set by guard-branch hook at worktree creation).
+# No branch-map.yaml required.
+# Install: copy to .github/workflows/
 
 name: Branch Auto-Sync
 
 on:
   push:
     branches:
-      # ── Customize: list your feature/integration branches ──
       - feature-*
       - feat/*
 
@@ -28,12 +28,12 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Parse branch-map and sync
+      - name: Sync branches
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git fetch --all --prune
           TRIGGER="${GITHUB_REF#refs/heads/}"
-          BRANCH_MAP=".claude/branch-map.yaml"
-          PARSER=".github/workflows/scripts/parse-branch-map.py"
           FAILED=""
 
           echo "Trigger branch: $TRIGGER"
@@ -64,42 +64,39 @@ jobs:
           }
 
           # ── Phase 1: Merge UP (feature → hub) ──
-          if [ -f "$BRANCH_MAP" ]; then
-            HUB=$(python3 "$PARSER" merge-target "$BRANCH_MAP" "$TRIGGER")
-          else
-            echo "WARNING: $BRANCH_MAP not found, skipping"
-            HUB=""
-          fi
+          # Hub is read from the PR's base branch (set by guard-branch hook at worktree creation).
+          HUB=$(gh pr list --head "$TRIGGER" --state open --json baseRefName -q '.[0].baseRefName' 2>/dev/null || echo "")
 
           if [ -n "$HUB" ] && [ "$TRIGGER" != "$HUB" ]; then
             echo ""
             echo "──── Phase 1: Merge UP ($TRIGGER → $HUB) ────"
             merge_into "$TRIGGER" "$HUB" \
               "chore: auto-sync $TRIGGER into $HUB" || true
+          else
+            echo "Phase 1: skipped (no open PR found for $TRIGGER, or trigger is already hub)"
+            HUB="$TRIGGER"
           fi
 
-          # ── Phase 2: Cascade DOWN (hub → children → grandchildren) ──
-          SYNC_SOURCE="${HUB:-$TRIGGER}"
-          CHILDREN=$(python3 "$PARSER" children "$BRANCH_MAP" "$TRIGGER" "$SYNC_SOURCE" 2>/dev/null || echo "")
+          # ── Phase 2: Cascade DOWN (hub → all other feature branches) ──
+          SYNC_SOURCE="${HUB}"
+          echo ""
+          echo "──── Phase 2: Cascade DOWN from $SYNC_SOURCE ────"
+
+          # Auto-detect all remote feature branches except the trigger and hub itself
+          CHILDREN=$(git branch -r --format='%(refname:short)' \
+            | grep -E '^origin/(feature-|feat/)' \
+            | sed 's|^origin/||' \
+            | grep -v "^$TRIGGER$" \
+            | grep -v "^$SYNC_SOURCE$" \
+            || true)
 
           if [ -n "$CHILDREN" ]; then
-            echo ""
-            echo "──── Phase 2: Cascade DOWN ($SYNC_SOURCE → children) ────"
             for CHILD in $CHILDREN; do
               merge_into "$SYNC_SOURCE" "$CHILD" \
                 "chore: auto-sync from $SYNC_SOURCE" || true
             done
-
-            # Depth 2: grandchildren (explicit only)
-            if [ -f "$BRANCH_MAP" ]; then
-              for CHILD in $CHILDREN; do
-                GRANDCHILDREN=$(python3 "$PARSER" grandchildren "$BRANCH_MAP" "$TRIGGER" "$CHILD" 2>/dev/null || echo "")
-                for GC in $GRANDCHILDREN; do
-                  merge_into "$CHILD" "$GC" \
-                    "chore: cascade from $SYNC_SOURCE via $CHILD" || true
-                done
-              done
-            fi
+          else
+            echo "No child branches to cascade to."
           fi
 
           echo ""

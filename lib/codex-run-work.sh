@@ -181,9 +181,6 @@ resolve_parent_branch() {
   if [ -f "$wdir/contract.md" ]; then
     parent_branch=$(extract_contract_field "$wdir/contract.md" "Parent Branch" || true)
   fi
-  if [ -z "$parent_branch" ] && [ -f ".claude/branch-map.yaml" ]; then
-    parent_branch=$(grep 'working_parent:' .claude/branch-map.yaml | head -1 | awk '{print $2}' || true)
-  fi
   if [ "$parent_branch" = "—" ] || [[ "$parent_branch" == \[* ]]; then
     parent_branch=""
   fi
@@ -199,9 +196,6 @@ resolve_merge_target() {
     merge_target=$(extract_contract_field "$wdir/contract.md" "Merge Target" || true)
   fi
   [ "$merge_target" = "—" ] && merge_target=""
-  if [ -z "$merge_target" ] && [ -f ".claude/branch-map.yaml" ]; then
-    merge_target=$(grep 'default_merge_target:' .claude/branch-map.yaml | head -1 | awk '{print $2}' || true)
-  fi
   [ -z "$merge_target" ] && merge_target="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo main)"
 
   echo "$merge_target"

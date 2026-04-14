@@ -11,7 +11,7 @@
 #   --data-pipeline Data pipeline architect skill
 #   --career        Career document tools (career-docs skill, career agents)
 #   --dl            PyTorch DL standards + agents (capture, data, model, train, eval, infra)
-#   --collab        Claude-Codex collaboration (work items, branch-map, AGENTS.md, CLAUDE.md)
+#   --collab        Claude-Codex collaboration (work items, AGENTS.md, CLAUDE.md)
 #   --ppt-generation PPT template-based generation (fill content into base PPT)
 #   --exclude NAME  Exclude a bundle (repeatable, e.g. --exclude dl --exclude career)
 #   --interactive   Interactive mode: choose bundles from a menu
@@ -107,7 +107,6 @@ BUNDLE_COLLAB=(
   "commands:work-impl.md"
   "commands:work-revise.md"
   "commands:work-status.md"
-  "commands:gha-branch-sync.md"
   "skills:collab-workflow"
   "agents:ci-audit-agent.md"
   "agents:work-review.md"
@@ -161,7 +160,7 @@ BUNDLE_DESCRIPTIONS=(
   "Data pipeline architect"
   "Career document tools (cover letters, Korean)"
   "PyTorch DL standards + agents (capture, data, model, train, eval, infra)"
-  "Claude-Codex collaboration (work items, AGENTS.md, CLAUDE.md)"
+  "Claude-Codex collaboration (work items, guard-branch, auto-sync, AGENTS.md, CLAUDE.md)"
   "HTML presentation generator (16:9 dark theme slides + PDF export)"
   "Work journal with Notion sync (daily log, review, planning)"
   "PPT template-based generation (fill content into base PPT without changing design)"
@@ -842,7 +841,12 @@ if $UNINSTALL; then
       agents)    remove_file "$CLAUDE_DIR/agents/$path" ;;
       skills)    remove_skill_dir "$path" ;;
       templates) remove_template_dir "$path" ;;
-      workflow)     remove_file "$PROJECT_ROOT/.github/workflows/$path" ;;
+      workflow)
+        remove_file "$PROJECT_ROOT/.github/workflows/$path"
+        # Remove legacy scripts/ directory (parse-branch-map.py no longer used)
+        remove_file "$PROJECT_ROOT/.github/workflows/scripts/parse-branch-map.py"
+        remove_dir_if_empty "$PROJECT_ROOT/.github/workflows/scripts"
+        ;;
       root-file)   remove_root_file "$path" ;;
       cursor-rule) remove_file "$PROJECT_ROOT/.cursor/rules/$path" ;;
       cursor-command) remove_file "$PROJECT_ROOT/.cursor/commands/$path" ;;
