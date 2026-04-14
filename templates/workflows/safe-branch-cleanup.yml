@@ -1,0 +1,84 @@
+# Safe Branch Cleanup
+# Triggered when a PR is merged. Deletes the head branch ONLY if no other
+# open PRs use it as their base branch (i.e., it is not a parent/hub branch).
+#
+# Problem this solves:
+#   GitHub's "Automatically delete head branches" setting is branch-unaware —
+#   it deletes the merged head regardless of whether other branches depend on it.
+#   This workflow replaces that behavior with a safe check.
+#
+# Setup:
+#   1. Disable "Automatically delete head branches" in repo Settings → General
+#   2. Copy this file to .github/workflows/safe-branch-cleanup.yml
+
+name: Safe Branch Cleanup
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  cleanup:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check and delete merged branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+          REPO: ${{ github.repository }}
+        run: |
+          echo "Merged branch: $BRANCH"
+
+          # Skip protected branches (main, develop, research + any 'main/*' style)
+          if echo "$BRANCH" | grep -qE '^(main|develop|research)$'; then
+            echo "SKIP: '$BRANCH' is a protected base branch — never delete."
+            exit 0
+          fi
+
+          # Check if any open PRs use this branch as their base
+          OPEN_CHILDREN=$(gh pr list \
+            --repo "$REPO" \
+            --base "$BRANCH" \
+            --state open \
+            --json number,title \
+            --jq 'length')
+
+          if [ "$OPEN_CHILDREN" -gt 0 ]; then
+            echo "SKIP: '$BRANCH' is a base for $OPEN_CHILDREN open PR(s)."
+            echo ""
+            echo "Open PRs targeting '$BRANCH':"
+            gh pr list \
+              --repo "$REPO" \
+              --base "$BRANCH" \
+              --state open \
+              --json number,title \
+              --jq '.[] | "  #\(.number) \(.title)"'
+            echo ""
+            echo "Branch will NOT be deleted. Close or retarget dependent PRs first."
+
+            # Comment on the merged PR to inform
+            gh pr comment "${{ github.event.pull_request.number }}" \
+              --repo "$REPO" \
+              --body "$(cat <<'MSG'
+**Branch \`$BRANCH\` was NOT deleted** — it is the base branch for $OPEN_CHILDREN open PR(s).
+
+Retarget or close dependent PRs before deleting this branch.
+MSG
+)"
+            exit 0
+          fi
+
+          # Safe to delete
+          echo "No open PRs depend on '$BRANCH'. Deleting..."
+          gh api \
+            --method DELETE \
+            -H "Accept: application/vnd.github+json" \
+            "/repos/$REPO/git/refs/heads/$BRANCH" \
+            && echo "Deleted: $BRANCH" \
+            || echo "WARNING: Failed to delete '$BRANCH' (may already be gone)"

@@ -121,6 +121,7 @@ BUNDLE_COLLAB=(
   "collab-pipeline:project"
   "cursor-command:collab-workflow.md"
   "workflow:branch-auto-sync.yml"
+  "workflow:safe-branch-cleanup.yml"
   "root-file:AGENTS.md"
   "root-file:CLAUDE.md"
   "script:codex-run.sh"
