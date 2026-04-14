@@ -65,7 +65,8 @@ jobs:
 
           # ── Phase 1: Merge UP (feature → hub) ──
           # Hub is read from the PR's base branch (set by guard-branch hook at worktree creation).
-          HUB=$(gh pr list --head "$TRIGGER" --state open --json baseRefName -q '.[0].baseRefName' 2>/dev/null || echo "")
+          HUB=$(gh pr list --head "$TRIGGER" --state open --json baseRefName,isDraft \
+            -q '[.[] | select(.isDraft == false)][0].baseRefName' 2>/dev/null || echo "")
 
           if [ -n "$HUB" ] && [ "$TRIGGER" != "$HUB" ]; then
             echo ""
