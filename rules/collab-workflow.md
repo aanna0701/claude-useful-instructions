@@ -38,11 +38,11 @@ Illegal shortcuts:
 
 ## Hook-Enforced Workflow
 
-All code modifications go through hooks that enforce the worktree + issue + PR pattern:
+All code modifications go through hooks that enforce the worktree + PR pattern:
 
 1. **branch-naming** (PreToolUse): Enforces `feature-*` naming on all new branches. `feat` → `feature-{slug}`, others → `feature-{type}-{slug}`.
-2. **guard-branch** (PreToolUse): Blocks code edits on the main repo. Auto-creates a worktree + GitHub Issue. Worktrees are exempt.
-3. **auto-pr-commit** (PostToolUse): On first `git commit` in a worktree, pushes the branch and creates a draft PR (base = branch the worktree was created from).
+2. **guard-branch** (PreToolUse): Blocks code edits on the main repo. Auto-creates a worktree. Worktrees are exempt.
+3. **auto-pr-commit** (PostToolUse): On first `git commit` in a worktree, pushes the branch and creates a draft PR if one doesn't exist yet (base = branch the worktree was created from).
 4. **worktree-cleanup** (PostToolUse + Stop): After `gh pr merge` or on session end, deletes merged worktrees, local branches, and remote branches.
 5. **auto-pr** (Stop): Fallback PR creation if the PostToolUse hook didn't fire.
 6. **pre-commit** (git hook): Runs ruff, pyright, mypy, clang-format before every commit.
@@ -167,25 +167,14 @@ After writing local `relay.md`, post a structured comment on the PR:
 
 Methods (try in order): MCP `add_issue_comment` → `gh pr comment` → skip (relay.md suffices).
 
-**CRITICAL: Use the PR number, NOT the Issue number.** GitHub's API treats PRs as issues internally, so `add_issue_comment` works on PR numbers. Posting to the Issue number scatters relay history away from the code.
+Resolve PR number: parse `status.md` PR field → extract number from URL (e.g., `.../pull/42` → `42`).
 
-Resolve PR number: parse `status.md` PR field → extract number from URL (e.g., `.../pull/42` → `42`). If no PR yet, skip relay comment.
-
-❌ WRONG — posting to Issue number:
-```
-# Issue field: https://github.com/org/repo/issues/233
-add_issue_comment(issue_number=233, body="<!-- relay:verify:... -->")
-# → comment lands on ISSUE, not on PR
-```
-
-✅ RIGHT — posting to PR number:
 ```
 # PR field: https://github.com/org/repo/pull/234
 add_issue_comment(issue_number=234, body="<!-- relay:verify:... -->")
-# → comment lands on PR where all relay lives
 ```
 
-✅ RIGHT — fallback with gh CLI:
+Fallback with gh CLI:
 ```bash
 gh pr comment 234 --body "<!-- relay:verify:... -->"
 ```
@@ -223,20 +212,6 @@ gh api "repos/${OWNER_REPO}/issues/${PR_NUMBER}/comments" \
 
 Fallback: skip if `gh` unavailable or no PR yet (relay.md local is sufficient).
 
-#### Issue Status Labels
-
-Use MCP `update_issue` to swap `status:*` labels at each state transition:
-
-```
-status:planned → status:scaffolded → status:implementing →
-status:ready-for-review → status:revising → status:merged
-```
-
-Any AI can use MCP `get_issue` to check current status before acting.
-Fallback: `gh issue edit --remove-label/--add-label`.
-
-Skip if no Issue exists in `status.md`.
-
 ## Locks
 
 - `work/locks/planning.lock` — prevents concurrent `/work-plan`
@@ -254,9 +229,9 @@ Skip if no Issue exists in `status.md`.
 - Codex: code + `status.md` only — never docs; records doc needs in "Doc Changes Needed"
 - `working_parent` is not a scratchpad. Keep clean before planning, review, and merge.
 - Ambiguities recorded in `status.md`, never resolved by implementer
-- Draft PR creation happens at implementation stage, not review stage
+- Draft PR is created at planning stage (`/work-plan`), serving as the single coordination hub
 - Human intervention: dispatch + review only
-- Pipeline: plan(`/work-plan`) → scaffold(`/work-scaffold`→Cursor) → impl(`codex-run.sh`) → verify(`/work-verify`→Cursor) → review(`/work-review`). Each stage reads + writes `relay.md` per § Relay Protocol.
+- Pipeline: plan(`/work-plan` — creates Draft PR) → scaffold(`/work-scaffold`→Cursor) → impl(`codex-run.sh`) → verify(`/work-verify`→Cursor) → review(`/work-review`). Each stage reads + writes `relay.md` per § Relay Protocol. No separate Issues — PR is the only GitHub artifact.
 - Cursor/Codex fallback: `--claude` flag on scaffold/verify, `/work-impl` for implement
 - AUDIT type items skip impl: `planned → auditing → audited` via `/work-verify`
 - `/work-scaffold` and `/work-verify` auto-detect type from ID prefix

@@ -5,12 +5,14 @@ All code edits on the main repo are blocked and redirected to an
 auto-created worktree. The worktree branches off the current branch
 (no branch-map needed).
 
-When a worktree is created, a GitHub Issue is automatically created.
+When a worktree is created, a Draft PR is automatically created
+to lock the base branch at creation time.
 
 How it decides:
   - If cwd is already a worktree (.git is a file) → allow all edits
   - If cwd is the main repo → block code edits, redirect to worktree
   - Orchestration files (work/, docs/, .claude/, etc.) are always allowed
+  - Only activates for projects with .claude-worktree-enabled marker
 
 One worktree per session (keyed on parent PID). Worktree is created on
 first code-edit attempt and reused for the rest of the session.
@@ -23,6 +25,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
 from datetime import datetime
@@ -36,11 +39,13 @@ if str(_LIB_DIR) not in sys.path:
     sys.path.insert(0, str(_LIB_DIR))
 
 from gh_utils import (  # noqa: E402
-    create_issue,
+    create_draft_pr,
     get_current_branch,
     get_repo_root,
     is_worktree,
+    push_branch,
     resolve_owner_repo,
+    write_worktree_meta,
 )
 from worktree_state import WorktreeState  # noqa: E402
 
@@ -119,24 +124,43 @@ def _ensure_worktree(main_root: Path, base_branch: str) -> tuple[Path, str, Work
     state.set_branch_name(wt_branch)
     state.set_base_branch(base_branch)
 
+    # Persist base branch in worktree (survives session/PPID changes)
+    write_worktree_meta(wt_dir, base_branch)
+
+    # Ensure meta file is git-ignored in the worktree
+    wt_gitignore = wt_dir / ".gitignore"
+    meta_entry = ".claude-worktree-meta"
+    if wt_gitignore.exists():
+        existing = wt_gitignore.read_text()
+        if meta_entry not in existing:
+            wt_gitignore.write_text(existing.rstrip("\n") + f"\n{meta_entry}\n")
+    else:
+        wt_gitignore.write_text(f"{meta_entry}\n")
+
     repo_slug = resolve_owner_repo(main_root)
     if repo_slug:
         state.set_repo_slug(repo_slug)
 
-    # Create GitHub Issue
-    issue_num = create_issue(
-        git_dir=main_root,
-        title=f"feature-adhoc: changes from {base_branch} ({stamp})",
-        body=(
-            f"Auto-created by guard-branch hook.\n\n"
+    # Early Draft PR — push empty branch and open draft PR immediately
+    pushed = push_branch(main_root, wt_branch)
+    if pushed:
+        pr_body = (
+            f"Auto-created by guard-branch hook at worktree creation.\n\n"
             f"- **Base branch:** `{base_branch}`\n"
             f"- **Worktree branch:** `{wt_branch}`\n"
-            f"- **Worktree path:** `{wt_dir}`\n"
-        ),
-        labels=["adhoc"],
-    )
-    if issue_num:
-        state.set_issue_number(issue_num)
+        )
+        pr_url = create_draft_pr(
+            git_dir=main_root,
+            base=base_branch,
+            head=wt_branch,
+            title=f"[WIP] {wt_branch}",
+            body=pr_body,
+        )
+        if pr_url:
+            pr_num_match = re.search(r"/(\d+)$", pr_url)
+            if pr_num_match:
+                state.set_pr_number(int(pr_num_match.group(1)))
+            state.set_pr_url(pr_url)
 
     return wt_dir, wt_branch, state
 
@@ -181,6 +205,10 @@ def main() -> None:
     if _is_orchestration_file(rel_path):
         return
 
+    # Only activate for projects that opted in (install.sh --core or --collab)
+    if not (root / ".claude-worktree-enabled").exists():
+        return
+
     # --- Main repo + code file → redirect to worktree ---
     base_branch = get_current_branch(root)
     if not base_branch or base_branch == "HEAD":
@@ -189,14 +217,10 @@ def main() -> None:
     wt_path, _wt_branch, state = _ensure_worktree(root, base_branch)
     redirect_path = wt_path / rel_path
 
-    issue_num = state.issue_number()
-    issue_msg = f"  Issue: #{issue_num}\n" if issue_num else ""
-
     msg = (
         f"REDIRECT: You are on branch '{base_branch}' in the main repo.\n"
         f"A worktree has been created at:\n"
         f"  {wt_path}\n"
-        f"{issue_msg}"
         f"Re-run your edit using the worktree path:\n"
         f"  {redirect_path}\n"
         f"When done, commit — a PR will be created automatically."

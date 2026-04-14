@@ -5,8 +5,8 @@ Fires after every Bash tool call. If the command contained 'git commit'
 and succeeded, checks if a PR already exists for this branch. If not,
 pushes the branch and creates a draft PR.
 
-Uses WorktreeState to track issue/PR numbers across the session.
-Falls back to reading work item status.md for collab worktrees.
+Uses WorktreeState to track PR numbers across the session.
+Falls back to .claude-worktree-meta for base branch recovery.
 
 Exit code 0 always (PostToolUse hooks never block).
 """
@@ -29,34 +29,13 @@ from gh_utils import (  # noqa: E402
     create_draft_pr,
     get_current_branch,
     get_main_repo_from_worktree,
+    get_parent_branch,
     get_repo_root,
     push_branch,
     resolve_owner_repo,
 )
 from worktree_state import WorktreeState  # noqa: E402
 
-
-def _find_issue_from_work_items(repo_root: Path, branch: str) -> int | None:
-    """Try to find issue number from work/items/*/status.md for collab worktrees."""
-    work_items = repo_root / "work" / "items"
-    if not work_items.exists():
-        return None
-
-    # Extract slug from branch name (e.g., feat/FEAT-123-slug -> FEAT-123-slug)
-    slug = branch.split("/", 1)[-1] if "/" in branch else branch
-
-    for item_dir in work_items.iterdir():
-        if not item_dir.is_dir():
-            continue
-        if slug in item_dir.name:
-            status_file = item_dir / "status.md"
-            if status_file.exists():
-                content = status_file.read_text()
-                # Look for Issue field: #123 or empty
-                m = re.search(r"Issue[:\s|]+#?(\d+)", content)
-                if m:
-                    return int(m.group(1))
-    return None
 
 
 def _update_work_item_status(repo_root: Path, branch: str, pr_url: str) -> None:
@@ -121,6 +100,43 @@ def _get_commit_info(git_dir: Path, base: str, head: str) -> tuple[str, str]:
     return commit_log, title
 
 
+def _update_existing_pr(git_dir: Path, branch: str, pr_num: int, state: WorktreeState) -> None:
+    """Update an early/WIP PR with actual commit info."""
+    repo = resolve_owner_repo(git_dir)
+    if not repo:
+        return
+
+    # Check if title still has [WIP] placeholder
+    result = subprocess.run(
+        ["gh", "pr", "view", str(pr_num), "--repo", repo, "--json", "title", "-q", ".title"],
+        capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        return
+
+    current_title = result.stdout.strip()
+    if not current_title.startswith("[WIP]"):
+        return  # Already updated, nothing to do
+
+    # Get base branch for commit log
+    base = state.base_branch() or get_parent_branch(git_dir)
+    if not base:
+        return
+
+    # Push latest commits
+    push_branch(git_dir, branch)
+
+    # Build new title and body from commits
+    commit_log, title = _get_commit_info(git_dir, base, branch)
+    body = f"## Changes\n{commit_log}\n"
+
+    subprocess.run(
+        ["gh", "pr", "edit", str(pr_num), "--repo", repo, "--title", title, "--body", body],
+        capture_output=True, text=True, timeout=30,
+    )
+    print(f"[auto-pr-commit] Updated PR #{pr_num} title: {title}", file=sys.stderr)
+
+
 def _check_existing_pr(git_dir: Path, branch: str) -> str | None:
     """Check if a PR already exists for this branch. Returns PR URL or None."""
     repo = resolve_owner_repo(git_dir)
@@ -176,37 +192,47 @@ def main() -> None:
     # Load session state
     state = WorktreeState.for_session()
 
-    # If PR already tracked in state, skip
-    if state.pr_number():
+    # Check if PR already exists (early PR from guard-branch or previous session)
+    pr_num = state.pr_number()
+    if not pr_num:
+        existing_pr = _check_existing_pr(root, branch)
+        if existing_pr:
+            pr_num_match = re.search(r"/(\d+)$", existing_pr)
+            if pr_num_match:
+                pr_num = int(pr_num_match.group(1))
+                state.set_pr_number(pr_num)
+                state.set_pr_url(existing_pr)
+
+    if pr_num:
+        # PR exists — update title/body if it still has the [WIP] placeholder
+        _update_existing_pr(root, branch, pr_num, state)
         return
 
-    # Check if PR already exists on GitHub
-    existing_pr = _check_existing_pr(root, branch)
-    if existing_pr:
-        pr_num_match = re.search(r"/(\d+)$", existing_pr)
-        if pr_num_match:
-            state.set_pr_number(int(pr_num_match.group(1)))
-            state.set_pr_url(existing_pr)
-        return
-
-    # Determine base branch
+    # Determine base branch — never fallback to main repo's current branch
     base = state.base_branch()
     if not base:
-        # Derive from main repo's current branch
-        main_repo = get_main_repo_from_worktree(root)
-        if main_repo:
-            base = get_current_branch(main_repo)
-        if not base or base == "HEAD":
-            print("[auto-pr-commit] No base branch recorded and could not infer. Skipping.", file=sys.stderr)
+        # Fallback: read from persistent .claude-worktree-meta in worktree
+        base = get_parent_branch(root)
+    if not base:
+        print("[auto-pr-commit] No base branch in state or meta. "
+              "Create PR manually with: gh pr create --base <branch>", file=sys.stderr)
+        return
+
+    # Validate: stored base must match parent repo's current branch
+    main_repo = get_main_repo_from_worktree(root)
+    if main_repo:
+        parent_current = get_current_branch(main_repo)
+        if parent_current and parent_current != "HEAD" and parent_current != base:
+            print(f"[auto-pr-commit] BASE MISMATCH: stored base '{base}' "
+                  f"≠ parent current '{parent_current}'. "
+                  f"Skipping auto-PR to prevent wrong-branch merge. "
+                  f"Create PR manually if intended.", file=sys.stderr)
             return
 
     # Push branch
     if not push_branch(root, branch):
         print("[auto-pr-commit] Push failed, skipping PR creation.", file=sys.stderr)
         return
-
-    # Get issue number (from state or work items)
-    issue_num = state.issue_number() or _find_issue_from_work_items(root, branch)
 
     # Build PR body
     commit_log, title = _get_commit_info(root, base, branch)
@@ -219,7 +245,6 @@ def main() -> None:
         head=branch,
         title=title,
         body=body,
-        issue_num=issue_num,
     )
 
     if pr_url:

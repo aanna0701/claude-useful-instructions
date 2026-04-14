@@ -23,12 +23,11 @@ Verify implementation against contract and write results, optionally with Cursor
 2. **Read relay**: Per `rules/collab-workflow.md` § Read Before Act — use `gh api .../issues/{PR}/comments` to read impl results (filter `<!-- relay:impl: -->`). Or read `pr-relay.md` / `relay.md` as fallback. If impl `result: blocked`, abort with error. Use `changed` files list to scope verification.
 3. **Verify** (always — both modes): Read code in worktree, verify against contract (boundaries, interfaces, invariants, test requirements, checklist). Write `verify-result.md` in worktree.
 4. **Relay**: Append `verify` block to `relay.md` with passed/failed counts and failure details.
-   - **PR Comment Relay** (per § PR Comment Relay — use **PR number**, NOT Issue number):
+   - **PR Comment Relay** (per § PR Comment Relay):
      ```
      # Extract PR number from status.md PR field URL (e.g., .../pull/42 → 42)
      add_issue_comment(issue_number={PR_NUMBER}, body="<!-- relay:verify:{timestamp} --> ...")
      # Fallback: gh pr comment {PR_NUMBER} --body "..."
-     # No PR yet? Skip relay comment (relay.md suffices).
      ```
 5. **Cursor integration** (default mode only, skip with `--claude`): Also generate Cursor Composer prompt for manual re-verification
 6. **Update status**: AUDIT/DOCS → `auditing`. FEAT/REFAC/FIX → unchanged.

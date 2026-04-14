@@ -190,19 +190,6 @@ PY
   gh pr comment "$pr_number" --body "$body" || true
 }
 
-update_issue_label() {
-  local issue_num="$1" new_status="$2"
-  [ -n "$issue_num" ] || return 0
-  command -v gh &>/dev/null || return 0
-  local old
-  old=$(gh issue view "$issue_num" --json labels -q '.labels[].name' 2>/dev/null | grep '^status:' || true)
-  for lbl in $old; do
-    gh issue edit "$issue_num" --remove-label "$lbl" 2>/dev/null || true
-  done
-  gh label create "status:$new_status" --color 0E8A16 2>/dev/null || true
-  gh issue edit "$issue_num" --add-label "status:$new_status" 2>/dev/null || true
-}
-
 fetch_pr_relay() {
   local pr_number="$1" output_file="$2"
   command -v gh &>/dev/null || return 0
@@ -406,20 +393,11 @@ push_and_create_pr() {
 
   local merge_target=""
   merge_target=$(resolve_merge_target "$wdir")
-  local issue=""
-  issue=$(grep -oP '^\| Issue \| #\K\d+' "$wdir/status.md" 2>/dev/null || true)
-  # Fallback: extract issue number from full URL (e.g., .../issues/233 → 233)
-  if [ -z "$issue" ]; then
-    issue=$(grep -oP '^\| Issue \| .*?/issues/\K\d+' "$wdir/status.md" 2>/dev/null || true)
-  fi
 
   local title="$feat_id"
   if [ -f "$wdir/brief.md" ]; then
     title=$(grep -m1 '^# ' "$wdir/brief.md" | sed 's/^# //' || echo "$feat_id")
   fi
-
-  local closes_line=""
-  [ -n "$issue" ] && closes_line="Closes #$issue"
 
   local pr_url
   pr_url=$(gh pr create \
@@ -429,7 +407,6 @@ push_and_create_pr() {
     --body "$(cat <<EOF
 ## Work Item: $slug
 
-$closes_line
 Work item: \`work/items/$slug/\`
 EOF
 )" \

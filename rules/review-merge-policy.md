@@ -1,6 +1,6 @@
 # Review and Merge Policy
 
-PRs are created during implementation as drafts. Review operates on existing PRs.
+PRs are created during planning as drafts. Review operates on existing PRs.
 
 ## Merge Gating
 
@@ -18,7 +18,7 @@ Before any merge:
 
 1. `gh pr merge {pr} --squash` (never `--delete-branch` — delete separately after verification).
 2. Verify: `gh pr view {pr} --json state -q .state` must be `MERGED`.
-3. **Only after verified merge**: delete remote branch, close issue, update label, cleanup worktree.
+3. **Only after verified merge**: delete remote branch, cleanup worktree.
 
 **On failure**: preserve branch + worktree, report error, release lock. Never delete branch on merge failure.
 

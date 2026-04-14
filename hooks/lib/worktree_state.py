@@ -83,14 +83,6 @@ class WorktreeState:
     def set_base_branch(self, name: str) -> None:
         self._write("base.branch", name)
 
-    # Issue number
-    def issue_number(self) -> int | None:
-        v = self._read("issue.number")
-        return int(v) if v else None
-
-    def set_issue_number(self, number: int) -> None:
-        self._write("issue.number", str(number))
-
     # PR number
     def pr_number(self) -> int | None:
         v = self._read("pr.number")

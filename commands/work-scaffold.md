@@ -38,7 +38,6 @@ Create stub files and test skeletons from contract, optionally with Cursor integ
    ```
    Also pre-fetch PR relay: `gh api .../issues/{PR}/comments` → `pr-relay.md` in worktree.
 4. **Update status** → `scaffolded` (both control plane and worktree)
-   - **Issue Label**: Use MCP `update_issue` to set `status:scaffolded`. Fallback: `gh issue edit`.
 5. **Output**: Print created files summary. Default mode: also print Composer prompt with absolute worktree path (`{WT_PATH}`)
 
 **MANDATORY NEXT-STEP TEMPLATE** — Print the block below as-is. Fill `«___»` slots with actual IDs. Do NOT add, remove, or reorder lines.

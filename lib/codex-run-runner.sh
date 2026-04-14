@@ -150,20 +150,21 @@ dispatch_group() {
     fi
 
     if command -v codex &>/dev/null; then
+      # Worktree targets: Codex sandbox cannot reliably handle git worktree context
+      # (branch mismatch, index.lock conflicts). Route to Claude sub-agent instead.
+      if [ "$git_dir" != "." ] && [ -d "$git_dir" ]; then
+        echo "  [subagent] $slug → Claude sub-agent required (worktree target)"
+        echo "$prompt" > "$log_file"
+        echo "CLAUDE_SUBAGENT_NEEDED:$fid:$log_file:$git_dir" >> "$LOG_DIR/.subagent-queue"
+        update_status_state_everywhere "$fid" "$wdir" "pending-subagent" "claude-subagent"
+        continue
+      fi
       if ! preflight_target_dir "$fid" "$wdir" "$git_dir"; then
         echo "  Blocked: $slug → target preflight failed; skipping Codex spawn"
         continue
       fi
-      if [ "$git_dir" != "." ] && [ -d "$git_dir" ]; then
-        echo "  Spawning: $slug → $log_file (cd $git_dir)"
-      else
-        echo "  Spawning: $slug → $log_file"
-      fi
-      if [ "$git_dir" != "." ] && [ -d "$git_dir" ]; then
-        codex exec --full-auto --cd "$git_dir" "$prompt" > "$log_file" 2>&1 &
-      else
-        codex exec --full-auto "$prompt" > "$log_file" 2>&1 &
-      fi
+      echo "  Spawning: $slug → $log_file"
+      codex exec --full-auto "$prompt" > "$log_file" 2>&1 &
       pids["$fid"]=$!
       log_files["$fid"]="$log_file"
       last_log_mtime["$fid"]=$(stat -c %Y "$log_file" 2>/dev/null || echo 0)
@@ -245,6 +246,7 @@ collect_dispatch_results() {
 
 cmd_dispatch() {
   local feat_ids=("$@")
+  local feat_ids_label="${feat_ids[*]}"
 
   echo "Step 1/4: Boundary check"
   if ! boundary_check "${feat_ids[@]}"; then
@@ -321,16 +323,26 @@ cmd_dispatch() {
     echo "Posting impl relay comments on PRs..."
     for fid in "${review_ids[@]}"; do
       post_impl_relay_comment "$fid" 2>/dev/null || true
-      local _wdir
-      _wdir=$(resolve_work_dir "$fid" 2>/dev/null) || true
-      if [ -n "$_wdir" ]; then
-        local _issue
-        _issue=$(grep -oP '^\| Issue \| #\K\d+' "$_wdir/status.md" 2>/dev/null || true)
-        # Fallback: extract issue number from full URL (e.g., .../issues/233 → 233)
-        [ -z "$_issue" ] && _issue=$(grep -oP '^\| Issue \| .*?/issues/\K\d+' "$_wdir/status.md" 2>/dev/null || true)
-        update_issue_label "$_issue" "ready-for-review" 2>/dev/null || true
-      fi
     done
+  fi
+
+  # Print Claude sub-agent instructions for worktree items
+  local subagent_queue="$LOG_DIR/.subagent-queue"
+  if [ -f "$subagent_queue" ]; then
+    echo ""
+    echo "🤖 Worktree items → Claude sub-agent 필요 (Codex 샌드박스 우회)"
+    echo "──────────────────────────────────────────────"
+    echo "아래 항목들은 Claude에서 직접 Agent()로 실행하세요:"
+    echo ""
+    while IFS=: read -r _tag sa_fid sa_log sa_dir; do
+      [ -n "$sa_fid" ] || continue
+      echo "  Agent(subagent_type=\"general-purpose\", prompt=open(\"$sa_log\").read())"
+      echo "  # $sa_fid → $sa_dir"
+      echo ""
+    done < "$subagent_queue"
+    echo "또는: /work-impl $feat_ids_label --claude"
+    echo "──────────────────────────────────────────────"
+    rm -f "$subagent_queue"
   fi
 
   echo "══════════════════════════════════════════════"

@@ -110,7 +110,7 @@ BUNDLE_COLLAB=(
   "commands:gha-branch-sync.md"
   "skills:collab-workflow"
   "agents:ci-audit-agent.md"
-  "agents:issue-creator.md"
+  "agents:work-review.md"
   "agents:work-reviser.md"
   "agents:pr-reviewer.md"
   "agents:cursor-prompt-builder.md"
@@ -672,15 +672,10 @@ remove_claude_hook() {
   local src="$REPO_DIR/hooks/$hook_name"
   [ -d "$src" ] || return 0
 
-  for f in "$src"/*.py "$src"/*.sh "$src"/*.json.example; do
-    [ -f "$f" ] || continue
-    local filename
-    filename="$(basename "$f")"
-    if [ -f "$dst_dir/$filename" ]; then
-      rm -v "$dst_dir/$filename"
-    fi
-  done
-
+  # settings.json FIRST — deregister hooks before deleting files.
+  # If files are deleted first, any Bash PostToolUse hook that fires in
+  # the window between file deletion and settings.json cleanup will fail
+  # with "No such file or directory".
   local settings_file="$HOME/.claude/settings.json"
   if [ -f "$settings_file" ]; then
     python3 - "$hook_name" "$REPO_DIR/scripts/patch-hook-settings.py" <<'PYEOF'
@@ -734,6 +729,16 @@ if changed:
     print(f"  Removed {hook_name} hooks from settings.json")
 PYEOF
   fi
+
+  # Delete hook files AFTER settings.json is updated
+  for f in "$src"/*.py "$src"/*.sh "$src"/*.json.example; do
+    [ -f "$f" ] || continue
+    local filename
+    filename="$(basename "$f")"
+    if [ -f "$dst_dir/$filename" ]; then
+      rm -v "$dst_dir/$filename"
+    fi
+  done
 }
 
 remove_work_dir() {
@@ -863,6 +868,13 @@ if $UNINSTALL; then
     remove_file "$PROJECT_ROOT/.cursor/mcp.json"
   fi
 
+  # Remove worktree guard marker if core or collab uninstalled
+  HAS_CORE=false
+  if printf '%s\n' "${SELECTED_BUNDLES[@]}" | grep -qx "core"; then HAS_CORE=true; fi
+  if $HAS_CORE || $HAS_COLLAB; then
+    remove_file "$PROJECT_ROOT/.claude-worktree-enabled"
+  fi
+
   # Clean up empty .claude subdirectories
   for subdir in rules commands agents skills templates; do
     remove_dir_if_empty "$CLAUDE_DIR/$subdir"
@@ -987,6 +999,15 @@ if $INSTALL_HAS_COLLAB; then
   ensure_collab_scaffold
   ensure_cursor_mcp
   ensure_github_labels
+fi
+
+# ── Enable worktree guard for projects that install core or collab ─────────
+if $INSTALL_HAS_CORE || $INSTALL_HAS_COLLAB; then
+  _marker="$PROJECT_ROOT/.claude-worktree-enabled"
+  if [[ ! -f "$_marker" ]]; then
+    touch "$_marker"
+    echo "  ✓ Worktree guard enabled (.claude-worktree-enabled)"
+  fi
 fi
 
 # ── Auto-install pre-commit when core bundle is installed ────────────────

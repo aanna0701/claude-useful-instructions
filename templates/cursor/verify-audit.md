@@ -77,4 +77,4 @@ For each file in scope:
 - AUDIT contracts use different section names than FEAT/REFACTOR contracts
 - The `cursor-prompt-builder` agent handles the section name mapping automatically
 - AUDIT items do not require `status.md` Changed Files (no implementation phase)
-- Results can be converted to GitHub Issues via `issue-creator` agent
+- Results can be converted to work items via `/work-plan --type=fix`

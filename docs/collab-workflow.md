@@ -140,7 +140,7 @@ project/
 └── .claude/
     ├── rules/collab-workflow.md       # Auto-loaded 3-agent rules (Claude, Cursor/Antigravity, Codex)
     ├── commands/work-{plan,scaffold,verify,review,impl,revise,status}.md
-    ├── agents/{issue-creator,work-reviser,cursor-prompt-builder}.md
+    ├── agents/{work-reviser,cursor-prompt-builder,pr-reviewer}.md
     ├── skills/collab-workflow/
     ├── templates/work-item/*.md       # Brief, contract, checklist, status, review, relay
     └── templates/cursor/*.md          # Cursor prompt templates + .cursor/rules/*.mdc templates

@@ -412,17 +412,19 @@ Non-negotiables:
 - Assume codex-run.sh already attempted parent-branch auto-sync before spawning you.
 - Use the project uv environment for Python commands: prefer \`uv run ...\` and never \`pip install\` ad hoc.
 - Stay inside contract boundaries only.
-- Update $wdir/status.md on every state change.
+- status.md is GPS only — only update: Status field, Agent field, Intended Commit Message section, Blockers section. Never add new sections.
 - Run the checklist verification commands before marking done.
 - Before starting, read prior stage results for context:
   1. Read $wdir/pr-relay.md if it exists (pre-fetched PR relay comments).
      Filter for blocks containing <!-- relay: --> markers.
   2. Fallback: read $wdir/relay.md (if it exists).
-- On completion, append an impl block to $wdir/relay.md:
+- On completion, append an impl block to $wdir/relay.md (this is where changed files, verification, doc notes go):
   ## impl @ {timestamp}
   result: {success|partial|blocked}
   changed: [{list of changed files}]
   commits: [{commit hashes}]
+  verification: [{commands run and results}]
+  doc_changes: [{doc updates needed, or "none"}]
   notes: |
     {1-3 line summary}
 - After writing relay.md, also post a PR relay comment if MCP GitHub is available:
