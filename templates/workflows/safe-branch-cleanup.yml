@@ -32,13 +32,30 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: ${{ github.event.pull_request.head.ref }}
           REPO: ${{ github.repository }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          # Optional: comma-separated branch names that must never be deleted.
+          # Configure at Settings → Secrets and variables → Actions → Variables
+          # → PROTECTED_BRANCHES. No hard-coded project names here.
+          EXTRA_PROTECTED: ${{ vars.PROTECTED_BRANCHES }}
         run: |
           echo "Merged branch: $BRANCH"
 
-          # Skip protected branches (main, develop, research + any 'main/*' style)
-          if echo "$BRANCH" | grep -qE '^(main|develop|research)$'; then
-            echo "SKIP: '$BRANCH' is a protected base branch — never delete."
+          # 1. Repository default branch is always protected.
+          if [ "$BRANCH" = "$DEFAULT_BRANCH" ]; then
+            echo "SKIP: '$BRANCH' is the repository default branch."
             exit 0
+          fi
+
+          # 2. User-pinned branches via PROTECTED_BRANCHES action variable.
+          if [ -n "$EXTRA_PROTECTED" ]; then
+            IFS=',' read -ra EXTRA_LIST <<< "$EXTRA_PROTECTED"
+            for p in "${EXTRA_LIST[@]}"; do
+              p_trim="$(echo "$p" | xargs)"
+              if [ -n "$p_trim" ] && [ "$BRANCH" = "$p_trim" ]; then
+                echo "SKIP: '$BRANCH' listed in PROTECTED_BRANCHES."
+                exit 0
+              fi
+            done
           fi
 
           # Check if any open PRs use this branch as their base

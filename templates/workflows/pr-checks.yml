@@ -15,6 +15,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install uv
         uses: astral-sh/setup-uv@v3
@@ -24,11 +26,84 @@ jobs:
       - name: Install deps
         run: uv sync --frozen
 
+      # Hybrid scope:
+      #   pull_request → only changed .py files (fast, PR-scoped signal)
+      #   push main    → full repo (regression gate for merged code)
+      - name: Determine scope
+        id: scope
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+            git fetch --no-tags --depth=1 origin "$BASE_SHA" 2>/dev/null || true
+            FILES=$(git diff --name-only --diff-filter=ACMR "$BASE_SHA" "$HEAD_SHA" -- '*.py' | tr '\n' ' ')
+            DIRS=$(git diff --name-only --diff-filter=ACMR "$BASE_SHA" "$HEAD_SHA" -- '*.py' \
+                   | xargs -r -n1 dirname | sort -u | tr '\n' ' ')
+            {
+              echo "mode=diff"
+              echo "py_files=$FILES"
+              echo "py_dirs=$DIRS"
+            } >> "$GITHUB_OUTPUT"
+            echo "Diff mode — changed .py files: ${FILES:-<none>}"
+          else
+            {
+              echo "mode=full"
+              echo "py_files="
+              echo "py_dirs="
+            } >> "$GITHUB_OUTPUT"
+            echo "Full mode (push to main)"
+          fi
+
       - name: Lint (ruff)
-        run: uv run ruff check .
+        run: |
+          set -euo pipefail
+          if [ "${{ steps.scope.outputs.mode }}" = "full" ]; then
+            uv run ruff check .
+          elif [ -n "${{ steps.scope.outputs.py_files }}" ]; then
+            uv run ruff check ${{ steps.scope.outputs.py_files }}
+          else
+            echo "No Python files changed — skipping ruff"
+          fi
 
       - name: Types (mypy)
-        run: uv run mypy .
+        run: |
+          set -euo pipefail
+          if [ "${{ steps.scope.outputs.mode }}" = "full" ]; then
+            uv run mypy .
+          elif [ -n "${{ steps.scope.outputs.py_files }}" ]; then
+            uv run mypy ${{ steps.scope.outputs.py_files }}
+          else
+            echo "No Python files changed — skipping mypy"
+          fi
 
+      # pytest scoping heuristic:
+      #   For each changed .py dir, include:
+      #     - the dir itself (co-located tests)
+      #     - a matching tests/<tail> dir (src/pkg → tests/pkg)
+      #     - a matching <head>/tests dir (pkg → pkg/tests)
+      #   Full mode runs the whole suite.
       - name: Tests (pytest)
-        run: uv run pytest
+        run: |
+          set -euo pipefail
+          if [ "${{ steps.scope.outputs.mode }}" = "full" ]; then
+            uv run pytest
+          elif [ -n "${{ steps.scope.outputs.py_dirs }}" ]; then
+            TARGETS=""
+            for d in ${{ steps.scope.outputs.py_dirs }}; do
+              [ -d "$d" ] && TARGETS="$TARGETS $d"
+              tail="${d#*/}"
+              [ "$tail" != "$d" ] && [ -d "tests/$tail" ] && TARGETS="$TARGETS tests/$tail"
+              head="${d%%/*}"
+              [ -d "$head/tests" ] && TARGETS="$TARGETS $head/tests"
+            done
+            TARGETS=$(echo "$TARGETS" | tr ' ' '\n' | sort -u | tr '\n' ' ')
+            if [ -n "${TARGETS// /}" ]; then
+              echo "Scoped pytest targets: $TARGETS"
+              uv run pytest $TARGETS
+            else
+              echo "No pytest targets resolved — skipping"
+            fi
+          else
+            echo "No Python files changed — skipping pytest"
+          fi
