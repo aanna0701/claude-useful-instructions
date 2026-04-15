@@ -1,21 +1,29 @@
-# Branch Auto-Sync — hub-and-spoke merge workflow
-# Hub branch is read from the PR's base branch (set by guard-branch hook at worktree creation).
-# No branch-map.yaml required.
+# Branch Auto-Sync — cascade hub updates DOWN to feature children.
+#
+# Policy: merges into any branch are only permitted via an approved PR
+# (/work-review → gh pr merge --squash). This workflow therefore NEVER
+# merges feature branches upward. It only propagates an already-merged
+# hub state DOWN into in-progress feature branches so they stay fresh.
+#
+# Trigger: a PR merge into a hub branch (main, develop, research, or any
+# feature-* branch acting as a hub). The merged base is the SYNC_SOURCE;
+# every open PR whose base is SYNC_SOURCE receives the update via merge.
+#
 # Install: copy to .github/workflows/
 
 name: Branch Auto-Sync
 
 on:
-  push:
-    branches:
-      - feature-*
-      - feat/*
+  pull_request:
+    types: [closed]
 
 permissions:
   contents: write
+  pull-requests: read
 
 jobs:
-  hub-sync:
+  cascade-down:
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -28,82 +36,61 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Sync branches
+      - name: Cascade hub -> children
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SYNC_SOURCE: ${{ github.event.pull_request.base.ref }}
+          REPO: ${{ github.repository }}
         run: |
+          set -u
           git fetch --all --prune
-          TRIGGER="${GITHUB_REF#refs/heads/}"
-          FAILED=""
 
-          echo "Trigger branch: $TRIGGER"
+          echo "Sync source (merged base): $SYNC_SOURCE"
           echo "========================================"
 
-          merge_into() {
-            local SOURCE=$1 TARGET=$2 MSG=$3
-            echo ""
-            echo "=== $SOURCE → $TARGET ==="
+          # Children = open PRs whose base is SYNC_SOURCE.
+          # Limiting to open-PR heads avoids touching abandoned branches
+          # and avoids cascading into merged siblings.
+          CHILDREN=$(gh pr list \
+            --repo "$REPO" \
+            --base "$SYNC_SOURCE" \
+            --state open \
+            --json headRefName \
+            --jq '.[].headRefName')
 
-            if ! git rev-parse "origin/$TARGET" &>/dev/null; then
-              echo "SKIP: $TARGET does not exist on remote"
-              return 0
+          if [ -z "$CHILDREN" ]; then
+            echo "No open child PRs targeting $SYNC_SOURCE."
+            exit 0
+          fi
+
+          FAILED=""
+          for CHILD in $CHILDREN; do
+            echo ""
+            echo "=== $SYNC_SOURCE -> $CHILD ==="
+
+            if ! git rev-parse "origin/$CHILD" &>/dev/null; then
+              echo "SKIP: $CHILD not on remote"
+              continue
             fi
 
-            git checkout "$TARGET"
-            git reset --hard "origin/$TARGET"
+            git checkout "$CHILD"
+            git reset --hard "origin/$CHILD"
 
-            if git merge "origin/$SOURCE" --no-edit -m "$MSG"; then
-              git push origin "$TARGET"
-              echo "OK: $TARGET updated"
+            if git merge "origin/$SYNC_SOURCE" --no-edit \
+                 -m "chore: auto-sync from $SYNC_SOURCE"; then
+              git push origin "$CHILD"
+              echo "OK: $CHILD updated"
             else
-              echo "CONFLICT: $TARGET — skipping (needs manual merge)"
+              echo "CONFLICT: $CHILD - needs manual resolution"
               git merge --abort
-              FAILED="$FAILED $TARGET"
-              return 1
+              FAILED="$FAILED $CHILD"
             fi
-          }
-
-          # ── Phase 1: Merge UP (feature → hub) ──
-          # Hub is read from the PR's base branch (set by guard-branch hook at worktree creation).
-          HUB=$(gh pr list --head "$TRIGGER" --state open --json baseRefName,isDraft \
-            -q '[.[] | select(.isDraft == false)][0].baseRefName' 2>/dev/null || echo "")
-
-          if [ -n "$HUB" ] && [ "$TRIGGER" != "$HUB" ]; then
-            echo ""
-            echo "──── Phase 1: Merge UP ($TRIGGER → $HUB) ────"
-            merge_into "$TRIGGER" "$HUB" \
-              "chore: auto-sync $TRIGGER into $HUB" || true
-          else
-            echo "Phase 1: skipped (no open PR found for $TRIGGER, or trigger is already hub)"
-            HUB="$TRIGGER"
-          fi
-
-          # ── Phase 2: Cascade DOWN (hub → all other feature branches) ──
-          SYNC_SOURCE="${HUB}"
-          echo ""
-          echo "──── Phase 2: Cascade DOWN from $SYNC_SOURCE ────"
-
-          # Auto-detect all remote feature branches except the trigger and hub itself
-          CHILDREN=$(git branch -r --format='%(refname:short)' \
-            | grep -E '^origin/(feature-|feat/)' \
-            | sed 's|^origin/||' \
-            | grep -v "^$TRIGGER$" \
-            | grep -v "^$SYNC_SOURCE$" \
-            || true)
-
-          if [ -n "$CHILDREN" ]; then
-            for CHILD in $CHILDREN; do
-              merge_into "$SYNC_SOURCE" "$CHILD" \
-                "chore: auto-sync from $SYNC_SOURCE" || true
-            done
-          else
-            echo "No child branches to cascade to."
-          fi
+          done
 
           echo ""
           echo "========================================"
           if [ -n "$FAILED" ]; then
-            echo "::warning::Failed branches:$FAILED"
+            echo "::warning::Conflicts on:$FAILED"
           else
-            echo "All syncs completed successfully."
+            echo "Cascade completed."
           fi

@@ -99,6 +99,21 @@ def _find_merged_worktrees(main_root: Path) -> list[tuple[Path, str]]:
 
             should_clean = False
 
+            # Safety: never clean a branch with an OPEN PR. Auto-sync workflows
+            # or local ancestry quirks can otherwise make a live work-item's
+            # worktree vanish mid-session.
+            repo = resolve_owner_repo(main_root)
+            if repo:
+                pr_check = subprocess.run(
+                    ["gh", "pr", "view", current_branch, "--repo", repo,
+                     "--json", "state", "-q", ".state"],
+                    capture_output=True, text=True, timeout=15,
+                )
+                if pr_check.returncode == 0 and pr_check.stdout.strip() == "OPEN":
+                    current_wt = None
+                    current_branch = None
+                    continue
+
             # Check 1: branch is ancestor of main (locally merged)
             if main_branch and main_branch != "HEAD":
                 check = subprocess.run(
