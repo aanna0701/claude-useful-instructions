@@ -5,28 +5,34 @@
 #   TARGET_DIR: project root to install into (REQUIRED)
 #
 # Options:
+#   3-layer structure:
+#     [base]     git hooks, commit/push helpers, token/debug utilities
+#     [workflow] Claude-Codex collaboration (work items, AGENTS.md/CLAUDE.md, codex-run)
+#     [domain-*] task-specific bundles
+#
 #   --all           Install all bundles (default if no bundle flags given)
-#   --core          Core utilities (smart-git-commit-push, optimize-tokens, guard-trunk)
-#   --docs          Documentation & diagrams (diataxis, write-doc, init-docs, sync-docs, doc/diagram agents)
-#   --data-pipeline Data pipeline architect skill
-#   --career        Career document tools (career-docs skill, career agents)
-#   --dl            PyTorch DL standards + agents (capture, data, model, train, eval, infra)
-#   --collab        Claude-Codex collaboration (work items, AGENTS.md, CLAUDE.md)
-#   --ppt-generation PPT template-based generation (fill content into base PPT)
-#   --google-style  Google C++/Python Style Guide refactor (rules, skill, command, agents, Cursor .mdc, .clang-format)
-#   --exclude NAME  Exclude a bundle (repeatable, e.g. --exclude dl --exclude career)
+#   --base          [base] git hooks + commit/push helpers + token/debug utilities
+#   --workflow      [workflow] Claude-Codex collaboration (work items, AGENTS.md/CLAUDE.md, codex-run)
+#   --docs          [domain] Documentation & diagrams
+#   --data-pipeline [domain] Data pipeline architect
+#   --career        [domain] Career document tools
+#   --dl            [domain] PyTorch DL standards + agents
+#   --presentation  [domain] HTML presentation generator
+#   --ppt-generation [domain] PPT template-based generation
+#   --google-style  [domain] Google C++/Python Style Guide refactor
+#   --exclude NAME  Exclude a bundle (repeatable)
 #   --interactive   Interactive mode: choose bundles from a menu
 #   --list          List available bundles and exit
 #   --uninstall     Remove installed files (respects bundle flags)
-#   -y, --yes       Skip confirmation prompts (e.g. work/ directory removal)
+#   -y, --yes       Skip confirmation prompts
 #
 # Examples:
-#   ./install.sh ~/proj                           # Install all bundles
-#   ./install.sh --core --docs ~/proj             # Install core + docs only
-#   ./install.sh --exclude career ~/proj          # Install all except career
-#   ./install.sh --interactive ~/proj             # Interactive selection
-#   ./install.sh --uninstall ~/proj               # Uninstall all from ~/proj
-#   ./install.sh --uninstall --collab ~/proj      # Uninstall collab bundle only
+#   ./install.sh ~/proj                               # Install all bundles
+#   ./install.sh --base --workflow ~/proj             # base + workflow (typical)
+#   ./install.sh --base --workflow --dl ~/proj        # + one domain
+#   ./install.sh --exclude career ~/proj              # Install all except career
+#   ./install.sh --uninstall ~/proj                   # Uninstall all from ~/proj
+#   ./install.sh --uninstall --workflow ~/proj        # Uninstall workflow only
 
 set -e
 
@@ -39,7 +45,7 @@ REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
 #   collab-pipeline:project → assemble templates/collab-pipeline-body.md into
 #     .cursor/rules/collab-pipeline.mdc and .agent/workflows/collab-pipeline.md (single source)
 
-BUNDLE_CORE=(
+BUNDLE_BASE=(
   "commands:smart-git-commit-push.md"
   "commands:optimize-tokens.md"
   "commands:debug-guide.md"
@@ -101,7 +107,7 @@ BUNDLE_DL=(
   "agents:dl-train.md"
 )
 
-BUNDLE_COLLAB=(
+BUNDLE_WORKFLOW=(
   "rules:collab-workflow.md"
   "rules:review-merge-policy.md"
   "commands:work-plan.md"
@@ -132,14 +138,6 @@ BUNDLE_PRESENTATION=(
   "script:scripts/html_to_pdf.py"
 )
 
-BUNDLE_WORKNOTE=(
-  "skills:worknote"
-  "agents:worknote-sync.md"
-  "agents:worknote-review.md"
-  "agents:worknote-plan.md"
-  "claude-hook:worknote-stop"
-)
-
 BUNDLE_PPT_GENERATION=(
   "skills:ppt-generation"
   "commands:generate-ppt.md"
@@ -159,18 +157,21 @@ BUNDLE_GOOGLE_STYLE=(
   "template:google-style"
 )
 
-BUNDLE_NAMES=("core" "docs" "data-pipeline" "career" "dl" "collab" "presentation" "worknote" "ppt-generation" "google-style")
+# 3-layer structure:
+#   base      — git hooks, commit/push helpers, token/debug utilities (always install)
+#   workflow  — Claude-Codex collaboration layer on top of base
+#   domain-*  — task-specific bundles (install per project need)
+BUNDLE_NAMES=("base" "workflow" "docs" "data-pipeline" "career" "dl" "presentation" "ppt-generation" "google-style")
 BUNDLE_DESCRIPTIONS=(
-  "Core utilities (smart-git-commit-push, optimize-tokens, debug-guide, guard-branch, auto-pr, pre-commit)"
-  "Documentation & diagrams (diataxis framework, doc agents, diagram-architect)"
-  "Data pipeline architect"
-  "Career document tools (cover letters, Korean)"
-  "PyTorch DL standards + agents (capture, data, model, train, eval, infra)"
-  "Claude-Codex collaboration (work items, guard-branch, auto-sync, AGENTS.md, CLAUDE.md)"
-  "HTML presentation generator (16:9 dark theme slides + PDF export)"
-  "Work journal with Notion sync (daily log, review, planning)"
-  "PPT template-based generation (fill content into base PPT without changing design)"
-  "Google C++/Python Style Guide refactor (rules, skill, /refactor-google-style, Cursor .mdc, .clang-format)"
+  "[base] git hooks + commit/push helpers + token/debug utilities"
+  "[workflow] Claude-Codex collaboration: work items, AGENTS.md/CLAUDE.md, codex-run, PR workflows"
+  "[domain] Documentation & diagrams (diataxis framework, doc agents, diagram-architect)"
+  "[domain] Data pipeline architect skill"
+  "[domain] Career document tools (cover letters, Korean)"
+  "[domain] PyTorch DL standards + agents (capture, data, model, train, eval, infra)"
+  "[domain] HTML presentation generator (16:9 dark theme slides + PDF export)"
+  "[domain] PPT template-based generation (fill content into base PPT without changing design)"
+  "[domain] Google C++/Python Style Guide refactor (rules, skill, command, agents, .clang-format)"
 )
 
 # ── Parse arguments ─────────────────────────────────────────────────────────
@@ -181,20 +182,19 @@ INTERACTIVE=false
 LIST_ONLY=false
 UNINSTALL=false
 FORCE_YES=false
-INSTALL_HAS_COLLAB=false
-INSTALL_HAS_CORE=false
+INSTALL_HAS_WORKFLOW=false
+INSTALL_HAS_BASE=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --all)           SELECTED_BUNDLES=("${BUNDLE_NAMES[@]}"); shift ;;
-    --core)          SELECTED_BUNDLES+=("core"); shift ;;
+    --base)          SELECTED_BUNDLES+=("base"); shift ;;
+    --workflow)      SELECTED_BUNDLES+=("workflow"); shift ;;
     --docs)          SELECTED_BUNDLES+=("docs"); shift ;;
     --data-pipeline) SELECTED_BUNDLES+=("data-pipeline"); shift ;;
     --career)        SELECTED_BUNDLES+=("career"); shift ;;
     --dl)            SELECTED_BUNDLES+=("dl"); shift ;;
-    --collab)        SELECTED_BUNDLES+=("collab"); shift ;;
     --presentation)  SELECTED_BUNDLES+=("presentation"); shift ;;
-    --worknote)      SELECTED_BUNDLES+=("worknote"); shift ;;
     --ppt-generation) SELECTED_BUNDLES+=("ppt-generation"); shift ;;
     --google-style)  SELECTED_BUNDLES+=("google-style"); shift ;;
     --exclude)       shift; EXCLUDED_BUNDLES+=("$1"); shift ;;
@@ -215,7 +215,7 @@ if $LIST_ONLY; then
     printf "  %-16s %s\n" "${BUNDLE_NAMES[$i]}" "${BUNDLE_DESCRIPTIONS[$i]}"
   done
   echo ""
-  echo "Usage: ./install.sh --core --docs [TARGET_DIR]"
+  echo "Usage: ./install.sh --base --workflow [TARGET_DIR]"
   exit 0
 fi
 
@@ -284,12 +284,12 @@ if [[ ${#EXCLUDED_BUNDLES[@]} -gt 0 ]]; then
   SELECTED_BUNDLES=("${FILTERED[@]}")
 fi
 
-if printf '%s\n' "${SELECTED_BUNDLES[@]}" | grep -qx "collab"; then
-  INSTALL_HAS_COLLAB=true
+if printf '%s\n' "${SELECTED_BUNDLES[@]}" | grep -qx "workflow"; then
+  INSTALL_HAS_WORKFLOW=true
 fi
 
-if printf '%s\n' "${SELECTED_BUNDLES[@]}" | grep -qx "core"; then
-  INSTALL_HAS_CORE=true
+if printf '%s\n' "${SELECTED_BUNDLES[@]}" | grep -qx "base"; then
+  INSTALL_HAS_BASE=true
 fi
 
 # ── Resolve target directory (REQUIRED) ─────────────────────────────────────
@@ -301,7 +301,7 @@ if [ -z "$TARGET_DIR" ]; then
   echo "" >&2
   echo "  Usage:" >&2
   echo "    ./install.sh /path/to/project                  # install all bundles" >&2
-  echo "    ./install.sh --core --collab /path/to/project   # specific bundles" >&2
+  echo "    ./install.sh --base --workflow /path/to/project   # specific bundles" >&2
   exit 1
 fi
 
@@ -315,14 +315,13 @@ declare -a INSTALL_LIST=()
 get_bundle_items() {
   local bundle_name="$1"
   case "$bundle_name" in
-    core)          printf '%s\n' "${BUNDLE_CORE[@]}" ;;
-    docs)          printf '%s\n' "${BUNDLE_DOCS[@]}" ;;
-    data-pipeline) printf '%s\n' "${BUNDLE_DATA_PIPELINE[@]}" ;;
-    career)        printf '%s\n' "${BUNDLE_CAREER[@]}" ;;
-    dl)            printf '%s\n' "${BUNDLE_DL[@]}" ;;
-    collab)        printf '%s\n' "${BUNDLE_COLLAB[@]}" ;;
-    presentation)  printf '%s\n' "${BUNDLE_PRESENTATION[@]}" ;;
-    worknote)        printf '%s\n' "${BUNDLE_WORKNOTE[@]}" ;;
+    base)            printf '%s\n' "${BUNDLE_BASE[@]}" ;;
+    workflow)        printf '%s\n' "${BUNDLE_WORKFLOW[@]}" ;;
+    docs)            printf '%s\n' "${BUNDLE_DOCS[@]}" ;;
+    data-pipeline)   printf '%s\n' "${BUNDLE_DATA_PIPELINE[@]}" ;;
+    career)          printf '%s\n' "${BUNDLE_CAREER[@]}" ;;
+    dl)              printf '%s\n' "${BUNDLE_DL[@]}" ;;
+    presentation)    printf '%s\n' "${BUNDLE_PRESENTATION[@]}" ;;
     ppt-generation)  printf '%s\n' "${BUNDLE_PPT_GENERATION[@]}" ;;
     google-style)    printf '%s\n' "${BUNDLE_GOOGLE_STYLE[@]}" ;;
   esac
@@ -876,7 +875,6 @@ if $UNINSTALL; then
   echo "Bundles: ${SELECTED_BUNDLES[*]}"
   echo "────────────────────────────────────────────────────────"
 
-  HAS_COLLAB=false
   for entry in "${INSTALL_LIST[@]}"; do
     type="${entry%%:*}"
     path="${entry#*:}"
@@ -908,20 +906,21 @@ if $UNINSTALL; then
     esac
   done
 
-  if printf '%s\n' "${SELECTED_BUNDLES[@]}" | grep -qx "collab"; then
-    HAS_COLLAB=true
+  HAS_WORKFLOW=false
+  if printf '%s\n' "${SELECTED_BUNDLES[@]}" | grep -qx "workflow"; then
+    HAS_WORKFLOW=true
   fi
 
-  # Remove work/ dir and cursor MCP if collab bundle is being uninstalled
-  if $HAS_COLLAB; then
+  # Remove work/ dir and cursor MCP if workflow bundle is being uninstalled
+  if $HAS_WORKFLOW; then
     remove_work_dir
     remove_file "$PROJECT_ROOT/.cursor/mcp.json"
   fi
 
-  # Remove worktree guard marker if core or collab uninstalled
-  HAS_CORE=false
-  if printf '%s\n' "${SELECTED_BUNDLES[@]}" | grep -qx "core"; then HAS_CORE=true; fi
-  if $HAS_CORE || $HAS_COLLAB; then
+  # Remove worktree guard marker if base or workflow uninstalled
+  HAS_BASE=false
+  if printf '%s\n' "${SELECTED_BUNDLES[@]}" | grep -qx "base"; then HAS_BASE=true; fi
+  if $HAS_BASE || $HAS_WORKFLOW; then
     remove_file "$PROJECT_ROOT/.claude-worktree-enabled"
   fi
 
@@ -1045,14 +1044,14 @@ for entry in "${INSTALL_LIST[@]}"; do
   esac
 done
 
-if $INSTALL_HAS_COLLAB; then
+if $INSTALL_HAS_WORKFLOW; then
   ensure_collab_scaffold
   ensure_cursor_mcp
   ensure_branch_protection
 fi
 
 # ── Enable worktree guard for projects that install core or collab ─────────
-if $INSTALL_HAS_CORE || $INSTALL_HAS_COLLAB; then
+if $INSTALL_HAS_BASE || $INSTALL_HAS_WORKFLOW; then
   _marker="$PROJECT_ROOT/.claude-worktree-enabled"
   if [[ ! -f "$_marker" ]]; then
     touch "$_marker"
@@ -1100,7 +1099,7 @@ ensure_pre_commit() {
   fi
 }
 
-if $INSTALL_HAS_CORE; then
+if $INSTALL_HAS_BASE; then
   ensure_pre_commit
 fi
 

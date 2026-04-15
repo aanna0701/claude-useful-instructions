@@ -2,92 +2,85 @@
 
 Portable Claude Code configuration. One `./install.sh` to apply everywhere.
 
+## Layered Structure
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  domain-*     docs · dl · career · google-style · presen-    │
+│               tation · ppt-generation · data-pipeline        │
+├──────────────────────────────────────────────────────────────┤
+│  workflow     Claude-Codex collaboration                     │
+│               (work items, AGENTS.md/CLAUDE.md, codex-run,   │
+│                CI workflows, review/merge policy)            │
+├──────────────────────────────────────────────────────────────┤
+│  base         git hooks + commit/push helpers                │
+│               + token/debug utilities + pre-commit template  │
+└──────────────────────────────────────────────────────────────┘
+```
+
+Every bundle installs into a target project's `.claude/` (and optionally `.cursor/`, `.agent/`, project root). A global shared config lives under `~/.claude/`.
+
 ## Quick Start
 
 ```bash
 git clone https://github.com/aanna0701/claude-useful-instructions.git
 cd claude-useful-instructions
 
-# Global — coding standards, doc tools (shared across all projects)
-./install.sh --core --docs
+# Typical: base + workflow per project
+./install.sh --base --workflow /path/to/my-project
 
-# Per-project — collaboration workflow (project-specific)
-./install.sh --collab /path/to/my-project
+# Add a domain when needed
+./install.sh --base --workflow --dl /path/to/ml-project
+
+# Install everything
+./install.sh /path/to/project
 ```
 
-### Aliases (optional)
-
-Replace `<CUI_DIR>` with your clone path (e.g., `~/claude-useful-instructions`).
+### Alias (optional)
 
 ```bash
-# bash (~/.bashrc)
-CUI_DIR=~/claude-useful-instructions  # ← adjust to your clone path
-cat >> ~/.bashrc << EOF
-alias cui-install='$CUI_DIR/install.sh'
-
-EOF
+CUI_DIR=~/claude-useful-instructions
+echo "alias cui-install='$CUI_DIR/install.sh'" >> ~/.bashrc
 source ~/.bashrc
 
-# zsh (~/.zshrc)
-CUI_DIR=~/claude-useful-instructions  # ← adjust to your clone path
-cat >> ~/.zshrc << EOF
-alias cui-install='$CUI_DIR/install.sh'
-EOF
-source ~/.zshrc
+cui-install --list
+cui-install --base --workflow /path/to/project
 ```
 
-**Setup example:**
+## Bundle Matrix
+
+| Layer    | Bundle            | Contents                                                                                     |
+|----------|-------------------|----------------------------------------------------------------------------------------------|
+| base     | `base`            | `git-auto-pull`, `branch-naming`, `guard-branch`, `guard-merge`, `auto-pr-commit`, `auto-pr`, `worktree-cleanup` hooks; `smart-git-commit-push`, `optimize-tokens`, `debug-guide`, `what-to-do` commands & agents; token analyzers; `pre-commit` template |
+| workflow | `workflow`        | Claude-Codex-Cursor work items (`/work-plan`, `/work-impl`, `/work-refactor`, `/work-review`, `/work-status`), `collab-workflow` skill, `pr-reviewer` / `ci-audit-agent`, CI (`pr-checks.yml`, `branch-auto-sync.yml`, `safe-branch-cleanup.yml`), `codex-run.sh`, `AGENTS.md`, `CLAUDE.md` |
+| domain   | `docs`            | `diataxis-doc-system`, `diagram-architect` skills + doc/diagram agents + `/write-doc`, `/init-docs`, `/sync-docs`, `/polish-doc` |
+| domain   | `data-pipeline`   | `data-pipeline-architect` skill                                                              |
+| domain   | `career`          | `career-docs` skill + writer/reviewer/reviser agents                                         |
+| domain   | `dl`              | `pytorch-dl-standards` rules + DL agents (`capture`, `data`, `model`, `train`, `eval`, `infra`) |
+| domain   | `presentation`    | `html-presentation` skill + slide commands + PDF export                                      |
+| domain   | `ppt-generation`  | PPT template-based generation (`/generate-ppt`, density/format agents)                       |
+| domain   | `google-style`    | Google C++/Python Style Guide rules + skill + `/refactor-google-style` + agents + `.clang-format` |
+
+## Install Options
 
 ```bash
-# 1. Global — coding standards, doc tools
-cui-install --core --docs
+./install.sh --list                                     # show bundles
+./install.sh --all /path/to/project                     # install everything
+./install.sh --base --workflow /path/to/project         # typical
+./install.sh --exclude dl /path/to/project              # all except dl
+./install.sh --interactive /path/to/project             # menu
 
-# 2. Per-project — collab workflow
-cui-install --collab /path/to/my-project
+./install.sh --uninstall /path/to/project               # remove all
+./install.sh --uninstall --workflow /path/to/project    # remove workflow only
 ```
+
+Breaking change: the old `--core` and `--collab` flags are **removed**. Use `--base` and `--workflow`.
 
 ---
 
-## Bundles
+## base layer — git workflow hooks
 
-| Bundle | Contents | Recommended Scope |
-|--------|----------|-------------------|
-| `core` | smart-git-commit-push, optimize-tokens, debug-guide, what-to-do, token analyzers, **hooks** (git-auto-pull, guard-branch, branch-naming, auto-pr-commit, worktree-cleanup, auto-pr), pre-commit templates | Global (`~/.claude/`) |
-| `docs` | diataxis-doc-system, diagram-architect, doc/diagram agents, write-doc, init-docs, sync-docs | Global |
-| `data-pipeline` | data-pipeline-architect skill | Global |
-| `collab` | Claude-Codex-Cursor v2 workflow (plan/impl/refactor/review/status), CI (`pr-checks.yml`), codex-run, AGENTS.md, CLAUDE.md | Per-project |
-| `career` | career-docs skill, career agents | Either |
-| `presentation` | html-presentation skill, create/format/edit/export-pdf commands | Global |
-| `worknote` | Work journal with Notion sync (daily log, review, planning) | Global |
-| `ppt-generation` | PPT template-based generation (fill content into base PPT without changing design) | Global |
-| `dl` | pytorch-dl-standards + dl agents (capture, data, model, train, eval, infra) | Either |
-| `google-style` | Google C++/Python Style Guide rules, `/refactor-google-style` command, refactor agents, Cursor `.mdc` rules, `.clang-format` | Per-project |
-
-> **Global** (`~/.claude/`): language-agnostic tools usable everywhere.
-> **Per-project** (`project/.claude/`): CLAUDE.md, AGENTS.md, work items, MCP are project-specific.
-
-## Collab v2
-
-PR + git are the single source of truth. No md file stores state.
-
-```
-plan (Claude) ──▶ impl | refactor (session AI) ──(push → CI)──▶ review (Claude) ──▶ merge
-                         ▲                                           │
-                         └──────────── CHANGES_REQUESTED ────────────┘
-```
-
-- **5 commands, 0 flags**: `/work-plan`, `/work-impl`, `/work-refactor`, `/work-review`, `/work-status`.
-- **1 file per work item**: `work/items/{ID}-{slug}/contract.md`.
-- **State is derived** from `gh pr list` + `git worktree list`.
-- **CI required**: `pr-checks.yml` (ruff + mypy + pytest) is bundled and installed automatically.
-- **Squash merge only**. MUST-fix = inline review comments, resolved via GraphQL `resolveReviewThread`.
-- **Two verification layers**: pre-commit (local, fast) + CI (remote, full) — intentional overlap.
-
-Migrating from v1? See [docs/MIGRATION-v2.md](docs/MIGRATION-v2.md). Rollback tag: `v1-final`.
-
-## Git Workflow (Hook-Enforced)
-
-The `core` bundle installs hooks that enforce a strict worktree-based git workflow:
+The `base` bundle installs the strict worktree-based git workflow:
 
 ```
 Code edit on main repo
@@ -95,280 +88,139 @@ Code edit on main repo
   → creates worktree (feature-*) + GitHub Issue
   → redirects edit to worktree
 
-First git commit in worktree
-  → auto-pr-commit pushes branch
-  → creates draft PR (Closes #issue)
+First commit in worktree
+  → auto-pr-commit pushes branch + creates draft PR (Closes #issue)
 
-PR merged
-  → worktree-cleanup deletes:
-    - worktree directory
-    - local branch
-    - remote branch
+PR merged (local or remote)
+  → post_merge_pull fast-forwards the main worktree
+  → worktree-cleanup deletes merged worktree + local + remote branch
 ```
 
-### Branch Naming Convention
+### Branch convention
 
-All branches must follow `feature-*` pattern:
+| Type     | Pattern                        | Example                       |
+|----------|--------------------------------|-------------------------------|
+| feat     | `feature-{slug}`               | `feature-user-auth`           |
+| fix      | `feature-fix-{slug}`           | `feature-fix-login-crash`     |
+| refactor | `feature-refac-{slug}`         | `feature-refac-db-schema`     |
+| docs     | `feature-docs-{slug}`          | `feature-docs-api-guide`      |
+| perf     | `feature-perf-{slug}`          | `feature-perf-query-cache`    |
+| adhoc    | `feature-adhoc-{MMDD-HHMM}`    | `feature-adhoc-0408-1530`     |
 
-| Type | Branch Pattern | Example |
-|------|---------------|---------|
-| feat | `feature-{slug}` | `feature-user-auth` |
-| fix | `feature-fix-{slug}` | `feature-fix-login-crash` |
-| refactor | `feature-refac-{slug}` | `feature-refac-db-schema` |
-| docs | `feature-docs-{slug}` | `feature-docs-api-guide` |
-| perf | `feature-perf-{slug}` | `feature-perf-query-cache` |
-| adhoc | `feature-adhoc-{MMDD-HHMM}` | `feature-adhoc-0408-1530` |
+### Hooks
 
-### Hooks Summary
+| Hook              | Event                          | What it does                                                 |
+|-------------------|--------------------------------|--------------------------------------------------------------|
+| `branch-naming`   | PreToolUse (Bash)              | Blocks non-`feature-*` branch names                          |
+| `guard-branch`    | PreToolUse (Edit/Write)        | Redirects code edits to worktree + creates Issue             |
+| `guard-merge`     | PreToolUse (Bash/MCP merge)    | Blocks automated merges into protected branches              |
+| `auto-pr-commit`  | PostToolUse (Bash)             | Draft PR on first `git commit`                               |
+| `worktree-cleanup`| PostToolUse (Bash) + Stop      | Deletes merged worktrees + remote branches                   |
+| `auto-pr`         | Stop                           | Fallback PR creation if `auto-pr-commit` missed              |
+| `git-auto-pull`   | PreToolUse (Edit/Write) + PostToolUse (Bash/MCP merge) | Session-start pull + post-merge fast-forward        |
 
-| Hook | Event | What It Does |
-|------|-------|-------------|
-| `branch-naming` | PreToolUse (Bash) | Blocks non-`feature-*` branch names |
-| `guard-branch` | PreToolUse (Edit/Write) | Redirects code edits to worktree + creates Issue |
-| `auto-pr-commit` | PostToolUse (Bash) | Draft PR on first `git commit` |
-| `worktree-cleanup` | PostToolUse (Bash) + Stop | Deletes merged worktrees + remote branches |
-| `auto-pr` | Stop | Fallback PR creation if hook missed |
-| `git-auto-pull` | PreToolUse (Edit/Write) | Auto `git pull` once per session |
+### Pre-commit template
 
-### Pre-commit (Code Quality)
+| Language | Format      | Lint | Type          |
+|----------|-------------|------|---------------|
+| Python   | ruff-format | ruff | pyright, mypy |
+| C++      | clang-format| —    | —             |
 
-The `core` bundle installs `.pre-commit-config.yaml` with:
+---
 
-| Language | Formatting | Lint | Type Check |
-|----------|-----------|------|-----------|
-| Python | ruff-format | ruff | pyright, mypy |
-| C++ | clang-format | — | — |
+## workflow layer — Claude-Codex collaboration
 
-### Prerequisites
+PR + git are the single source of truth. No markdown file stores state.
 
-#### Notion MCP (optional — for `worknote` bundle)
+```
+/work-plan (Claude) ──▶ /work-impl | /work-refactor (session AI) ──(push → CI)──▶ /work-review (Claude) ──▶ merge
+                                     ▲                                                     │
+                                     └──────────── CHANGES_REQUESTED ─────────────────────┘
+```
 
-The `worknote` skill uses Notion as a work journal backend via MCP.
+- **5 commands, 0 flags**: `/work-plan`, `/work-impl`, `/work-refactor`, `/work-review`, `/work-status`
+- **1 file per work item**: `work/items/{ID}-{slug}/contract.md` (immutable after plan)
+- **State is derived** from `gh pr list` + `git worktree list`
+- **CI required**: `pr-checks.yml` (ruff + mypy + pytest) bundled and installed automatically
+- **Squash merge only**. MUST-fix = inline review comments, resolved via GraphQL `resolveReviewThread`
+- **Two verification layers**: pre-commit (local, fast) + CI (remote, full) — intentional overlap
 
-1. Create a Notion Integration at https://www.notion.so/profile/integrations
-   - Name: `claude-journal` (or any name)
-   - Capabilities: **Read**, **Update**, **Insert** content
-   - Copy the **Internal Integration Secret** (`ntn_...`)
+### `/work-impl` execution model
 
-2. Add MCP server (global scope — available in all projects):
-   ```bash
-   claude mcp add --scope user notion \
-     -e NOTION_TOKEN=ntn_YOUR_TOKEN \
-     -- npx @notionhq/notion-mcp-server
-   ```
+1. **Codex first** via `codex-run.sh` — runs `codex exec` unattended, only edits files.
+2. **Claude orchestrates git** — inspects the worktree after codex returns, commits + pushes with a meaningful message, handles PR state.
+3. **Fallback** — if codex stalled or CI fails, Claude finishes the work in-session from the same worktree.
 
-3. Set up Notion workspace:
-   - Create a page (e.g., "업무일지") to hold the journal database
-   - Open that page → **⋯ → Connections → Add your integration**
-   - The `worknote` skill will create a "Daily Worknote" inline DB inside this page
-   - Update the DB ID in `skills/worknote/references/notion-schema.md`
+Single-responsibility: codex generates, Claude manages git/PR. Eliminates the stale-edit-without-commit failure mode.
 
-4. Verify:
-   ```bash
-   claude mcp list
-   # notion: npx @notionhq/notion-mcp-server - ✓ Connected
-   ```
+Migrating from v1? See [docs/MIGRATION-v2.md](docs/MIGRATION-v2.md). Rollback tag: `v1-final`.
 
-> **Note**: This is separate from any Notion SDK usage in your application code.
-> MCP is for Claude Code to interact with Notion during conversations.
-
-#### GitHub CLI (`gh`)
-
-The `collab` bundle requires **GitHub CLI (`gh`)** for full functionality:
-
-| Feature | Requires `gh` |
-|---------|:---:|
-| Every `/work-*` command | **Yes** |
-| `codex-run.sh` (prompt assembly + PR summary) | **Yes** |
-| `install.sh` (branch protection + squash-only repo settings) | **Yes** |
-
-v2 has no fallback for `gh` failures — they raise errors.
+### GitHub CLI (required)
 
 ```bash
-# Install gh CLI
-# Ubuntu/Debian
-sudo apt install gh
-
-# macOS
-brew install gh
-
-# Conda
-conda install gh --channel conda-forge
-
-# Then authenticate
+# Ubuntu/Debian: sudo apt install gh
+# macOS:        brew install gh
+# Conda:        conda install gh --channel conda-forge
 gh auth login
 ```
 
-### Install Options
-
-```bash
-./install.sh                                        # All bundles → ~/.claude/
-./install.sh /path/to/project                       # All bundles → project
-./install.sh --list                                 # Show available bundles
-./install.sh --core --docs                          # Specific bundles only
-./install.sh --exclude career --exclude dl           # All except specific bundles
-./install.sh --interactive                          # Interactive menu
-
-# Uninstall
-./install.sh --uninstall /path/to/project           # Remove all installed files
-./install.sh --uninstall --collab /path/to/project   # Remove collab bundle only
-```
+The workflow layer has **no fallback** for `gh` failures — they raise errors.
 
 ---
 
-## Skills
+## domain layer — task-specific bundles
 
-Auto-triggered by Claude Code based on conversation context.
+| Bundle           | Trigger examples (skills auto-fire)                                  |
+|------------------|---------------------------------------------------------------------|
+| `docs`           | "Write docs", "Design doc", "API docs", "Draw diagram", "ERD"       |
+| `data-pipeline`  | "Design data pipeline", "ETL architecture"                          |
+| `career`         | "자소서 써줘", "Cover letter", "경력기술서"                          |
+| `dl`             | PyTorch DL standards; manual invocation of DL agents                |
+| `presentation`   | "PPT format", "Slide conversion", "format-presentation"             |
+| `ppt-generation` | "템플릿에 내용 넣어줘", "fill template", ".potx"                    |
+| `google-style`   | `/refactor-google-style` command                                     |
 
-| Skill | Trigger Examples |
-|-------|-----------------|
-| `diataxis-doc-system` | "Write docs", "Design doc", "API docs" |
-| `diagram-architect` | "Draw diagram", "System structure", "ERD" |
-| `data-pipeline-architect` | "Design data pipeline", "ETL architecture" |
-| `html-presentation` | "PPT format", "Slide conversion", "format-presentation" |
-| `career-docs` | "자소서 써줘", "Cover letter", "경력기술서" |
-| `collab-workflow` | "Work item", "Codex", "Hand off", "Delegate", "scaffold", "verify", "audit" |
-| `ppt-generation` | "템플릿에 내용 넣어줘", "베이스 PPT에 채워줘", "fill template", ".potx" |
-| `worknote` | "업무일지", "업무 기록", "오늘 뭐했", "work note" |
-
-> Full reference: [docs/skills.md](docs/skills.md)
-
-## Agents
-
-Subagents delegated by Claude for specific tasks.
-
-| Group | Agents | Count |
-|-------|--------|-------|
-| Documentation | `doc-writer-guide`, `-explain`, `-reference` | 3 |
-| Delivery | `doc-writer-task`, `-contract`, `-checklist`, `-review` | 4 |
-| Doc Quality | `doc-polisher`, `doc-reviewer`, `doc-reviewer-execution` | 3 |
-| Diagram | `diagram-writer` | 1 |
-| Debug / Planning | `debug-guide`, `what-to-do` | 2 |
-| Work Journal | `worknote-sync`, `-review`, `-plan` | 3 |
-| Token Analysis | `token-duplication-detector`, `-load-measurer`, `-mcp-analyzer`, `-split-detector` | 4 |
-| Career Docs | `career-docs-writer`, `-reviewer`, `-reviser` | 3 |
-| Collab Workflow | `pr-reviewer` | 1 |
-| CI Audit | `ci-audit-agent` | 1 |
-| PPT Generation | `ppt-density-checker`, `ppt-format-reviewer` | 2 |
-| DL Pipeline | `dl-capture`, `-data`, `-model`, `-train`, `-eval`, `-infra` | 6 |
-
-> Full reference: [docs/agents.md](docs/agents.md)
-
-## Commands
-
-| Command | Description |
-|---------|-------------|
-| `/work-plan` | Create a work item (contract + branch + worktree + draft PR) |
-| `/work-impl` | Implement FEAT/FIX/PERF/CHORE/TEST in the worktree per contract |
-| `/work-refactor` | Refactor (REFAC) with Preserve constraints |
-| `/work-review` | Submit `gh pr review` with inline MUST-fix comments |
-| `/work-status` | View derived state from `gh pr list` + `git worktree list` |
-| `/gha-branch-sync` | Audit GitHub Actions against branch map |
-| `/write-doc` | Diataxis-based document writing |
-| `/polish-doc` | Apply writing-style and structural fixes to existing docs |
-| `/init-docs` | Scaffold docs site structure (numbering + MkDocs) |
-| `/sync-docs` | Sync docs to current codebase state |
-| `/debug-guide` | Analyze recent commits and generate a verification/debug checklist |
-| `/what-to-do` | Review recent commits and generate an action plan (verify, debug, implement) |
-| `/smart-git-commit-push` | Auto-split commits by feature and push |
-| `/create-presentation` | Generate HTML slide deck from content |
-| `/format-presentation` | Convert HTML to standard 16:9 dark-theme format |
-| `/edit-presentation` | Modify content in formatted presentations |
-| `/export-pdf` | Convert HTML slides to PDF (1920×1080) |
-| `/generate-ppt` | Fill a base PPT template with source material content |
-| `/optimize-tokens` | Analyze and reduce token waste in instructions |
-
-> Full reference: [docs/commands.md](docs/commands.md)
-
-## Rules
-
-Shared code standards installed to `.claude/rules/`.
-
-| File | Bundle | Content |
-|------|--------|---------|
-| `collab-workflow.md` | collab | v2 SSOT: 4-stage pipeline, PR-derived state, GitHub conventions |
-| `review-merge-policy.md` | collab | Merge gating: squash-only, CI required, MUST-fix inline threads |
-| `pytorch-dl-standards.md` | dl | PyTorch DL standards: config/DTO, frozen patterns, kornia, tech stack |
-
-> Subagents do NOT auto-read rules. Agent definitions must include explicit Read instructions.
+Install only the domains you need. Domain bundles are independent of each other.
 
 ---
 
-## Project Structure
+## Reference
+
+| Group               | Catalog                                                                                 |
+|---------------------|-----------------------------------------------------------------------------------------|
+| Skills              | [docs/skills.md](docs/skills.md)                                                        |
+| Agents              | [docs/agents.md](docs/agents.md)                                                        |
+| Commands            | [docs/commands.md](docs/commands.md)                                                    |
+| Workflow architecture | [docs/collab-workflow.md](docs/collab-workflow.md)                                    |
+| v1 → v2 migration   | [docs/MIGRATION-v2.md](docs/MIGRATION-v2.md)                                            |
+
+## Project structure
 
 ```
 claude-useful-instructions/
-├── skills/                          # Auto-triggered by conversation context
-│   ├── diataxis-doc-system/         # Diataxis documentation system
-│   ├── diagram-architect/           # C4 Mermaid architecture diagrams
-│   ├── data-pipeline-architect/     # Data pipeline design + subagent generation
-│   ├── collab-workflow/             # Claude-Codex collaboration workflow
-│   ├── html-presentation/           # 16:9 dark-theme slide deck formatter + PDF export
-│   ├── career-docs/                 # Cover letter & career documents (Korean)
-│   ├── ppt-generation/              # PPT template-based content injection
-│   └── worknote/                    # Work journal with Notion sync
-├── agents/                          # Subagents delegated by Claude
-│   ├── doc-writer-*.md              # Diataxis doc writers (4 types + delivery agents)
-│   ├── diagram-writer.md            # Mermaid diagram generation
-│   ├── debug-guide.md               # Commit analysis → verification checklist
-│   ├── what-to-do.md                # Recent work summary → action plan
-│   ├── doc-polisher.md              # Doc writing-style polish
-│   ├── doc-reviewer.md              # Diataxis doc quality review
-│   ├── doc-reviewer-execution.md    # Execution artifact review
-│   ├── token-*.md                   # Token optimization analysis (4 agents)
-│   ├── worknote-*.md                # Work journal agents (sync, review, plan)
-│   ├── ppt-density-checker.md       # Slide density QA
-│   ├── ppt-format-reviewer.md       # Template format compliance review
-│   ├── pr-reviewer.md               # PR review against work item contract
-│   ├── ci-audit-agent.md            # GitHub Actions topology audit
-│   ├── career-docs-*.md             # Career document writer & reviewer
-│   └── dl-*.md                      # DL pipeline agents (6 domains)
-├── commands/                        # User-invocable slash commands
-├── rules/                           # Shared code standards
-├── docs/                            # Detailed reference guides
-│   ├── collab-workflow.md           # Claude-Codex architecture & walkthrough
-│   ├── skills.md                    # Full skill documentation
-│   ├── agents.md                    # Full agent documentation
-│   └── commands.md                  # Full command documentation
-├── scripts/                         # Standalone utility scripts
-│   ├── html_to_pdf.py               # Playwright-based HTML→PDF slide converter
-│   └── patch-hook-settings.py       # Hook settings patcher for installer
-├── lib/                             # Shared helpers
-│   └── merge-lock.sh                # flock-based serialized merge
-├── templates/                       # Installable templates
-│   ├── pre-commit/                  # .pre-commit-config.yaml, .clang-format
-│   ├── work-item/contract.md        # v2 contract template (single per-item file)
-│   ├── collab-pipeline-body.md      # /collab-workflow orchestration summary
-│   ├── workflows/                   # GitHub Actions: branch-auto-sync, safe-branch-cleanup, pr-checks
-│   ├── codex/AGENTS.md
-│   └── claude/CLAUDE.md
-├── hooks/                           # Claude Code hooks
-│   ├── lib/                         # Shared utilities (gh_utils, worktree_state)
-│   ├── git-auto-pull/               # Pre-edit auto-pull hook
-│   ├── branch-naming/               # Enforce feature-* branch naming
-│   ├── guard-branch/                # Redirect code edits to worktree + auto-create Issue
-│   ├── auto-pr-commit/              # Draft PR on first commit
-│   ├── worktree-cleanup/            # Delete merged worktrees + remote branches
-│   ├── auto-pr/                     # Fallback PR creation on session end
-│   └── worknote-stop/               # Session-end work journal capture
-├── install.sh                       # Bundle-based installer (+ --uninstall)
-└── codex-run.sh                     # Codex runner (single + parallel + boundary check)
+├── skills/           # Auto-triggered skills (diataxis, diagram, data-pipeline, collab-workflow,
+│                     #   html-presentation, career-docs, ppt-generation, google-style-refactor)
+├── agents/           # Subagents (doc writers, diagram writer, debug-guide, token analyzers,
+│                     #   pr-reviewer, ci-audit-agent, dl-*, career-docs-*, ppt-*, google-style-*)
+├── commands/         # Slash commands (/work-*, /write-doc, /init-docs, /sync-docs,
+│                     #   /smart-git-commit-push, /optimize-tokens, /debug-guide, /what-to-do,
+│                     #   /create-presentation, /format-presentation, /export-pdf, /generate-ppt,
+│                     #   /refactor-google-style)
+├── rules/            # Code standards (collab-workflow.md, review-merge-policy.md,
+│                     #   pytorch-dl-standards.md, google-style-*.md)
+├── hooks/            # Claude Code hooks — base layer (git-auto-pull, branch-naming,
+│                     #   guard-branch, guard-merge, auto-pr-commit, auto-pr, worktree-cleanup)
+├── templates/        # Installable templates (pre-commit, work-item, workflows, codex/claude/)
+├── scripts/          # Utility scripts (html_to_pdf.py, patch-hook-settings.py)
+├── lib/              # Shared helpers (merge-lock.sh)
+├── docs/             # Reference guides
+├── install.sh        # Bundle-based installer (+ --uninstall)
+└── codex-run.sh      # Unattended Codex runner (edits only; Claude owns git/PR)
 ```
 
----
+## Adding new configuration
 
-## Detailed Guides
-
-| Guide | Description |
-|-------|-------------|
-| [Collab Workflow](docs/collab-workflow.md) | Claude-Codex architecture, setup, and walkthrough |
-| [Migration v1 → v2](docs/MIGRATION-v2.md) | What changed in v2 and how to upgrade |
-| [Skills Reference](docs/skills.md) | Full skill documentation |
-| [Agents Reference](docs/agents.md) | Full agent documentation |
-| [Commands Reference](docs/commands.md) | Full command documentation |
-
-## Adding New Configuration
-
-1. Add files to `skills/`, `agents/`, `commands/`, or `rules/`
-2. `git commit && git push`
-3. On other machines: `git pull && ./install.sh`
+1. Add files to `skills/`, `agents/`, `commands/`, `rules/`, or `hooks/`.
+2. Register in `install.sh` under the appropriate `BUNDLE_*` array.
+3. `git commit && git push`.
+4. On other machines: `git pull && ./install.sh …`.
