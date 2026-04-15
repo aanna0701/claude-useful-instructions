@@ -164,11 +164,13 @@ PID=""
 (
   codex exec --cd "$WT_PATH" --prompt-file "$PROMPT_FILE" 2>&1 \
     | while IFS= read -r line; do
-        echo "$line"
+        printf '%s\n' "$line"
         date +%s > "$LOG_FILE.heartbeat"
-      done
-) > "$LOG_FILE" &
+      done \
+    | tee "$LOG_FILE"
+) &
 PID=$!
+echo "[codex-run] live log: $LOG_FILE (tailing to stdout)" >&2
 
 START=$(date +%s)
 date +%s > "$LOG_FILE.heartbeat"
