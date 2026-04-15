@@ -1,240 +1,159 @@
-# Claude-Codex Collaboration
+# Claude-Codex-Cursor Collaboration (v2)
+
+State of every work item is derived from GitHub PR + git. No md file stores state.
 
 ## Roles
 
-- **Claude**: spec owner, integrator — designs work items, reviews, merges, handles doc changes
-- **Cursor**: scaffold + verify — scaffolds file structures (Composer), verifies implementation against contract
-- **Codex**: implementer — per contract only, never modifies docs (records in `status.md`)
+- **Session AI** (Claude Code or Cursor): drives `/work-plan`, `/work-impl`, `/work-refactor`, `/work-review`, `/work-status`.
+- **Codex (unattended)**: `bash codex-run.sh {ID}` — same contract as session AI, runs without supervision.
 
-## State Machine
+## Pipeline
 
 ```
-planned → [scaffolded] → implementing → ready-for-review → reviewing → merged
-             ↑ optional                                       ↓
-             (skip OK)                                      revising
-
-planned → auditing → audited   ← AUDIT type only (/work-verify)
+plan (Claude) ──▶ impl | refactor (session AI) ──(push → CI)──▶ review (Claude) ──▶ merge
+                          ▲                                           │
+                          └─────────── CHANGES_REQUESTED ─────────────┘
 ```
 
-Valid transitions:
-- `planned → scaffolded` — `/work-scaffold` (Cursor, optional)
-- `planned → implementing` — `codex-run.sh` (skip scaffold)
-- `scaffolded → implementing` — `codex-run.sh` (after Cursor scaffold)
-- `planned → auditing` — `/work-verify` (AUDIT type only, Cursor)
-- `auditing → audited` — Cursor writes `verify-result.md`
+- `impl` handles FEAT / FIX / PERF / CHORE / TEST.
+- `refactor` handles REFAC.
+- `revise` is not a stage — on `CHANGES_REQUESTED`, re-run the same `/work-impl` or `/work-refactor`.
+- `verify` is not a stage — CI (`pr-checks.yml`) produces the check run.
 
-Illegal shortcuts:
-- `planned → reviewing` (must implement first)
-- `implementing → merged` (must review first)
-- `reviewing → implementing` (only via REVISE → `revising`)
+## Commands
 
-## Ownership
+| Command | Subject |
+|---|---|
+| `/work-plan` | Create item (contract + branch + worktree + draft PR) |
+| `/work-impl {ID}` | Implement (FEAT/FIX/PERF/CHORE/TEST) |
+| `/work-refactor {ID}` | Refactor (REFAC) |
+| `/work-review {ID}` | `gh pr review` with inline MUST-fix comments |
+| `/work-status [ID]` | Read-only view derived from `gh` + `git` |
 
-- The **current project branch** is orchestration-only. Never implement there directly.
-- Feature worktrees are the only implementation workspace.
-- `status.md` in the active worktree is authoritative while work is in progress.
-- Contract = single source of truth for boundaries.
-- No `branch-map.yaml` needed — base branch = `git rev-parse --abbrev-ref HEAD`.
+No flags. Session context decides which AI runs.
 
-## Hook-Enforced Workflow
+## Per-item files (authoritative, worktree-local)
 
-All code modifications go through hooks that enforce the worktree + PR pattern:
+```
+$WT_PATH/work/items/{ID}-{slug}/contract.md
+```
 
-1. **branch-naming** (PreToolUse): Enforces `feature-*` naming on all new branches. `feat` → `feature-{slug}`, others → `feature-{type}-{slug}`.
-2. **guard-branch** (PreToolUse): Blocks code edits on the main repo. Auto-creates a worktree. Worktrees are exempt.
-3. **auto-pr-commit** (PostToolUse): On first `git commit` in a worktree, pushes the branch and creates a draft PR if one doesn't exist yet (base = branch the worktree was created from).
-4. **worktree-cleanup** (PostToolUse + Stop): After `gh pr merge` or on session end, deletes merged worktrees, local branches, and remote branches.
-5. **auto-pr** (Stop): Fallback PR creation if the PostToolUse hook didn't fire.
-6. **pre-commit** (git hook): Runs ruff, pyright, mypy, clang-format before every commit.
+One file per work item. Nothing else.
 
-## Worktree Rules (canonical)
+## State derivation
 
-All commands reference this section for worktree operations.
+Sources (md never consulted):
 
-### Naming Convention (absolute paths)
+```bash
+gh pr list --state all --limit 100 --search "head:feature-" \
+  --json number,headRefName,isDraft,state,reviewDecision,statusCheckRollup,title,url,commits
+git worktree list --porcelain
+```
+
+Join on `headRefName ↔ worktree branch`. Derive:
+
+| Observable | Status |
+|---|---|
+| `pr.state = MERGED` | merged |
+| `pr.state = CLOSED` (unmerged) | abandoned |
+| `isDraft && checks = SUCCESS` | ready (promote needed) |
+| `isDraft` | implementing |
+| `!isDraft && reviewDecision = CHANGES_REQUESTED` | revising |
+| `!isDraft && reviewDecision = APPROVED && checks = SUCCESS` | ready-to-merge |
+| `!isDraft` | reviewing |
+
+`gh` or `git` failure → raise error. No fallback.
+
+## Branch convention
+
+- `feature-{TYPE}-{slug}` — `TYPE ∈ {feat, fix, perf, chore, test, refac}`, `slug` kebab-case ≤ 40 chars.
+- Enforced by `hooks/branch-naming`.
+
+## Worktree convention
 
 ```bash
 REPO_ROOT="$(git rev-parse --show-toplevel)"
-PROJECT=$(basename "$REPO_ROOT")
-SLUG="user-auth"                         # kebab-case, max 30 chars
-# feat → feature-{slug}, others → feature-{type}-{slug}
-BRANCH="feature-${SLUG}"                 # e.g. feature-user-auth
-BRANCH="feature-fix-${SLUG}"             # e.g. feature-fix-login-crash
-BRANCH="feature-refac-${SLUG}"           # e.g. feature-refac-db-schema
+PROJECT="$(basename "$REPO_ROOT")"
 WT_PATH="$(dirname "$REPO_ROOT")/${PROJECT}-${BRANCH}"
-# e.g. /home/leo/projects/myapp-FEAT-001-user-auth
 ```
 
-**All worktree paths MUST be absolute in output.** Cursor cannot resolve relative paths.
+All output paths absolute. `/work-plan` creates branch + worktree. `hooks/worktree-cleanup` removes them after merge.
 
-### Creation (only in `/work-plan`)
-
-```bash
-git branch "$BRANCH" "$PARENT"
-git worktree add "$WT_PATH" "$BRANCH"
-```
-
-### Work Item Discovery (all commands)
-
-Given an ID (e.g. `PERF-154`), find `work/items/{ID}-*/` in this order:
-
-1. `work/items/{ID}-*/` in cwd (main repo — items not yet dispatched)
-2. `git worktree list` → for each worktree path, check `{WT_PATH}/work/items/{ID}-*/`
-3. Sibling directory fallback: `${PARENT}/${PROJECT}-{ID}-*/work/items/{ID}-*/`
-
-First match wins. If no match: `ERROR: {ID} not found`.
-
-### Worktree Resolution (all commands)
-
-Once the item directory is found, resolve its worktree:
-
-1. Read `Worktree Path` field from `status.md` (primary — always absolute)
-2. Fallback: convention `$(dirname "$REPO_ROOT")/${PROJECT}-${SLUG}`
-3. Verify: `git worktree list | grep "$SLUG"`
-4. If missing and needed: recreate from branch `git worktree add "$WT_PATH" "$BRANCH"`
-
-### Opening in Cursor
-
-```bash
-cursor "$WT_PATH"
-# e.g. cursor /home/leo/projects/myapp-FEAT-001-user-auth
-```
-
-### File Resolution
-
-Worktree copy is authoritative. Bootstrap: resolve slug → read `Worktree Path` from worktree `status.md` → fallback to convention → ALL subsequent reads use resolved absolute path.
-
-## Relay Protocol
-
-Each stage appends a structured block to `work/items/{SLUG}/relay.md` and posts a summary on the PR. This enables downstream stages to read prior results without re-deriving them.
-
-### relay.md Format
-
-```markdown
-## {stage} @ {YYYY-MM-DD HH:MM}
-result: {success | partial | revise | reject | blocked}
-{stage-specific fields — see below}
-notes: |
-  {free-form summary, 1-3 lines}
-```
-
-Stage-specific fields:
-
-| Stage | Fields |
-|-------|--------|
-| impl | `changed: [files]`, `commits: [hashes]` |
-| verify | `passed: N`, `failed: N`, `failures: [- test: reason]` |
-| review | `decision: {MERGE\|REVISE\|REJECT}`, `must_fix: N`, `optional: N`, `items: [- {SEV}: description (file:line)]` |
-| revise | `fixed: [- description]`, `remaining: N` |
-
-### Read Before Act
-
-Each stage MUST read prior relay results before starting:
-- **verify**: Check impl stage result — skip if `blocked`.
-- **review**: Check verify failures — factor into review severity.
-- **revise**: Read review `items` — these are the MUST-fix list.
-
-**Read sources (priority order):**
-1. `gh api` direct — freshest (Claude Code, codex-run.sh)
-2. `pr-relay.md` in worktree — pre-fetched snapshot (Codex, Cursor)
-3. Local `relay.md` — fallback if PR not yet created
-
-### PR Comment Relay (Cross-AI Hybrid)
-
-PR comments are the **universal relay**. Write via MCP `add_issue_comment` or `gh pr comment`. Read via `gh api` (direct) or pre-fetched `pr-relay.md` (for sandboxed AIs).
-
-**Note:** MCP `get_pull_request_comments` returns **review comments only** (inline code comments), NOT issue comments. Use `gh api` to read relay comments.
-
-| AI | Write | Read |
-|----|-------|------|
-| Claude Code | MCP `add_issue_comment` or `gh pr comment` | `gh api .../issues/{n}/comments` direct |
-| Codex | MCP `add_issue_comment` (if available) or relay.md only → codex-run.sh posts | `pr-relay.md` (pre-fetched by codex-run.sh) |
-| Cursor | MCP `add_issue_comment` (if available) or relay.md only → user triggers post | `pr-relay.md` (pre-fetched during scaffold/verify) |
-
-#### Write (after each stage)
-
-After writing local `relay.md`, post a structured comment on the PR:
-
-```markdown
-<!-- relay:{stage}:{ISO-8601} -->
-### {stage} — {result}
-**agent:** {codex|claude-code|cursor|human}
-**{field1}:** value1
-**{field2}:** value2
-
-> Summary notes as blockquote.
-```
-
-Methods (try in order): MCP `add_issue_comment` → `gh pr comment` → skip (relay.md suffices).
-
-Resolve PR number: parse `status.md` PR field → extract number from URL (e.g., `.../pull/42` → `42`).
+## PR body (machine-readable)
 
 ```
-# PR field: https://github.com/org/repo/pull/234
-add_issue_comment(issue_number=234, body="<!-- relay:verify:... -->")
+<!-- work-item:{ID} -->
+<!-- work-type:{TYPE} -->
+
+## Contract
+See work/items/{ID}-{slug}/contract.md
+
+## Acceptance
+- [ ] ...
 ```
 
-Fallback with gh CLI:
-```bash
-gh pr comment 234 --body "<!-- relay:verify:... -->"
-```
+`hooks/auto-pr-commit` injects this on draft PR creation. Body below is user-editable.
 
-Stage-specific fields:
+## Review
 
-| Stage | Required Fields |
-|-------|----------------|
-| impl | `changed`, `commits` |
-| verify | `passed`, `failed`, `failures` (if any) |
-| review | `decision` (MERGE/REVISE/REJECT), `must_fix`, `items` (if any) |
-| revise | `fixed`, `remaining` |
+- **MUST-fix → inline** (GraphQL `addPullRequestReviewThread` with path + line).
+- **SHOULD / NICE → top-level body** (`gh pr review --body`).
+- Decision via `gh pr review --approve` or `--request-changes`.
+- After fix commits, each resolved thread: GraphQL `resolveReviewThread`.
 
-#### Read (before each stage)
+## Merge
 
-**Claude Code** (direct):
-```bash
-PR_NUMBER=$(grep -oP '^\| PR \| .*/pull/\K\d+' "$WT_PATH/work/items/$SLUG/status.md")
-OWNER_REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
-gh api "repos/${OWNER_REPO}/issues/${PR_NUMBER}/comments" \
-  --jq '[.[] | select(.body | contains("<!-- relay:")) | .body] | last'
-```
+- Squash merge only. Rebase / merge-commit disabled at repo level.
+- `gh pr merge {N} --squash --delete-branch` by the approver.
+- No auto-merge.
 
-**Codex / Cursor** (pre-fetched file):
-Read `$WT_PATH/work/items/{SLUG}/pr-relay.md`. Filter for `<!-- relay:{prev_stage}: -->` marker. Use the last matching block.
+## CI (required)
 
-#### Pre-fetch (for Codex/Cursor)
+`templates/.github/workflows/pr-checks.yml` is bundled and installed by `install.sh`.
 
-Before dispatching to Codex or generating Cursor prompt, codex-run.sh / work-* command runs:
-```bash
-gh api "repos/${OWNER_REPO}/issues/${PR_NUMBER}/comments" \
-  --jq '[.[] | select(.body | contains("<!-- relay:")) | .body] | join("\n\n---\n\n")' \
-  > "$WT_PATH/work/items/$SLUG/pr-relay.md"
-```
+- Python: `ruff check . && mypy . && pytest`
+- Triggers on `pull_request` (opened/synchronize/reopened/ready_for_review) and `push` to main.
+- Produces check run `check` on the PR.
 
-Fallback: skip if `gh` unavailable or no PR yet (relay.md local is sufficient).
+Branch protection (set by `install.sh`):
+- Require PR, approvals ≥ 1
+- Require check `check` passing, branch up-to-date
+- Require conversation resolution
+- No force push, no deletion on main
 
-## Locks
+## Verification layers (intentional overlap)
 
-- `work/locks/planning.lock` — prevents concurrent `/work-plan`
-- `work/locks/{ID}.lock` — prevents concurrent impl and review on same item
-- `work/locks/merge.lock` — one merge-and-cleanup at a time (implemented via `lib/merge-lock.sh`, uses `flock`)
+| Layer | When | Scope | On fail |
+|---|---|---|---|
+| pre-commit | before local commit | staged files | block commit |
+| CI (pr-checks.yml) | after push | whole repo | block merge |
 
-## Review Revision Policy
+## Hooks
 
-- Review fixes stay on the same work item via `/work-revise`.
-- New work item only when refactoring exceeds contract boundary.
-- On REVISE, every MUST-fix from `review.md` must be resolved before optional work.
+| Hook | Role |
+|---|---|
+| `branch-naming` | Enforce `feature-{TYPE}-{slug}` |
+| `guard-branch` | Block edits on main; create worktree |
+| `guard-merge` | Block direct merges into protected branches |
+| `auto-pr-commit` | On first commit in worktree: push + create draft PR with standard body |
+| `auto-pr` | Fallback draft PR creation on Stop |
+| `worktree-cleanup` | Remove worktree + local branch after merge |
+| `git-auto-pull` | Keep base branch current |
+
+## CHANGES_REQUESTED re-entry
+
+1. Run `/work-impl {ID}` or `/work-refactor {ID}` again (same command).
+2. Session AI / codex-run.sh assembles prompt with:
+   - `contract.md`
+   - unresolved review threads (GraphQL `reviewThreads { isResolved path line comments }`)
+   - `git diff origin/{base}...HEAD`
+3. Apply fixes → commit → push.
+4. Resolve each fixed thread via GraphQL `resolveReviewThread`.
+5. `/work-review` re-runs to approve.
 
 ## Principles
 
-- Codex: code + `status.md` only — never docs; records doc needs in "Doc Changes Needed"
-- `working_parent` is not a scratchpad. Keep clean before planning, review, and merge.
-- Ambiguities recorded in `status.md`, never resolved by implementer
-- Draft PR is created at planning stage (`/work-plan`), serving as the single coordination hub
-- Human intervention: dispatch + review only
-- Pipeline: plan(`/work-plan` — creates Draft PR) → scaffold(`/work-scaffold`→Cursor) → impl(`codex-run.sh`) → verify(`/work-verify`→Cursor) → review(`/work-review`). Each stage reads + writes `relay.md` per § Relay Protocol. No separate Issues — PR is the only GitHub artifact.
-- Cursor/Codex fallback: `--claude` flag on scaffold/verify, `/work-impl` for implement
-- AUDIT type items skip impl: `planned → auditing → audited` via `/work-verify`
-- `/work-scaffold` and `/work-verify` auto-detect type from ID prefix
-- `/work-scaffold` generates `.cursor/rules/*.mdc` for contract enforcement
-- `/work-verify` generates Cursor prompt; Cursor writes `verify-result.md` directly
-- All worktree paths in output MUST be absolute (Cursor cannot resolve relative paths)
+- PR + git = single source of truth. md files never store state.
+- Contract is the only human-authored spec per item.
+- Session context chooses the AI; commands take no flags.
+- `gh` / `git` failures raise errors; no degraded modes.

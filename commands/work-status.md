@@ -1,71 +1,67 @@
-# work-status — Check Work Item Progress
+# work-status — View Work Items (PR-derived)
+
+Read-only. State derived from `gh pr list` + `git worktree list`. No md files consulted.
 
 ## Input
 
-**$ARGUMENTS**: Optional work item ID (e.g., `FEAT-001`).
-
-## CRITICAL: Worktree-First Gate
-
-**Before reading ANY `status.md`**, you MUST resolve its worktree path. The main repo copy is a stale seed — it does NOT reflect Codex/agent progress.
-
-❌ WRONG: `Read work/items/FEAT-001-foo/status.md` (cwd — stale, shows `open` even when done)
-✅ RIGHT: Resolve worktree path FIRST → `Read /abs/path/to/worktree/work/items/FEAT-001-foo/status.md`
-
-## Worktree Discovery (critical)
-
-Work items live in worktrees, NOT the main repo. Discovery order:
-
-1. Run `git worktree list` from cwd (or `$REPO_ROOT`)
-2. For each worktree path, glob `{WT_PATH}/work/items/*/status.md`
-3. Also glob `work/items/*/status.md` in the main repo (items not yet dispatched)
-4. Deduplicate by item ID (worktree copy wins over main repo copy)
-
-If cwd is not a git repo, scan `$ARGUMENTS` parent directory or ask user for repo path.
-
-### Worktree search fallback
-
-If `git worktree list` returns only the main repo (no worktrees), also scan sibling directories matching the naming convention:
-
-```bash
-REPO_ROOT="$(git rev-parse --show-toplevel)"
-PROJECT="$(basename "$REPO_ROOT")"
-PARENT="$(dirname "$REPO_ROOT")"
-# Scan: ${PARENT}/${PROJECT}-*/work/items/*/status.md
+```
+/work-status            # all active items
+/work-status {ID}       # single item detail
 ```
 
-This catches worktrees created by other sessions or tools.
+## Steps
 
-## Mode A: All Items (no argument)
+1. **Fetch PRs**:
+   ```bash
+   gh pr list --state all --limit 100 --search "head:feature-" \
+     --json number,headRefName,isDraft,state,reviewDecision,\
+mergedAt,statusCheckRollup,updatedAt,title,url,commits,author
+   ```
+2. **Fetch worktrees**:
+   ```bash
+   git worktree list --porcelain
+   ```
+3. **Join** on `headRefName ↔ worktree branch`.
+4. **Derive status** for each row:
 
-Discover all items per § Worktree Discovery above. For each `status.md`, extract fields. Print table:
+   | Observable | Status |
+   |---|---|
+   | `pr.state = MERGED` | merged |
+   | `pr.state = CLOSED` (unmerged) | abandoned |
+   | `isDraft && checks = SUCCESS` | ready (promote needed) |
+   | `isDraft` | implementing |
+   | `!isDraft && reviewDecision = CHANGES_REQUESTED` | revising |
+   | `!isDraft && reviewDecision = APPROVED && checks = SUCCESS` | ready-to-merge |
+   | `!isDraft` | reviewing |
 
-| ID | Title | Type | Status | Agent | Branch | Worktree | PR | Freshness |
+5. **Flag stale worktrees** — merged PR but worktree still present → print cleanup hint.
 
-Worktree column = absolute path from `status.md` `Worktree Path` field.
+## Mode A: all items
 
-If no items: "No work items found. Use `/work-plan` to create one."
-
-## Mode B: Specific Item
-
-1. Find item by ID: search worktrees first (§ Worktree Discovery), then main repo
-2. Read from worktree copy (authoritative per `rules/collab-workflow.md` § Worktree Rules)
-3. Show detailed view: type, status, agent, branch, PR, progress (checklist), review decision, blockers
-4. Surface `needs-sync` explicitly as preflight failure
-
-## Next Actions
-
-Print per-status commands:
-
-**MANDATORY NEXT-STEP TEMPLATE** — Print only the line matching the item's status. Fill `«___»` slots with actual values.
+Print a table sorted by `updatedAt` desc:
 
 ```
-📋 다음 단계
-  planned          → /work-scaffold «ID» then bash codex-run.sh «ID»
-  ready-for-review → /work-verify «ID» then /work-review «ID»
-  revising         → bash codex-run.sh «ID» then /work-verify «ID» then /work-review «ID»
-  implementing     → tail -f work/.dispatch-logs/«SLUG».log
-  blocked          → git -C «WT_PATH» status --short, then bash codex-run.sh «ID»
+ID        Title                      Type  Status          Branch                        PR    Worktree
+FEAT-042  Add auth middleware        FEAT  ready-to-merge  feature-feat-auth-middleware  #128  /abs/path
+REFAC-007 Split db module            REFAC revising        feature-refac-split-db         #131  /abs/path
 ```
 
-Fallback: scaffold `--claude`, verify `--claude`, impl `/work-impl`.
-`{WT_PATH}` = status.md Worktree Path (절대경로).
+## Mode B: single item
+
+Print:
+- Title, type, status
+- Branch, PR URL, worktree absolute path
+- CI checks breakdown (`gh pr checks {N}`)
+- `reviewDecision`
+- Unresolved review threads count (GraphQL)
+- Last commit SHA + message
+
+## Errors
+
+- `gh` or `git` failure → raise, no fallback.
+- `gh auth status` fail → `ERROR: run 'gh auth login'`.
+
+## Notes
+
+- No filter on merged/closed; the full list is shown. Use `gh pr list` directly for richer queries.
+- ID parsing: extract from PR title prefix (`FEAT-042 ...`) or `headRefName`.

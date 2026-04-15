@@ -1,53 +1,31 @@
----
-title: "FEAT-NNN Contract"
-type: contract
-status: draft
-created: YYYY-MM-DD
-updated: YYYY-MM-DD
----
+# {ID}: {Title}
 
-# FEAT-NNN Contract
+**Type**: FEAT | FIX | PERF | CHORE | TEST | REFAC
 
-## Branch Map
+## Goal
 
-| Field | Value |
-|-------|-------|
-| Role | [docs/backend/frontend/infra/cross-cutting] |
-| Parent Branch | [current branch at planning time] |
-| Merge Target | [same as parent branch unless overridden] |
-| Target Worktree | [worktree name if using worktrees, else —] |
-| CI Scope | [lint, typecheck, test — inferred from affected paths] |
+One to two sentences. What does this item deliver?
 
-## Interfaces
+## Scope
 
-| Interface | Type | Owner | Spec |
-|-----------|------|-------|------|
-| [endpoint/schema/config] | [input/output/config] | [module] | [definition] |
+- **In**: what this item covers.
+- **Out**: what is explicitly excluded.
 
 ## Boundaries
 
-### Allowed Modifications
+- **Touch** (globs the implementer may modify):
+  - `src/path/**`
+- **Forbidden** (must not be touched):
+  - `src/other/**`
+- **Preserve** (REFAC only — invariants that must not change):
+  - Public exports of `src/path/index.ts`
+  - Behavior covered by `tests/path/**`
 
-- [File/module/directory that may be changed]
+## Acceptance
 
-### Forbidden Zones
+- [ ] Criterion 1
+- [ ] Criterion 2
 
-- [File/module that must NOT be changed] — Reason: [...]
+## Risks / Unknowns
 
-## Invariants
-
-Conditions that **must never be violated**:
-
-1. [Invariant 1]
-2. [Invariant 2]
-
-## Test Requirements
-
-- [ ] [Test requirement 1]
-- [ ] [Test requirement 2]
-
-## Error Handling
-
-| Error Case | Expected Behavior |
-|-----------|------------------|
-| [Case] | [Behavior] |
+- Risk or open question.

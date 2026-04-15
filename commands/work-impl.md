@@ -1,37 +1,69 @@
-# work-impl — Implement a Work Item in Its Worktree
+# work-impl — Implement a Work Item
 
-Resolve a work item to its worktree and implement per contract. Claude fallback for when Codex is unavailable.
+For `FEAT / FIX / PERF / CHORE / TEST`. Runs in the current session (Claude or Cursor). For unattended Codex, use `bash codex-run.sh {ID}` instead.
 
 ## Input
 
-**$ARGUMENTS**: Work item ID (`FEAT-001`) or `all`.
-
-## CRITICAL: Worktree-First Gate
-
-**Before reading ANY work item file**, you MUST resolve the worktree path. The cwd copy of `status.md` is a stale seed — it does NOT reflect Codex/agent progress.
-
-❌ WRONG: `Read work/items/FEAT-001-foo/status.md` (cwd — stale, shows `open` even when done)
-✅ RIGHT: Resolve worktree path FIRST → `Read /abs/path/to/worktree/work/items/FEAT-001-foo/status.md`
+```
+/work-impl {ID}        # e.g. /work-impl FEAT-042
+```
 
 ## Steps
 
-1. **Resolve**: Per `rules/collab-workflow.md` § Work Item Discovery (searches cwd, worktrees, sibling dirs). `FEAT-001` → find `work/items/FEAT-001-*/`. `all` → find planned/revising items. **Gate: do NOT proceed to step 2 until worktree path is resolved and validated (`$WT_PATH ≠ repo root`).**
-2. **Switch to worktree**: Per `rules/collab-workflow.md` § Worktree Rules. All operations run in worktree. Never on `working_parent`.
-3. **Sync preflight**: Preferred via `codex-run.sh` (auto-sync + `uv sync --frozen`). Manual: verify `git merge-base --is-ancestor`. Missing deps → `blocked` with `needs-sync`.
-4. **Implement**: Acquire lock per `rules/collab-workflow.md` § Locks. Status → `implementing`. Follow contract strictly: Allowed Modifications only, never Forbidden Zones, satisfy tests, preserve invariants. If `revising`: resolve MUST-fix from review.md first.
-5. **Complete & Push**: Status → `ready-for-review`. In `status.md` update only: Status, Agent, Intended Commit Message, Blockers. Write Changed Files / Verification / Doc Changes to `relay.md` (not status.md). Use `git add -f work/items/${SLUG}/`. Commit with `{type}({ID}): <description>`. The Draft PR already exists (created by `/work-plan`). Push updates the PR diff automatically.
-6. **Relay**: Per `rules/collab-workflow.md` § Relay Protocol — append `impl` block to `relay.md` with changed files, commit hashes, and notes.
-   - **PR Comment Relay** (per § PR Comment Relay):
-     ```
-     # Extract PR number from status.md PR field URL (e.g., .../pull/42 → 42)
-     add_issue_comment(issue_number={PR_NUMBER}, body="<!-- relay:impl:{timestamp} --> ...")
-     # Fallback: gh pr comment {PR_NUMBER} --body "..."
-     ```
+1. **Resolve worktree** by branch convention:
+   ```bash
+   BRANCH=$(git branch --list "feature-*-${slug}" | head -1)   # or look up via PR headRefName
+   WT_PATH=$(git worktree list --porcelain | awk -v b="$BRANCH" '$1=="worktree"{p=$2} $1=="branch" && $2=="refs/heads/"b{print p}')
+   ```
+   If unresolved → `ERROR: worktree for {ID} not found. Run /work-plan or check git worktree list.`
+2. **Read inputs** from worktree:
+   - `$WT_PATH/work/items/{ID}-{slug}/contract.md`
+3. **Check re-entry** — PR `reviewDecision`:
+   ```bash
+   PR=$(gh pr list --head "$BRANCH" --json number,reviewDecision --jq '.[0]')
+   ```
+   If `reviewDecision = CHANGES_REQUESTED`, fetch **unresolved review threads**:
+   ```bash
+   gh api graphql -f query='
+     query($o:String!,$r:String!,$n:Int!){
+       repository(owner:$o,name:$r){
+         pullRequest(number:$n){
+           reviewThreads(first:100){
+             nodes{ id isResolved path line comments(first:5){nodes{body}} }
+     }}}}' -f o=$OWNER -f r=$REPO -F n=$PR_NUMBER \
+     | jq '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved==false)'
+   ```
+   These threads = MUST-fix list.
+4. **Implement** in `$WT_PATH`:
+   - Honor `contract.Boundaries.Touch` / `Forbidden`.
+   - On re-entry, resolve every unresolved thread.
+   - Keep tests green between commits. Small commits.
+5. **Commit + push** (`-s` required for DCO):
+   ```bash
+   cd "$WT_PATH"
+   git add -A
+   git commit -s -m "{type}({ID}): <description>"
+   git push
+   ```
+   Pre-commit runs ruff + mypy + pyright + clang-format. CI (`pr-checks.yml`) runs on push.
+6. **Resolve review threads** — for each fixed thread:
+   ```bash
+   gh api graphql -f query='mutation($id:ID!){resolveReviewThread(input:{threadId:$id}){thread{id}}}' -f id=$THREAD_ID
+   ```
+7. **Promote draft → ready** if acceptance met and checks green (first pass only):
+   ```bash
+   gh pr ready $PR_NUMBER
+   ```
+8. **Summary** — print `gh pr view --json state,reviewDecision,statusCheckRollup` result.
 
-**MANDATORY NEXT-STEP TEMPLATE** — Print the block below as-is. Fill `«___»` slots with actual ID. Do NOT add, remove, or reorder lines.
+## Output
 
-```
-📋 다음 단계
-  /work-verify «ID»                 # Cursor 없으면: --claude
-  /work-review «ID»
-```
+- PR URL
+- CI check status (SUCCESS / FAILURE / PENDING)
+- `reviewDecision`
+
+## Errors
+
+- `gh` or `git` failure → raise, no fallback.
+- Worktree not found → direct to `/work-plan`.
+- Contract touches outside `Touch` globs → stop, report violation.
