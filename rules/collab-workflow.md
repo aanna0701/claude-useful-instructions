@@ -126,7 +126,8 @@ Branch protection (set by `install.sh`):
 | Layer | When | Scope | On fail |
 |---|---|---|---|
 | pre-commit | before local commit | staged files | block commit |
-| CI (pr-checks.yml) | after push | whole repo | block merge |
+| CI on PR | after push to PR branch | changed .py files + related test dirs | block merge |
+| CI on main push | after squash merge | whole repo | surface repo-wide regressions |
 
 ## Hooks
 
