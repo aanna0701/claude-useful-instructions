@@ -196,9 +196,9 @@ Reasoning effort should match the agent's responsibility, and model should match
 | `low` | sonnet (or haiku) | Mechanical data movement, simple sync/format tasks | `worknote-sync` |
 | `medium` | sonnet | Standard code/doc generation, straightforward analysis, routine writing | `dl-*`, `debug-guide`, `what-to-do`, `diagram-writer`, `doc-polisher`, most `doc-writer-*`, `doc-reviewer-execution`, `ppt-*`, `worknote-plan`, `worknote-review` |
 | `medium` | opus | Medium tasks that still benefit from Opus quality (e.g. Korean career documents with strong tone requirements) | `career-docs-writer`, `career-docs-reviser` |
-| `high` | **opus** | Senior judgment calls, quality scoring, cross-system audits, final review gates | `pr-reviewer`, `doc-reviewer`, `ci-audit-agent`, `career-docs-reviewer`, `doc-writer-explain` |
-| `max` | **opus only** | Hardest architectural problems, deepest reasoning — use sparingly | — (none currently) |
+| `high` | sonnet | Senior sonnet judgment calls where opus isn't warranted (none currently) | — |
+| `max` | **opus only** | Deep-judgment tasks: quality scoring, cross-system audits, final review gates, architectural decisions | `pr-reviewer`, `doc-reviewer`, `ci-audit-agent`, `career-docs-reviewer`, `doc-writer-explain` |
 
-**Pipeline guideline**: early stages (scaffold / first-pass generation) use `medium` + sonnet; final review or merge-gating stages use `high` + opus; reserve `max` for the hardest architectural problems.
+**Pipeline guideline**: early stages (scaffold / first-pass generation) use `medium` + sonnet; any deep-judgment / review-gate / audit stage uses `max` + opus. `high` without opus is reserved for the rare case where sonnet is preferred but the task still needs stretched reasoning.
 
 **Pipeline guideline**: early stages (scaffold / first-pass generation) use `medium`; final review or merge-gating stages use `high` (or `max` on Opus for the hardest cases).
