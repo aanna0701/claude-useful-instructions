@@ -162,8 +162,16 @@ def _update_existing_pr(git_dir: Path, branch: str, pr_num: int, state: Worktree
     if not current_title.startswith("[WIP]"):
         return  # Already updated, nothing to do
 
-    # Get base branch for commit log
-    base = state.base_branch() or get_parent_branch(git_dir)
+    # Get base branch for commit log — prefer main repo's current HEAD so
+    # the commit log uses the same base that the PR is actually targeting.
+    base = None
+    main_repo = get_main_repo_from_worktree(git_dir)
+    if main_repo:
+        parent_current = get_current_branch(main_repo)
+        if parent_current and parent_current != "HEAD":
+            base = parent_current
+    if not base:
+        base = state.base_branch() or get_parent_branch(git_dir)
     if not base:
         return
 
@@ -252,26 +260,29 @@ def main() -> None:
         _update_existing_pr(root, branch, pr_num, state)
         return
 
-    # Determine base branch — never fallback to main repo's current branch
-    base = state.base_branch()
-    if not base:
-        # Fallback: read from persistent .claude-worktree-meta in worktree
-        base = get_parent_branch(root)
-    if not base:
-        print("[auto-pr-commit] No base branch in state or meta. "
-              "Create PR manually with: gh pr create --base <branch>", file=sys.stderr)
-        return
-
-    # Validate: stored base must match parent repo's current branch
+    # Determine base branch — the authoritative source is the main repo's
+    # currently checked-out branch (the user's mental model: "PR base = whatever
+    # branch the repo root has checked out right now"). Sticky session state
+    # and .claude-worktree-meta are only fallbacks for edge cases where the
+    # main repo isn't introspectable (e.g. detached HEAD).
+    base = None
     main_repo = get_main_repo_from_worktree(root)
     if main_repo:
         parent_current = get_current_branch(main_repo)
-        if parent_current and parent_current != "HEAD" and parent_current != base:
-            print(f"[auto-pr-commit] BASE MISMATCH: stored base '{base}' "
-                  f"≠ parent current '{parent_current}'. "
-                  f"Skipping auto-PR to prevent wrong-branch merge. "
-                  f"Create PR manually if intended.", file=sys.stderr)
-            return
+        if parent_current and parent_current != "HEAD":
+            base = parent_current
+    if not base:
+        base = state.base_branch() or get_parent_branch(root)
+    if not base:
+        print("[auto-pr-commit] No base branch could be resolved "
+              "(main repo detached HEAD and no stored state). "
+              "Create PR manually with: gh pr create --base <branch>", file=sys.stderr)
+        return
+
+    # Keep session state in sync with the resolved base so later commits and
+    # other hooks see a consistent value.
+    if state.base_branch() != base:
+        state.set_base_branch(base)
 
     # Push branch
     if not push_branch(root, branch):
