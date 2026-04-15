@@ -20,6 +20,20 @@ Create one work item: contract + branch + worktree + draft PR.
 7. **Create branch + worktree + materialize contract**:
    ```bash
    PARENT="$(git rev-parse --abbrev-ref HEAD)"
+   # Guard: refuse to base a work item off the repo default branch. Some repos
+   # keep `main` intentionally empty and integrate on a branch like
+   # `feature-init-dev`; basing a PR on main there ships to the wrong target
+   # and has to be reverted. Override by checking out the integration branch
+   # before running /work-plan.
+   DEFAULT_BRANCH="$(gh repo view --json defaultBranchRef --jq .defaultBranchRef.name 2>/dev/null || echo main)"
+   case "$PARENT" in
+     "$DEFAULT_BRANCH"|HEAD)
+       echo "ERROR: current branch '$PARENT' is the repo default; cannot be a work-item parent."
+       echo "       Checkout the integration branch first, e.g.:"
+       echo "         git checkout feature-init-dev && git pull"
+       exit 1
+       ;;
+   esac
    git branch "$BRANCH" "$PARENT"
    WT_PATH="$(dirname "$REPO_ROOT")/${PROJECT}-${BRANCH}"
    git worktree add "$WT_PATH" "$BRANCH"
