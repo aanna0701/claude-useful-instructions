@@ -295,46 +295,32 @@ User Input (doc type + JD/context + constraints)
 
 ## collab-workflow
 
-Claude-Codex collaboration workflow for structured design-implement-review cycles. Includes optional Cursor/Antigravity integration for multi-file scaffolding, codebase verification, and `/collab-workflow` full pipeline orchestration.
+PR-native collaboration workflow for structured plan → implement → review cycles between Claude and Codex. State is derived from the GitHub PR + git — no per-item status md files.
 
-**Triggers**: "work item", "work plan", "work review", "work status", "codex", "hand off", "delegate", "FEAT-", "REFAC-", "AUDIT-", "scaffold", "verify", "cursor", "antigravity", "audit", "consistency check", "code audit", "multi-agent", "parallel", "dispatch", "worktree", "branch map", "verification result", "findings", "collab-workflow"
+**Triggers**: "work item", "work plan", "work review", "work status", "codex", "hand off", "delegate", "FEAT-", "FIX-", "REFAC-", "multi-agent", "worktree", "branch map", "collab-workflow"
 
 ### Routing
 
 | User Intent | Route To |
 |-------------|----------|
-| **Full pipeline (Cursor/Antigravity)** | **`/collab-workflow {instruction}`** |
 | Plan work items | `/work-plan` |
-| Scaffold file structure (Cursor/Antigravity) | `/work-scaffold` |
-| Codebase audit (AUDIT only) | `/work-verify` [→ `--ingest`] |
-| Check status | `/work-status` |
+| Implement (FEAT / FIX / PERF / CHORE / TEST) | `/work-impl` |
+| Refactor (REFAC) | `/work-refactor` |
 | Review + merge | `/work-review` |
-| Implement in worktree | `/work-impl` |
-| Re-dispatch failed review | `/work-revise` |
-| Code audit / consistency check | `/work-plan --type=audit` then `/work-verify` |
+| Check status | `/work-status` |
 | Set up branch hierarchy | `/branch-init` |
 | Audit CI workflows | `/gha-branch-sync` |
 
-### Scenario Workflows
+### Pipeline
 
-| Type | Flow |
-|------|------|
-| **Full pipeline** | `/collab-workflow` → Claude plan → scaffold → Codex impl → verify → Claude review |
-| **FEAT** | `/work-plan` → `/work-scaffold` → `codex-run.sh` → `/work-review` |
-| **REFACTOR** | `/work-plan` → `/work-scaffold` → `codex-run.sh` → `/work-review` |
-| **AUDIT** | `/work-plan --type=audit` → `/work-verify` [`--ingest`] → (issues or fix) |
+```
+/work-plan → /work-impl | /work-refactor → /work-review → merge
+```
 
-### Cursor/Antigravity Rules
-
-`/work-scaffold` generates `.cursor/rules/*.mdc`:
-- `{SLUG}-guard.mdc` — contract boundaries auto-applied when editing allowed files
-- `{SLUG}-forbidden.mdc` — warning when opening forbidden zone files
-
-These are glob-based rules that Cursor/Antigravity applies automatically without manual prompt copy.
+Revise loop: if `reviewDecision=CHANGES_REQUESTED`, re-run `/work-impl {ID}` (or `/work-refactor`) — it fetches unresolved review threads via GraphQL and treats each as a MUST-fix.
 
 ### Related
 
-- **[Cursor/Antigravity Integration](cursor-integration.md)**: Full integration guide (pipeline, rules, --ingest)
-- **[Collab Workflow](collab-workflow.md)**: Architecture, setup, and walkthrough
-- **`cursor-prompt-builder`** agent: Contract → Cursor/Antigravity prompt + rules assembly
-- **Commands**: `/collab-workflow`, `/work-plan`, `/work-scaffold`, `/work-verify`, `/work-review`, `/work-impl`, `/work-revise`, `/work-status`
+- **[Collab Workflow](collab-workflow.md)**: Architecture, setup, walkthrough
+- **[Migration v1 → v2](MIGRATION-v2.md)**: What changed in v2
+- **Commands**: `/work-plan`, `/work-impl`, `/work-refactor`, `/work-review`, `/work-status`

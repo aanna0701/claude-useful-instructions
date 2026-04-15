@@ -111,18 +111,6 @@ Used by the `collab-workflow` skill and `/work-*` commands.
 | Agent | Role |
 |-------|------|
 | `pr-reviewer` | Review PRs against work item contracts |
-| `work-reviser` | Re-dispatch failed review items with targeted fixes |
-| `cursor-prompt-builder` | Parse contracts, detect type from ID prefix, assemble Cursor/Antigravity prompts + rules |
-
-### cursor-prompt-builder
-
-Invoked by `/work-scaffold` and `/work-verify`. Handles the full pipeline:
-
-1. Detects work item type from ID prefix (FEAT → `scaffold-feat.md`, REFAC → `scaffold-refactor.md`, AUDIT → `verify-audit.md`)
-2. Parses `brief.md` and `contract.md` into structured data
-3. Selects the type-specific template from `.claude/templates/cursor/`
-4. Fills template variables and returns the rendered prompt
-5. For scaffold mode: derives glob patterns from contract paths and generates `.cursor/rules/{SLUG}-guard.mdc` (contract boundary enforcement) and `{SLUG}-forbidden.mdc` (forbidden zone warning)
 
 ---
 
