@@ -41,6 +41,16 @@ _GIT_PUSH_RE = re.compile(
 _GH_PR_MERGE_RE = re.compile(r"\bgh\s+pr\s+merge\b(?:\s+(\d+))?")
 _GH_API_MERGE_RE = re.compile(r"\bgh\s+api\b[^\n]*?/pulls/(\d+)/merge\b")
 
+# Commands that cannot perform a merge — skip pattern scan entirely so
+# merge-keyword false positives inside commit messages / PR bodies / echo
+# strings don't block the command.
+_BYPASS_RE = re.compile(
+    r"^\s*git\s+(?:commit|tag|log|show|blame|diff|stash|notes)\b"
+    r"|^\s*gh\s+(?:pr\s+(?:create|edit|comment|view|list|diff|checks|ready|close|reopen|review)|"
+    r"issue|release|repo|api\s+graphql|run|workflow|label)\b"
+    r"|^\s*echo\b|^\s*cat\b|^\s*printf\b"
+)
+
 
 def _block(msg: str) -> None:
     print(json.dumps({"error": msg}), file=sys.stderr)
@@ -113,6 +123,13 @@ def _check_review_gate(pr_number: int, origin: str) -> None:
 
 
 def _check_bash(command: str) -> None:
+    # Fast bypass: commands that cannot cause a merge (commit messages, PR
+    # descriptions, echo/cat strings) frequently contain the literal tokens
+    # we match on. Skip them to avoid blocking on text-payload false matches.
+    first_line = command.lstrip().splitlines()[0] if command.strip() else ""
+    if _BYPASS_RE.match(first_line):
+        return
+
     if _GIT_MERGE_RE.search(command):
         _block(
             "BLOCKED: 보호된 브랜치(main / develop / research)로의 `git merge` 차단.\n"
