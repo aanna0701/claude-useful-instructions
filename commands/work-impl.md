@@ -20,9 +20,11 @@ For `FEAT / FIX / PERF / CHORE / TEST`.
      CODEX_FAILED=1
    fi
    ```
-   After the Codex pass, re-check PR state:
-   - If PR is green (`statusCheckRollup` all SUCCESS) and acceptance is met → skip to step 7 (promote draft → ready) and 8 (summary).
-   - If Codex stalled, pushed nothing, or left failing checks / unresolved threads → continue from step 1 to finish the work in-session.
+   `codex-run.sh` **only edits files** — it never commits/pushes. After it returns:
+   - Resolve `$WT_PATH` (step 1) and `cd` into it.
+   - If `git status --porcelain` is non-empty → run step 5 (commit + push) with a `{type}({ID}):` message summarizing the codex diff. Then re-check PR state.
+   - If PR is green and acceptance met → skip to step 7/8.
+   - If codex produced nothing, stalled, or CI fails → continue from step 1 to finish in-session.
 
 1. **Resolve worktree** by branch convention:
    ```bash

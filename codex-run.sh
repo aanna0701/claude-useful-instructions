@@ -153,9 +153,9 @@ trap 'rm -f "$PROMPT_FILE"' EXIT
   echo
   echo "## Task"
   echo
-  echo "Implement the contract. Honor Touch/Forbidden/Preserve globs."
-  echo "Small commits. Keep tests green. Sign commits with -s."
-  echo "Do not write status/relay/review md files. Only edit source + contract is immutable."
+  echo "Edit files to implement the contract. Honor Touch/Forbidden/Preserve globs."
+  echo "Do NOT run git add / git commit / git push — the runner commits your changes."
+  echo "Do not write status/relay/review md files. Contract is immutable."
 } > "$PROMPT_FILE"
 
 # Run codex with stall detection
@@ -191,12 +191,18 @@ while kill -0 "$PID" 2>/dev/null; do
 done
 wait "$PID" 2>/dev/null || true
 
-# Push whatever was committed
-git push 2>&1 | tail -5 || true
-
-# Summary
+# Runner never commits/pushes. Claude (/work-impl) inspects the worktree
+# and owns git + PR operations. Just report what codex left behind.
 echo
-echo "=== PR status ==="
+echo "=== worktree status (codex output) ==="
+git status --short
+echo
+echo "=== diff stat vs origin/$PR_BASE ==="
+git diff "origin/$PR_BASE...HEAD" --stat
+git diff --stat  # uncommitted
+
+echo
+echo "=== PR status (pre-commit) ==="
 gh pr view "$PR_NUM" --json number,url,state,isDraft,reviewDecision,statusCheckRollup \
   | jq -r '"PR #\(.number)  \(.url)\n  state=\(.state)  draft=\(.isDraft)  review=\(.reviewDecision // "none")"'
 echo
