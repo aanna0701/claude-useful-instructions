@@ -65,7 +65,32 @@ while IFS= read -r line; do
   esac
 done < <(git worktree list --porcelain)
 
-[ -n "$WT_PATH" ] || die "no worktree contains work/items/${ID}-*. Run /work-plan first."
+if [ -z "$WT_PATH" ]; then
+  # Distinguish: branch+worktree exist but contract missing, vs nothing at all.
+  ORPHAN_WT=""
+  while IFS= read -r line; do
+    case "$line" in
+      "worktree "*) cur_path="${line#worktree }" ;;
+      "branch refs/heads/"*)
+        cur_branch="${line#branch refs/heads/}"
+        if [[ "$cur_branch" =~ ^feature-(feat|fix|perf|chore|test|refac)-(.+)$ ]]; then
+          cand_slug="${BASH_REMATCH[2]}"
+          # Branch name often encodes slug; flag worktree with matching slug but no contract dir.
+          if [ ! -d "$cur_path/work/items/${ID}-${cand_slug}" ] \
+             && [ -d "$cur_path" ]; then
+            ORPHAN_WT="$cur_path (branch $cur_branch)"
+          fi
+        fi
+        ;;
+    esac
+  done < <(git worktree list --porcelain)
+  if [ -n "$ORPHAN_WT" ]; then
+    die "worktree found but contract missing: $ORPHAN_WT
+  Likely cause: /work-plan created worktree but skipped contract copy (work/ gitignored).
+  Fix: cp work/items/${ID}-<slug>/contract.md <worktree>/work/items/${ID}-<slug>/ and re-run, or re-run /work-plan."
+  fi
+  die "no worktree contains work/items/${ID}-*. Run /work-plan first."
+fi
 
 ITEM_DIR="$WT_PATH/work/items/${ID}-${SLUG}"
 CONTRACT="$ITEM_DIR/contract.md"

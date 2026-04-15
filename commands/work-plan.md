@@ -17,19 +17,30 @@ Create one work item: contract + branch + worktree + draft PR.
 4. **Set branch** `feature-{type}-{slug}` (lowercase type, so `REFAC → refac`).
 5. **Acquire lock** `work/locks/planning.lock` via `flock`.
 6. **Write contract** to `work/items/{ID}-{slug}/contract.md` using the schema in `templates/work-item/contract.md`.
-7. **Create branch + worktree**:
+7. **Create branch + worktree + materialize contract**:
    ```bash
    PARENT="$(git rev-parse --abbrev-ref HEAD)"
    git branch "$BRANCH" "$PARENT"
    WT_PATH="$(dirname "$REPO_ROOT")/${PROJECT}-${BRANCH}"
    git worktree add "$WT_PATH" "$BRANCH"
+   # MANDATORY: copy contract into the worktree. codex-run.sh resolves the worktree
+   # by probing `work/items/{ID}-{slug}/` existence, so skipping this breaks
+   # /work-impl. Verify before proceeding.
    mkdir -p "$WT_PATH/work/items/{ID}-{slug}"
    cp "work/items/{ID}-{slug}/contract.md" "$WT_PATH/work/items/{ID}-{slug}/contract.md"
+   test -f "$WT_PATH/work/items/{ID}-{slug}/contract.md" \
+     || { echo "ERROR: contract not materialized in worktree"; exit 1; }
    ```
 8. **First commit + push** in worktree:
    ```bash
    cd "$WT_PATH"
-   git add work/items/{ID}-{slug}/contract.md
+   # -f forces add even if work/ is gitignored; contract.md belongs on the branch
+   # so the PR has context. NEVER fall back to `git commit --allow-empty` — an
+   # empty plan commit means contract.md is absent from the branch and
+   # codex-run.sh / /work-review cannot see it.
+   git add -f work/items/{ID}-{slug}/contract.md
+   git diff --cached --quiet \
+     && { echo "ERROR: nothing staged; contract missing or add -f skipped"; exit 1; }
    git commit -s -m "chore(plan): {ID} contract"
    git push -u origin "$BRANCH"
    ```
