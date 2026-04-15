@@ -3,6 +3,7 @@ name: ppt-density-checker
 description: "PPT 슬라이드의 콘텐츠 밀도를 검사하고 과밀 슬라이드를 탐지합니다. 슬라이드 QA, 밀도 체크, PPT 검수 시 사용."
 tools: Read, Bash
 model: sonnet
+effort: medium
 ---
 
 # PPT Density Checker

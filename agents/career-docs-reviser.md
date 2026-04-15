@@ -3,6 +3,7 @@ name: career-docs-reviser
 description: "Career document Reviser agent — applies Reviewer feedback to Writer output in a single targeted pass, producing the final polished document"
 tools: Read, Write, Edit, Bash
 model: opus
+effort: medium
 ---
 
 # Reviser Agent

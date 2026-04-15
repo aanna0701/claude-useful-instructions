@@ -3,6 +3,7 @@ name: dl-model
 description: "Model architecture — backbone, decoder/head definition (Docker GPU)"
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: sonnet
+effort: medium
 ---
 
 # Model Architecture Specialist

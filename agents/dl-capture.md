@@ -3,6 +3,7 @@ name: dl-capture
 description: "Data acquisition — sensor/camera capture, device communication, raw data collection"
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: sonnet
+effort: medium
 ---
 
 # Data Acquisition Specialist

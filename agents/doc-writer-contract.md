@@ -10,6 +10,7 @@ tools:
   - Bash
   - Glob
   - Grep
+effort: medium
 ---
 
 # Contract Writer Agent

@@ -3,6 +3,7 @@ name: doc-polisher
 description: "Documentation polisher agent — reads existing docs, reviews against writing-style/common-rules, and applies fixes directly"
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: sonnet
+effort: medium
 ---
 
 # Documentation Polisher Agent

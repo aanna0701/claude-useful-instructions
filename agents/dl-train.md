@@ -3,6 +3,7 @@ name: dl-train
 description: "Training pipeline — fine-tuning, distributed training (Docker GPU)"
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: sonnet
+effort: medium
 ---
 
 # Training Specialist

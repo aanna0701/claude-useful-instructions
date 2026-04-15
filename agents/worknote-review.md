@@ -3,6 +3,7 @@ name: worknote-review
 description: Query Notion work journal by period and generate contextual summary
 subagent_type: general-purpose
 tools: [Read, Bash, ToolSearch, mcp__notion__*]
+effort: medium
 ---
 
 # Worknote Review Agent

@@ -3,6 +3,7 @@ name: doc-writer-explain
 description: "Explanation writer agent — Design Docs (RFC), ADRs, architecture explanations with 4+1 View Model and mandatory alternative comparison"
 tools: Read, Write, Edit, Bash, Glob
 model: opus
+effort: high
 ---
 
 # Explanation Writer Agent

@@ -165,6 +165,7 @@ name: agent-name
 description: "What this agent handles — Claude uses this to decide delegation"
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: sonnet  # sonnet | opus | haiku
+effort: medium # low | medium | high | max (max = Opus only)
 ---
 
 # Agent Name
@@ -182,5 +183,19 @@ model: sonnet  # sonnet | opus | haiku
 - **`description`** is the most important field — it determines when Claude delegates
 - **`tools`**: Restrict to what the agent actually needs
 - **`model`**: `haiku` for simple tasks (3x cheaper), `opus` for deep reasoning
+- **`effort`**: overrides the session's reasoning effort while the subagent is active (see below)
 - Project agents: `<project>/.claude/agents/`, global agents: `~/.claude/agents/`
 - Agents do NOT auto-read `CLAUDE.md` or `.claude/rules/` — include explicit Read instructions in the agent definition
+
+### Effort Policy
+
+Reasoning effort should match the agent's responsibility. Values set per agent:
+
+| Effort | When to use | Examples in this repo |
+|--------|-------------|-----------------------|
+| `low` | Mechanical data movement, simple sync/format tasks | `worknote-sync` |
+| `medium` | Standard code/doc generation, straightforward analysis, routine writing | `dl-*`, `debug-guide`, `what-to-do`, `diagram-writer`, `doc-polisher`, most `doc-writer-*`, `doc-reviewer-execution`, `ppt-*`, `worknote-plan`, `worknote-review`, `career-docs-writer`, `career-docs-reviser` |
+| `high` | Senior judgment calls, quality scoring, cross-system audits, final review gates | `pr-reviewer`, `doc-reviewer`, `career-docs-reviewer`, `ci-audit-agent`, `doc-writer-explain` |
+| `max` | Hardest architectural problems, deepest reasoning (requires Opus) | — (none currently; use sparingly) |
+
+**Pipeline guideline**: early stages (scaffold / first-pass generation) use `medium`; final review or merge-gating stages use `high` (or `max` on Opus for the hardest cases).

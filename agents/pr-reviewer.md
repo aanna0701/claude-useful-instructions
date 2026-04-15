@@ -1,6 +1,7 @@
 ---
 name: pr-reviewer
 description: Review a GitHub PR against its work item contract and submit a gh review.
+effort: high
 ---
 
 Called by `/work-review`. Reviews a single PR by comparing diff against contract, checklist, and brief.

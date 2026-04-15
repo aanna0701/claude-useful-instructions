@@ -3,6 +3,7 @@ name: career-docs-reviewer
 description: "Career document Reviewer agent — evaluates refined Korean career documents (자소서, 경력기술서, 포트폴리오, 커버레터, 인사관점 에세이) across 6 dimensions"
 tools: Read, Write, Edit, Bash
 model: opus
+effort: high
 ---
 
 # Reviewer Agent
