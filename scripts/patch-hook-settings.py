@@ -16,11 +16,15 @@ HOOKS_DIR = os.path.expanduser("~/.claude/hooks")
 
 HOOK_REGISTRY: dict[str, dict] = {
     "git-auto-pull": {
-        "managed": {"auto_pull.py"},
+        "managed": {"auto_pull.py", "post_merge_pull.py"},
         "events": {
             "PreToolUse": [{
                 "matcher": "Edit|Write|NotebookEdit",
                 "hooks": [{"type": "command", "command": f"python3 {HOOKS_DIR}/auto_pull.py"}],
+            }],
+            "PostToolUse": [{
+                "matcher": "Bash|mcp__plugin_ecc_github__merge_pull_request",
+                "hooks": [{"type": "command", "command": f"python3 {HOOKS_DIR}/post_merge_pull.py"}],
             }],
         },
     },
