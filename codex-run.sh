@@ -162,7 +162,7 @@ trap 'rm -f "$PROMPT_FILE"' EXIT
 LAST_OUTPUT=$(date +%s)
 PID=""
 (
-  codex exec --cd "$WT_PATH" --prompt-file "$PROMPT_FILE" 2>&1 \
+  codex exec --cd "$WT_PATH" --full-auto - < "$PROMPT_FILE" 2>&1 \
     | while IFS= read -r line; do
         printf '%s\n' "$line"
         date +%s > "$LOG_FILE.heartbeat"
