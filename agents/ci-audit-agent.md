@@ -1,6 +1,7 @@
 ---
 name: ci-audit-agent
 description: Audit and generate GitHub Actions workflows for branch-map alignment and topology safety.
+model: opus
 effort: high
 ---
 

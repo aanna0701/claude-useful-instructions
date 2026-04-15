@@ -1,6 +1,7 @@
 ---
 name: pr-reviewer
 description: Review a GitHub PR against its work item contract and submit a gh review.
+model: opus
 effort: high
 ---
 

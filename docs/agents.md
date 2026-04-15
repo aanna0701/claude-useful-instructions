@@ -187,15 +187,18 @@ effort: medium # low | medium | high | max (max = Opus only)
 - Project agents: `<project>/.claude/agents/`, global agents: `~/.claude/agents/`
 - Agents do NOT auto-read `CLAUDE.md` or `.claude/rules/` — include explicit Read instructions in the agent definition
 
-### Effort Policy
+### Effort + Model Policy
 
-Reasoning effort should match the agent's responsibility. Values set per agent:
+Reasoning effort should match the agent's responsibility, and model should match the reasoning depth. Pair `high` effort with `opus` whenever deep judgment is needed.
 
-| Effort | When to use | Examples in this repo |
-|--------|-------------|-----------------------|
-| `low` | Mechanical data movement, simple sync/format tasks | `worknote-sync` |
-| `medium` | Standard code/doc generation, straightforward analysis, routine writing | `dl-*`, `debug-guide`, `what-to-do`, `diagram-writer`, `doc-polisher`, most `doc-writer-*`, `doc-reviewer-execution`, `ppt-*`, `worknote-plan`, `worknote-review`, `career-docs-writer`, `career-docs-reviser` |
-| `high` | Senior judgment calls, quality scoring, cross-system audits, final review gates | `pr-reviewer`, `doc-reviewer`, `career-docs-reviewer`, `ci-audit-agent`, `doc-writer-explain` |
-| `max` | Hardest architectural problems, deepest reasoning (requires Opus) | — (none currently; use sparingly) |
+| Effort | Default model | When to use | Agents in this repo |
+|--------|---------------|-------------|---------------------|
+| `low` | sonnet (or haiku) | Mechanical data movement, simple sync/format tasks | `worknote-sync` |
+| `medium` | sonnet | Standard code/doc generation, straightforward analysis, routine writing | `dl-*`, `debug-guide`, `what-to-do`, `diagram-writer`, `doc-polisher`, most `doc-writer-*`, `doc-reviewer-execution`, `ppt-*`, `worknote-plan`, `worknote-review` |
+| `medium` | opus | Medium tasks that still benefit from Opus quality (e.g. Korean career documents with strong tone requirements) | `career-docs-writer`, `career-docs-reviser` |
+| `high` | **opus** | Senior judgment calls, quality scoring, cross-system audits, final review gates | `pr-reviewer`, `doc-reviewer`, `ci-audit-agent`, `career-docs-reviewer`, `doc-writer-explain` |
+| `max` | **opus only** | Hardest architectural problems, deepest reasoning — use sparingly | — (none currently) |
+
+**Pipeline guideline**: early stages (scaffold / first-pass generation) use `medium` + sonnet; final review or merge-gating stages use `high` + opus; reserve `max` for the hardest architectural problems.
 
 **Pipeline guideline**: early stages (scaffold / first-pass generation) use `medium`; final review or merge-gating stages use `high` (or `max` on Opus for the hardest cases).

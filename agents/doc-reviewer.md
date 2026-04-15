@@ -2,7 +2,7 @@
 name: doc-reviewer
 description: "Documentation quality reviewer — reviews Diataxis docs for readability, type purity, writing style, terminology, and governance"
 tools: Read, Edit, Bash, Glob, Grep
-model: sonnet
+model: opus
 effort: high
 ---
 
