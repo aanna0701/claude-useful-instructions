@@ -1,0 +1,57 @@
+---
+description: "Google C++ Style Guide — naming, formatting, includes, ownership"
+globs: ["**/*.cc", "**/*.cpp", "**/*.cxx", "**/*.h", "**/*.hpp"]
+alwaysApply: false
+---
+
+# Google C++ Style Guide — Cursor Rule
+
+Apply these rules whenever you edit a C++ source or header file.
+
+## Formatting
+
+- 2-space indent, 80-column lines, K&R braces.
+- `clang-format` with `BasedOnStyle: Google` is the source of truth — run it before saving. `.clang-format` is in the repo root.
+
+## Naming
+
+| Kind | Convention |
+|------|------------|
+| Files | `snake_case.cc` / `.h` |
+| Types (class/struct/enum/alias) | `PascalCase` |
+| Functions | `PascalCase` |
+| Variables / parameters / locals | `snake_case` |
+| Private/protected class members | `snake_case_` (trailing underscore) |
+| Struct data members | `snake_case` (no trailing underscore) |
+| Constants (`constexpr` / `const` at namespace/class scope) | `kCamelCase` |
+| Enumerators | `kCamelCase` |
+| Macros | `SCREAMING_SNAKE_CASE` (avoid when possible) |
+| Namespaces | `snake_case` |
+
+## Includes
+
+Group in this order, one group per block, alphabetized within each group:
+
+1. Related header (for `foo.cc`, `foo.h`)
+2. C system headers (`<sys/types.h>`)
+3. C++ standard library (`<vector>`)
+4. Other libraries
+5. Project headers (`"project/foo/bar.h"`)
+
+Include guard: `<PATH>_<FILE>_H_` (uppercase).
+
+## Language Features
+
+- `nullptr`, never `NULL` or `0`.
+- `std::unique_ptr` for unique ownership. `std::shared_ptr` only when shared ownership is essential.
+- Single-arg constructors must be `explicit`.
+- `override` / `final` on virtual methods.
+- Use `= default` / `= delete` explicitly; follow Rule of 3/5/0 consistently.
+- No `using namespace std;` at namespace or global scope in headers.
+
+## Comments
+
+- Public classes and functions have `//` comments describing behavior, ownership, thread-safety.
+- Preconditions / postconditions stated explicitly when non-obvious.
+
+Canonical source: https://google.github.io/styleguide/cppguide.html

@@ -13,6 +13,7 @@
 #   --dl            PyTorch DL standards + agents (capture, data, model, train, eval, infra)
 #   --collab        Claude-Codex collaboration (work items, AGENTS.md, CLAUDE.md)
 #   --ppt-generation PPT template-based generation (fill content into base PPT)
+#   --google-style  Google C++/Python Style Guide refactor (rules, skill, command, agents, Cursor .mdc, .clang-format)
 #   --exclude NAME  Exclude a bundle (repeatable, e.g. --exclude dl --exclude career)
 #   --interactive   Interactive mode: choose bundles from a menu
 #   --list          List available bundles and exit
@@ -146,7 +147,19 @@ BUNDLE_PPT_GENERATION=(
   "agents:ppt-format-reviewer.md"
 )
 
-BUNDLE_NAMES=("core" "docs" "data-pipeline" "career" "dl" "collab" "presentation" "worknote" "ppt-generation")
+BUNDLE_GOOGLE_STYLE=(
+  "rules:google-style-cpp.md"
+  "rules:google-style-python.md"
+  "skills:google-style-refactor"
+  "commands:refactor-google-style.md"
+  "agents:google-style-refactor-cpp.md"
+  "agents:google-style-refactor-python.md"
+  "cursor-rule:google-style-cpp.mdc"
+  "cursor-rule:google-style-python.mdc"
+  "template:google-style"
+)
+
+BUNDLE_NAMES=("core" "docs" "data-pipeline" "career" "dl" "collab" "presentation" "worknote" "ppt-generation" "google-style")
 BUNDLE_DESCRIPTIONS=(
   "Core utilities (smart-git-commit-push, optimize-tokens, debug-guide, guard-branch, auto-pr, pre-commit)"
   "Documentation & diagrams (diataxis framework, doc agents, diagram-architect)"
@@ -157,6 +170,7 @@ BUNDLE_DESCRIPTIONS=(
   "HTML presentation generator (16:9 dark theme slides + PDF export)"
   "Work journal with Notion sync (daily log, review, planning)"
   "PPT template-based generation (fill content into base PPT without changing design)"
+  "Google C++/Python Style Guide refactor (rules, skill, /refactor-google-style, Cursor .mdc, .clang-format)"
 )
 
 # ── Parse arguments ─────────────────────────────────────────────────────────
@@ -182,6 +196,7 @@ while [[ $# -gt 0 ]]; do
     --presentation)  SELECTED_BUNDLES+=("presentation"); shift ;;
     --worknote)      SELECTED_BUNDLES+=("worknote"); shift ;;
     --ppt-generation) SELECTED_BUNDLES+=("ppt-generation"); shift ;;
+    --google-style)  SELECTED_BUNDLES+=("google-style"); shift ;;
     --exclude)       shift; EXCLUDED_BUNDLES+=("$1"); shift ;;
     --interactive)   INTERACTIVE=true; shift ;;
     --list)          LIST_ONLY=true; shift ;;
@@ -309,6 +324,7 @@ get_bundle_items() {
     presentation)  printf '%s\n' "${BUNDLE_PRESENTATION[@]}" ;;
     worknote)        printf '%s\n' "${BUNDLE_WORKNOTE[@]}" ;;
     ppt-generation)  printf '%s\n' "${BUNDLE_PPT_GENERATION[@]}" ;;
+    google-style)    printf '%s\n' "${BUNDLE_GOOGLE_STYLE[@]}" ;;
   esac
 }
 

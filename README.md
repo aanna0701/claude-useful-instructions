@@ -61,6 +61,7 @@ cui-install --collab /path/to/my-project
 | `worknote` | Work journal with Notion sync (daily log, review, planning) | Global |
 | `ppt-generation` | PPT template-based generation (fill content into base PPT without changing design) | Global |
 | `dl` | pytorch-dl-standards + dl agents (capture, data, model, train, eval, infra) | Either |
+| `google-style` | Google C++/Python Style Guide rules, `/refactor-google-style` command, refactor agents, Cursor `.mdc` rules, `.clang-format` | Per-project |
 
 > **Global** (`~/.claude/`): language-agnostic tools usable everywhere.
 > **Per-project** (`project/.claude/`): CLAUDE.md, AGENTS.md, work items, MCP are project-specific.
