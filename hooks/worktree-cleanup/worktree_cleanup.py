@@ -29,18 +29,47 @@ from worktree_state import WorktreeState  # noqa: E402
 
 
 
-_HUB_PROTECTED = {
-    "main", "master", "develop", "research", "staging",
-    "feature-init-dev",
-}
+def _main_worktree_branch(main_root: Path) -> str | None:
+    """Return the branch checked out in the primary worktree (the repo root).
+
+    This is the developer's current integration context — whatever branch was
+    active when secondary worktrees were spawned. Deleting it would yank the
+    ground under every in-flight PR based on it, so we treat it as protected
+    automatically (no hard-coded name).
+    """
+    result = subprocess.run(
+        ["git", "worktree", "list", "--porcelain"],
+        capture_output=True, text=True, cwd=str(main_root),
+    )
+    if result.returncode != 0:
+        return None
+    current_wt: Path | None = None
+    for line in result.stdout.splitlines():
+        if line.startswith("worktree "):
+            current_wt = Path(line.split(" ", 1)[1])
+        elif line.startswith("branch ") and current_wt == main_root:
+            return line.split(" ", 1)[1].replace("refs/heads/", "")
+        elif line == "":
+            current_wt = None
+    return None
 
 
-def _is_protected_branch(branch: str) -> bool:
-    """Never touch integration / hub branches."""
+def _is_protected_branch(branch: str, main_root: Path) -> bool:
+    """True when *branch* must never be auto-deleted.
+
+    Sources (all auto-detected, no hard-coded project branches):
+      1. The primary-worktree branch — the current integration hub.
+      2. Long-lived release branches by convention
+         (main / master / develop / research / staging).
+      3. Anything the user pins via GIT_CLEANUP_PROTECTED_BRANCHES.
+    """
     import os as _os
+    release_defaults = {"main", "master", "develop", "research", "staging"}
     extra = _os.environ.get("GIT_CLEANUP_PROTECTED_BRANCHES", "")
     extra_set = {b.strip() for b in extra.split(",") if b.strip()}
-    return branch in (_HUB_PROTECTED | extra_set)
+    hub = _main_worktree_branch(main_root)
+    protected = release_defaults | extra_set | ({hub} if hub else set())
+    return branch in protected
 
 
 def _is_base_of_open_pr(repo: str | None, branch: str) -> bool:
@@ -68,7 +97,7 @@ def _cleanup_worktree(main_root: Path, wt_path: Path, branch: str) -> None:
     wt_str = str(wt_path)
     repo = resolve_owner_repo(main_root)
 
-    if _is_protected_branch(branch):
+    if _is_protected_branch(branch, main_root):
         print(
             f"[worktree-cleanup] Refuse to delete protected branch: {branch}",
             file=sys.stderr,
@@ -226,20 +255,15 @@ def _cleanup_orphan_branches(main_root: Path, repo: str | None) -> None:
         return
 
     safe_prefixes = ("feature-", "tmp/guard-")
-    protected = {
-        "main", "master", "develop", "research", "staging",
-        # Integration / hub branches — never auto-delete. Extend via
-        # GIT_CLEANUP_PROTECTED_BRANCHES env (comma-separated).
-        "feature-init-dev",
-    }
-    import os as _os
-    extra = _os.environ.get("GIT_CLEANUP_PROTECTED_BRANCHES", "")
-    if extra:
-        protected.update(b.strip() for b in extra.split(",") if b.strip())
 
     for branch in result.stdout.strip().splitlines():
         branch = branch.strip()
-        if not branch or branch in protected or branch == main_branch:
+        if not branch or branch == main_branch:
+            continue
+        # Auto-detected protection: primary-worktree branch, release defaults,
+        # and the user's GIT_CLEANUP_PROTECTED_BRANCHES list. No hard-coded
+        # project names.
+        if _is_protected_branch(branch, main_root):
             continue
         if branch in wt_branches:
             continue
@@ -264,19 +288,9 @@ def _cleanup_orphan_branches(main_root: Path, repo: str | None) -> None:
             # Safety 2: never delete a branch that is the BASE of any open PR.
             # Deleting it triggers base_ref_deleted on GitHub which auto-closes
             # every child PR (observed case: hub branch for stacked PRs).
-            base_check = subprocess.run(
-                ["gh", "pr", "list", "--repo", repo, "--base", branch,
-                 "--state", "open", "--json", "number", "-q", "length"],
-                capture_output=True, text=True, timeout=15,
-            )
-            try:
-                open_children = int((base_check.stdout or "0").strip())
-            except ValueError:
-                open_children = 0
-            if open_children > 0:
+            if _is_base_of_open_pr(repo, branch):
                 print(
-                    f"[worktree-cleanup] Skip {branch}: base of "
-                    f"{open_children} open PR(s)",
+                    f"[worktree-cleanup] Skip {branch}: base of open PR(s)",
                     file=sys.stderr,
                 )
                 continue
