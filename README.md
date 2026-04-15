@@ -246,7 +246,7 @@ Subagents delegated by Claude for specific tasks.
 | Work Journal | `worknote-sync`, `-review`, `-plan` | 3 |
 | Token Analysis | `token-duplication-detector`, `-load-measurer`, `-mcp-analyzer`, `-split-detector` | 4 |
 | Career Docs | `career-docs-writer`, `-reviewer`, `-reviser` | 3 |
-| Collab Workflow | `pr-reviewer`, `work-reviser`, `cursor-prompt-builder` | 3 |
+| Collab Workflow | `pr-reviewer` | 1 |
 | CI Audit | `ci-audit-agent` | 1 |
 | PPT Generation | `ppt-density-checker`, `ppt-format-reviewer` | 2 |
 | DL Pipeline | `dl-capture`, `-data`, `-model`, `-train`, `-eval`, `-infra` | 6 |
@@ -361,7 +361,7 @@ claude-useful-instructions/
 | Guide | Description |
 |-------|-------------|
 | [Collab Workflow](docs/collab-workflow.md) | Claude-Codex architecture, setup, and walkthrough |
-| [Cursor/Antigravity Integration](docs/cursor-integration.md) | IDE AI as pipeline orchestrator, structure propagator, and codebase verifier |
+| [Migration v1 → v2](docs/MIGRATION-v2.md) | What changed in v2 and how to upgrade |
 | [Skills Reference](docs/skills.md) | Full skill documentation |
 | [Agents Reference](docs/agents.md) | Full agent documentation |
 | [Commands Reference](docs/commands.md) | Full command documentation |

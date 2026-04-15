@@ -38,32 +38,6 @@ from worktree_state import WorktreeState  # noqa: E402
 
 
 
-def _update_work_item_status(repo_root: Path, branch: str, pr_url: str) -> None:
-    """Update status.md PR field for collab worktrees."""
-    work_items = repo_root / "work" / "items"
-    if not work_items.exists():
-        return
-
-    slug = branch.split("/", 1)[-1] if "/" in branch else branch
-
-    for item_dir in work_items.iterdir():
-        if not item_dir.is_dir():
-            continue
-        if slug in item_dir.name:
-            status_file = item_dir / "status.md"
-            if status_file.exists():
-                content = status_file.read_text()
-                # Update PR field
-                content = re.sub(
-                    r"(PR[:\s|]+)\S*",
-                    rf"\g<1>{pr_url}",
-                    content,
-                    count=1,
-                )
-                status_file.write_text(content)
-            break
-
-
 _BRANCH_RE = re.compile(r"^feature-(feat|fix|perf|chore|test|refac)-(.+)$")
 
 
@@ -296,7 +270,6 @@ def main() -> None:
         if pr_num_match:
             state.set_pr_number(int(pr_num_match.group(1)))
         state.set_pr_url(pr_url)
-        _update_work_item_status(root, branch, pr_url)
         print(f"[auto-pr-commit] Draft PR created: {pr_url}", file=sys.stderr)
     else:
         print("[auto-pr-commit] PR creation failed.", file=sys.stderr)

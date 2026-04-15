@@ -118,11 +118,9 @@ Check each `.md` file against actual codebase (all worktrees):
 - Sync with subproject state; ensure correct relative paths
 
 ### Execution artifacts (work/)
-- Update Brief/Task status from git evidence (merged feature branches → `done`)
-- Sync Work Item status.md with actual branch/worktree state
-- Flag orphaned Checklists, unused Contracts, missing Reviews
-- Verify source links and FEAT-NNN/T-NNN references
-- Detect Work Item bundles with stale status.md
+- Verify `work/items/{ID}-{slug}/contract.md` references still exist (branch, worktree, PR)
+- Flag orphaned contracts whose branch/PR no longer exists (merged or abandoned)
+- Verify source links and FEAT-NNN/FIX-NNN/REFAC-NNN references
 
 ---
 
