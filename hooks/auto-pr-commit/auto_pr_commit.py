@@ -38,32 +38,6 @@ from worktree_state import WorktreeState  # noqa: E402
 
 
 
-def _update_work_item_status(repo_root: Path, branch: str, pr_url: str) -> None:
-    """Update status.md PR field for collab worktrees."""
-    work_items = repo_root / "work" / "items"
-    if not work_items.exists():
-        return
-
-    slug = branch.split("/", 1)[-1] if "/" in branch else branch
-
-    for item_dir in work_items.iterdir():
-        if not item_dir.is_dir():
-            continue
-        if slug in item_dir.name:
-            status_file = item_dir / "status.md"
-            if status_file.exists():
-                content = status_file.read_text()
-                # Update PR field
-                content = re.sub(
-                    r"(PR[:\s|]+)\S*",
-                    rf"\g<1>{pr_url}",
-                    content,
-                    count=1,
-                )
-                status_file.write_text(content)
-            break
-
-
 _BRANCH_RE = re.compile(r"^feature-(feat|fix|perf|chore|test|refac)-(.+)$")
 
 
@@ -162,8 +136,16 @@ def _update_existing_pr(git_dir: Path, branch: str, pr_num: int, state: Worktree
     if not current_title.startswith("[WIP]"):
         return  # Already updated, nothing to do
 
-    # Get base branch for commit log
-    base = state.base_branch() or get_parent_branch(git_dir)
+    # Get base branch for commit log — prefer main repo's current HEAD so
+    # the commit log uses the same base that the PR is actually targeting.
+    base = None
+    main_repo = get_main_repo_from_worktree(git_dir)
+    if main_repo:
+        parent_current = get_current_branch(main_repo)
+        if parent_current and parent_current != "HEAD":
+            base = parent_current
+    if not base:
+        base = state.base_branch() or get_parent_branch(git_dir)
     if not base:
         return
 
@@ -252,26 +234,29 @@ def main() -> None:
         _update_existing_pr(root, branch, pr_num, state)
         return
 
-    # Determine base branch — never fallback to main repo's current branch
-    base = state.base_branch()
-    if not base:
-        # Fallback: read from persistent .claude-worktree-meta in worktree
-        base = get_parent_branch(root)
-    if not base:
-        print("[auto-pr-commit] No base branch in state or meta. "
-              "Create PR manually with: gh pr create --base <branch>", file=sys.stderr)
-        return
-
-    # Validate: stored base must match parent repo's current branch
+    # Determine base branch — the authoritative source is the main repo's
+    # currently checked-out branch (the user's mental model: "PR base = whatever
+    # branch the repo root has checked out right now"). Sticky session state
+    # and .claude-worktree-meta are only fallbacks for edge cases where the
+    # main repo isn't introspectable (e.g. detached HEAD).
+    base = None
     main_repo = get_main_repo_from_worktree(root)
     if main_repo:
         parent_current = get_current_branch(main_repo)
-        if parent_current and parent_current != "HEAD" and parent_current != base:
-            print(f"[auto-pr-commit] BASE MISMATCH: stored base '{base}' "
-                  f"≠ parent current '{parent_current}'. "
-                  f"Skipping auto-PR to prevent wrong-branch merge. "
-                  f"Create PR manually if intended.", file=sys.stderr)
-            return
+        if parent_current and parent_current != "HEAD":
+            base = parent_current
+    if not base:
+        base = state.base_branch() or get_parent_branch(root)
+    if not base:
+        print("[auto-pr-commit] No base branch could be resolved "
+              "(main repo detached HEAD and no stored state). "
+              "Create PR manually with: gh pr create --base <branch>", file=sys.stderr)
+        return
+
+    # Keep session state in sync with the resolved base so later commits and
+    # other hooks see a consistent value.
+    if state.base_branch() != base:
+        state.set_base_branch(base)
 
     # Push branch
     if not push_branch(root, branch):
@@ -296,7 +281,6 @@ def main() -> None:
         if pr_num_match:
             state.set_pr_number(int(pr_num_match.group(1)))
         state.set_pr_url(pr_url)
-        _update_work_item_status(root, branch, pr_url)
         print(f"[auto-pr-commit] Draft PR created: {pr_url}", file=sys.stderr)
     else:
         print("[auto-pr-commit] PR creation failed.", file=sys.stderr)

@@ -1,0 +1,78 @@
+---
+description: "Google Python Style Guide — docstrings, type hints, naming, imports"
+globs: ["**/*.py"]
+alwaysApply: false
+---
+
+# Google Python Style Guide — Cursor Rule
+
+Apply these rules whenever you edit a Python file.
+
+## Formatting
+
+- 4-space indent, 80-column lines (unless `pyproject.toml` sets otherwise).
+- `ruff format` is the source of truth. Run `ruff check --fix` + `ruff format` before saving.
+
+## Imports
+
+Three groups separated by a blank line, each alphabetized:
+
+1. Standard library
+2. Third-party
+3. Project-local (absolute imports preferred)
+
+- One import per line.
+- No `from x import *`.
+
+## Naming
+
+| Kind | Convention |
+|------|------------|
+| Modules / packages | `snake_case` |
+| Classes / exceptions / type vars | `PascalCase` |
+| Functions / methods / variables | `snake_case` |
+| Module-level constants | `SCREAMING_SNAKE_CASE` |
+| "Private" module/class members | `_leading_underscore` |
+| Name-mangled | `__double_leading_underscore` |
+| Dunder | `__double_underscores__` |
+
+## Type Hints
+
+- All public function signatures fully annotated (parameters + return).
+- Use PEP 604 union syntax (`X | Y`) on 3.10+; add `from __future__ import annotations` on 3.9.
+- Prefer built-in generics (`list[int]`, `dict[str, int]`) over `typing.List` / `typing.Dict` on 3.9+.
+- `typing.Protocol` for duck-typed interfaces.
+
+## Docstrings
+
+Google style. Every public module, class, and function gets one.
+
+```python
+def fetch_rows(table: str, limit: int = 10) -> list[dict]:
+    """Fetches rows from a table.
+
+    Args:
+        table: Fully qualified table name.
+        limit: Maximum rows to return.
+
+    Returns:
+        List of row dictionaries.
+
+    Raises:
+        IOError: If the table cannot be read.
+    """
+```
+
+- One-sentence imperative summary, period-terminated.
+- Sections: `Args:`, `Returns:` or `Yields:`, `Raises:`, `Attributes:`.
+
+## Language Features
+
+- f-strings over `.format()` / `%`.
+- `@dataclass(frozen=True)` or `NamedTuple` for small value objects.
+- Context managers (`with`) for resources.
+- `is` / `is not` only for `None`, `True`, `False`, sentinels.
+- Never use mutable default arguments.
+- Catch specific exceptions; no bare `except:`.
+
+Canonical source: https://google.github.io/styleguide/pyguide.html

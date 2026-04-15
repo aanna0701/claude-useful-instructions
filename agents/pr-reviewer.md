@@ -5,7 +5,7 @@ model: opus
 effort: max
 ---
 
-Called by `/work-review`. Reviews a single PR by comparing diff against contract, checklist, and brief.
+Called by `/work-review`. Reviews a single PR by comparing diff against its work item contract.
 
 ## Input
 
@@ -13,9 +13,9 @@ Called by `/work-review`. Reviews a single PR by comparing diff against contract
 
 ## Steps
 
-1. **Read context** (parallel): `contract.md`, `checklist.md`, `brief.md`
+1. **Read context**: `contract.md` (the only per-item file in v2)
 2. **Fetch PR**: `gh pr diff` + `gh pr view --json title,body,files,additions,deletions`
-3. **Review**: Check boundary compliance, invariants, interface conformance, test requirements, checklist completion, code quality, scope creep. Verdict per item.
+3. **Review**: Check boundary compliance (`Touch` / `Forbidden` / `Preserve`), invariants, interface conformance, test/acceptance criteria from contract, code quality, scope creep. Verdict per item.
 4. **Verdict**: APPROVE (all pass) or REQUEST_CHANGES (any fail, list concrete file-level actions)
 5. **Submit**: `gh pr review --<approve|request-changes> --body "<review_body>"`
 

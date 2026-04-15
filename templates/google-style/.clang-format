@@ -1,0 +1,33 @@
+# Google C++ Style — clang-format config
+# Installed by the `google-style` bundle (./install.sh --google-style <project>).
+# Override any field below to taste; this file is the project SSOT once installed.
+
+BasedOnStyle: Google
+Language: Cpp
+Standard: c++17
+
+# Google defaults to 80; projects often relax. Keep 80 until the team agrees otherwise.
+ColumnLimit: 80
+
+# 2-space indent, no tabs — Google default, pinned here so editors can't drift.
+IndentWidth: 2
+TabWidth: 2
+UseTab: Never
+
+# Pointer/reference alignment — Google uses Left ("Type* ptr").
+PointerAlignment: Left
+DerivePointerAlignment: false
+
+# Include block grouping matches the rule file. clang-format sorts within each block;
+# the skill/agent is responsible for assigning headers to the correct block.
+IncludeBlocks: Regroup
+SortIncludes: CaseSensitive
+
+# Keep forward declarations and access specifiers as written by the author.
+IndentAccessModifiers: false
+AccessModifierOffset: -1
+
+# Allow single-line ifs only when the whole construct fits — avoids dense unreadable lines.
+AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortLoopsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Inline

@@ -99,7 +99,7 @@ Analyze the codebase for incomplete work:
 ### 4d. Related Work
 
 - Check if there are open branches related to the changed files
-- Check for work item files (work/items/*/status.md) that reference changed modules
+- Check for work item contracts (`work/items/*/contract.md`) that reference changed modules, and cross-reference open draft PRs via `gh pr list --draft`
 
 ## Step 5: Generate Action Plan
 

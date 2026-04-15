@@ -109,73 +109,25 @@ Review a completed work item against its contract. Decides merge/revise/reject.
 
 ## /work-impl
 
-Implement a work item in a worktree.
+Implement a work item (`FEAT`/`FIX`/`PERF`/`CHORE`/`TEST`) in its worktree. Tries Codex first via `codex-run.sh`, then falls back to the current session.
 
 **Usage**:
 ```
-/work-impl #123           # By GitHub Issue number
 /work-impl FEAT-001       # By work item ID
 ```
 
----
-
-## /work-revise
-
-Re-dispatch a work item that failed review with targeted fix instructions.
-
-**Usage**:
-```
-/work-revise FEAT-001
-```
+Set `WORK_IMPL_SKIP_CODEX=1` to skip the Codex pass and implement directly in-session.
 
 ---
 
-## /work-scaffold
+## /work-refactor
 
-Generate Cursor/Antigravity Composer prompts from work item contracts. Auto-detects type from ID prefix.
-
-**Usage**:
-```
-/work-scaffold FEAT-001              # New feature: file structure + type stubs
-/work-scaffold REFAC-002             # Refactoring: migration map + rename list
-/work-scaffold FEAT-001 REFAC-002    # Multiple items (parallel)
-/work-scaffold AUDIT-003             # Skip — redirects to /work-verify
-```
-
-### Type → Behavior
-
-| Type Prefix | Action |
-|-------------|--------|
-| `FEAT`, `FIX`, `CHORE`, `PERF`, `TEST` | File structure + type/interface stubs |
-| `REFAC` | Before→after migration map + affected references |
-| `AUDIT`, `DOCS` | Skip — prints redirect to `/work-verify` |
-
-Also generates `.cursor/rules/*.mdc` (glob-based contract enforcement) in the worktree root. Updates `status.md` → `scaffolded`.
-
-> See [Cursor/Antigravity Integration](cursor-integration.md) for the full guide.
-
----
-
-## /work-verify
-
-Codebase audit via Cursor/Antigravity. **AUDIT type only** — FEAT/REFAC go directly to `/work-review`.
+Refactor a work item (`REFAC` only). Same pipeline as `/work-impl` but honors `Boundaries.Preserve` — no new public symbols, existing tests stay green.
 
 **Usage**:
 ```
-/work-verify AUDIT-001                     # Generate audit prompt
-/work-verify AUDIT-001 --ingest            # Parse Cursor/Antigravity output → verdict → route
-/work-verify FEAT-001                      # → redirects to /work-review
+/work-refactor REFAC-007
 ```
-
-### `--ingest` Verdict Logic
-
-| Condition | Verdict | Action |
-|-----------|---------|--------|
-| 0 CRITICAL, 0 HIGH | PASS | Status → `audited` |
-| 0 CRITICAL, 1+ HIGH | PASS_WITH_WARNINGS | Status → `audited`, print warnings |
-| 1+ CRITICAL | FAIL | Status stays, print action items |
-
-> See [Cursor/Antigravity Integration](cursor-integration.md) for the full guide.
 
 ---
 
