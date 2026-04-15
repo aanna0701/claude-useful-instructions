@@ -163,6 +163,21 @@ def _cleanup_orphan_branches(main_root: Path, repo: str | None) -> None:
         if not any(branch.startswith(p) for p in safe_prefixes):
             continue
 
+        # Safety: never delete a branch with an OPEN PR. ancestry-into-main can
+        # be true the instant a feature branch is created from main HEAD, before
+        # any merge happens. Without this check, creating a feature branch and
+        # pushing it would race the cleanup hook and the head_ref_deleted event
+        # would auto-close the brand-new PR.
+        if repo:
+            check = subprocess.run(
+                ["gh", "pr", "view", branch, "--repo", repo, "--json", "state",
+                 "-q", ".state"],
+                capture_output=True, text=True, timeout=15,
+            )
+            pr_state = check.stdout.strip() if check.returncode == 0 else ""
+            if pr_state == "OPEN":
+                continue
+
         # Delete local branch
         subprocess.run(
             ["git", "branch", "-D", branch],

@@ -55,7 +55,7 @@ cui-install --collab /path/to/my-project
 | `core` | smart-git-commit-push, optimize-tokens, debug-guide, what-to-do, token analyzers, **hooks** (git-auto-pull, guard-branch, branch-naming, auto-pr-commit, worktree-cleanup, auto-pr), pre-commit templates | Global (`~/.claude/`) |
 | `docs` | diataxis-doc-system, diagram-architect, doc/diagram agents, write-doc, init-docs, sync-docs | Global |
 | `data-pipeline` | data-pipeline-architect skill | Global |
-| `collab` | Claude-Codex collaboration, work items, AI IDE integration (pipeline rule for Cursor/Antigravity, scaffold/verify), CI audit, codex-run, AGENTS.md, CLAUDE.md | Per-project |
+| `collab` | Claude-Codex-Cursor v2 workflow (plan/impl/refactor/review/status), CI (`pr-checks.yml`), codex-run, AGENTS.md, CLAUDE.md | Per-project |
 | `career` | career-docs skill, career agents | Either |
 | `presentation` | html-presentation skill, create/format/edit/export-pdf commands | Global |
 | `worknote` | Work journal with Notion sync (daily log, review, planning) | Global |
@@ -64,6 +64,25 @@ cui-install --collab /path/to/my-project
 
 > **Global** (`~/.claude/`): language-agnostic tools usable everywhere.
 > **Per-project** (`project/.claude/`): CLAUDE.md, AGENTS.md, work items, MCP are project-specific.
+
+## Collab v2
+
+PR + git are the single source of truth. No md file stores state.
+
+```
+plan (Claude) ──▶ impl | refactor (session AI) ──(push → CI)──▶ review (Claude) ──▶ merge
+                         ▲                                           │
+                         └──────────── CHANGES_REQUESTED ────────────┘
+```
+
+- **5 commands, 0 flags**: `/work-plan`, `/work-impl`, `/work-refactor`, `/work-review`, `/work-status`.
+- **1 file per work item**: `work/items/{ID}-{slug}/contract.md`.
+- **State is derived** from `gh pr list` + `git worktree list`.
+- **CI required**: `pr-checks.yml` (ruff + mypy + pytest) is bundled and installed automatically.
+- **Squash merge only**. MUST-fix = inline review comments, resolved via GraphQL `resolveReviewThread`.
+- **Two verification layers**: pre-commit (local, fast) + CI (remote, full) — intentional overlap.
+
+Migrating from v1? See [docs/MIGRATION-v2.md](docs/MIGRATION-v2.md). Rollback tag: `v1-final`.
 
 ## Git Workflow (Hook-Enforced)
 
@@ -156,12 +175,13 @@ The `worknote` skill uses Notion as a work journal backend via MCP.
 
 The `collab` bundle requires **GitHub CLI (`gh`)** for full functionality:
 
-| Feature | Requires `gh` | Without `gh` |
-|---------|:---:|---|
-| Worktree creation | No | Works fine |
-| Work item generation | No | Works fine |
-| GitHub Issue creation (`/work-plan` Step 7) | **Yes** | Silently skipped, `issue` stays `null` in dispatch.json |
-| `/gha-branch-sync` CI audit | **Yes** | Cannot run |
+| Feature | Requires `gh` |
+|---------|:---:|
+| Every `/work-*` command | **Yes** |
+| `codex-run.sh` (prompt assembly + PR summary) | **Yes** |
+| `install.sh` (branch protection + squash-only repo settings) | **Yes** |
+
+v2 has no fallback for `gh` failures — they raise errors.
 
 ```bash
 # Install gh CLI
@@ -237,13 +257,11 @@ Subagents delegated by Claude for specific tasks.
 
 | Command | Description |
 |---------|-------------|
-| `/work-plan` | Create work item for Codex delegation |
-| `/work-status` | Check work item progress |
-| `/work-impl` | Implement a work item in its worktree per contract |
-| `/work-review` | Review Codex implementation against contract |
-| `/work-scaffold` | Generate Cursor/Antigravity Composer prompts + .cursor/rules/*.mdc from contracts |
-| `/work-verify` | Codebase audit via Cursor/Antigravity (AUDIT type only, `--ingest` for result parsing) |
-| `/work-revise` | Re-dispatch REVISE items from review to agent or Codex |
+| `/work-plan` | Create a work item (contract + branch + worktree + draft PR) |
+| `/work-impl` | Implement FEAT/FIX/PERF/CHORE/TEST in the worktree per contract |
+| `/work-refactor` | Refactor (REFAC) with Preserve constraints |
+| `/work-review` | Submit `gh pr review` with inline MUST-fix comments |
+| `/work-status` | View derived state from `gh pr list` + `git worktree list` |
 | `/gha-branch-sync` | Audit GitHub Actions against branch map |
 | `/write-doc` | Diataxis-based document writing |
 | `/polish-doc` | Apply writing-style and structural fixes to existing docs |
@@ -267,8 +285,8 @@ Shared code standards installed to `.claude/rules/`.
 
 | File | Bundle | Content |
 |------|--------|---------|
-| `collab-workflow.md` | collab | Claude-Codex role separation, hook-enforced workflow, work item protocol |
-| `review-merge-policy.md` | collab | Merge gating: freshness, CI checks, MUST-fix resolution |
+| `collab-workflow.md` | collab | v2 SSOT: 4-stage pipeline, PR-derived state, GitHub conventions |
+| `review-merge-policy.md` | collab | Merge gating: squash-only, CI required, MUST-fix inline threads |
 | `pytorch-dl-standards.md` | dl | PyTorch DL standards: config/DTO, frozen patterns, kornia, tech stack |
 
 > Subagents do NOT auto-read rules. Agent definitions must include explicit Read instructions.
@@ -301,8 +319,6 @@ claude-useful-instructions/
 │   ├── ppt-density-checker.md       # Slide density QA
 │   ├── ppt-format-reviewer.md       # Template format compliance review
 │   ├── pr-reviewer.md               # PR review against work item contract
-│   ├── work-reviser.md              # Re-dispatch REVISE items from review
-│   ├── cursor-prompt-builder.md     # Contract → Cursor/Antigravity prompts
 │   ├── ci-audit-agent.md            # GitHub Actions topology audit
 │   ├── career-docs-*.md             # Career document writer & reviewer
 │   └── dl-*.md                      # DL pipeline agents (6 domains)
@@ -316,17 +332,13 @@ claude-useful-instructions/
 ├── scripts/                         # Standalone utility scripts
 │   ├── html_to_pdf.py               # Playwright-based HTML→PDF slide converter
 │   └── patch-hook-settings.py       # Hook settings patcher for installer
-├── lib/                             # Codex runner modules (sourced by codex-run.sh)
-│   ├── codex-run-work.sh            # Work item dispatch logic
-│   ├── codex-run-git.sh             # Git/worktree operations
-│   ├── codex-run-boundary.sh        # Boundary check (changed-files audit)
-│   └── codex-run-runner.sh          # Codex execution with stall detection
+├── lib/                             # Shared helpers
+│   └── merge-lock.sh                # flock-based serialized merge
 ├── templates/                       # Installable templates
-│   ├── pre-commit/                  # .pre-commit-config.yaml, .clang-format templates
-│   ├── work-item/                   # brief, contract, checklist, status, review, relay
-│   ├── collab-pipeline-body.md      # Single source for `/collab-workflow` pipeline (assembled by install.sh)
-│   ├── cursor/                      # Cursor/Antigravity prompt templates + per-item .mdc patterns
-│   ├── workflows/                   # GitHub Actions workflow templates
+│   ├── pre-commit/                  # .pre-commit-config.yaml, .clang-format
+│   ├── work-item/contract.md        # v2 contract template (single per-item file)
+│   ├── collab-pipeline-body.md      # /collab-workflow orchestration summary
+│   ├── workflows/                   # GitHub Actions: branch-auto-sync, safe-branch-cleanup, pr-checks
 │   ├── codex/AGENTS.md
 │   └── claude/CLAUDE.md
 ├── hooks/                           # Claude Code hooks

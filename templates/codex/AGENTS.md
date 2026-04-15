@@ -1,94 +1,68 @@
-# Codex Agent Instructions
+# Codex Agent Instructions (v2)
 
 ## Role
 
-You are an implementation agent. Implement the assigned work item exactly per contract. Do not broaden scope or make architecture decisions.
+You are the implementer for a single work item. Follow the contract. Do not broaden scope.
 
-## Work Intake
+## Work intake
 
-Normal path:
-1. `codex-run.sh` dispatches the resolved work item.
+`bash codex-run.sh {ID}` assembles and passes you:
 
-Manual fallback:
-1. Find `work/items/FEAT-NNN-*/`
-2. Read `status.md`
-3. Read `relay.md` (if exists) for prior stage results
-4. Read `brief.md` -> `contract.md` -> `checklist.md`
+1. `work/items/{ID}-{slug}/contract.md` — the spec.
+2. Unresolved review threads (GraphQL) — present only on `CHANGES_REQUESTED` re-entry; each is a MUST-fix.
+3. `git diff origin/{base}...HEAD` — current worktree state.
 
-## Context Discovery
+Manual fallback: read `work/items/{ID}-{slug}/contract.md` directly. That is the only per-item file.
+
+## Context discovery
 
 Before coding:
-1. List project guidance filenames only first
-2. Read only relevant files from `CLAUDE.md`, `.claude/rules/`, `.claude/agents/`, `.claude/commands/`, `.claude/skills/`
-3. Contract wins if guidance conflicts
+1. List relevant guidance filenames: `CLAUDE.md`, `.claude/rules/`, `.claude/agents/`, `.claude/commands/`, `.claude/skills/`.
+2. Read only what is relevant to the contract.
+3. Contract always wins on conflict.
 
-## Non-Negotiables
+## Non-negotiables
 
-- Implement only what the contract allows.
-- Modify only `Allowed Modifications`.
-- Never touch `Forbidden Zones`.
-- Do not edit docs unless the task is docs-only.
-- Never implement on the `working_parent` branch.
-- If branch freshness or dependency outputs are missing, mark `blocked` with a concrete reason.
-- For Python work, use the uv-managed environment. Prefer `uv run ...`. Do not use ad hoc `pip install`.
-- Keep code and comments in English.
+- Touch only files matching `contract.Boundaries.Touch` globs.
+- Never touch files matching `contract.Boundaries.Forbidden`.
+- For REFAC: preserve everything in `contract.Boundaries.Preserve` (public API, behavior covered by tests).
+- Keep tests green between commits. Small commits preferred.
+- Use the uv-managed environment for Python (`uv run ...`). No ad-hoc `pip install`.
+- All code and comments in English.
+- All commits signed: `git commit -s ...` (required by DCO).
 
-## Status Discipline
+## CHANGES_REQUESTED re-entry
 
-Update `work/items/FEAT-NNN-slug/status.md` on every state change.
+If unresolved review threads are provided:
 
-Canonical states:
-- `planned`
-- `implementing`
-- `blocked`
-- `ready-for-review`
-- `reviewing`
-- `revising`
-- `merged`
-- `rejected`
+1. Treat each thread as a MUST-fix at `path:line`.
+2. Apply the fix.
+3. After committing the fix, resolve the thread:
+   ```bash
+   gh api graphql -f query='mutation($id:ID!){resolveReviewThread(input:{threadId:$id}){thread{id}}}' -f id=$THREAD_ID
+   ```
 
-Use one overall status only. Keep frontmatter `status:` and body status synchronized.
+## Git
 
-Minimum status requirements:
-- `implementing`: set `Agent`, `Branch`, `Worktree`, `Worktree Path`
-- `blocked`: record the blocker and failing command if relevant
-- `ready-for-review`: record `Changed Files`, `Verification`, and `Intended Commit Message`
+- Work only on the current worktree branch. No sub-branches.
+- Never force-push. Never rewrite history.
+- Do not merge sibling branches.
+- `codex-run.sh` handles `git push` at the end.
 
-## Git Rules
-
-- Use the current worktree branch. Do not create sub-branches.
-- Parent sync may only come from the contract's declared parent branch.
-- Do not merge sibling feature branches.
-- Do not force-push or rewrite history.
-- If git commit fails because of worktree sandbox restrictions, leave files saved and status complete. The runner will rescue the commit.
-
-## Completion Protocol
+## Completion
 
 Before exit:
-1. Run required verification from the checklist
-2. Run `git status --short`
-3. Run `git diff --check`
-4. Set final status to `ready-for-review` or `blocked`
-5. Print `/work-review FEAT-NNN`
+1. Run `git status --short`.
+2. Run `git diff --check`.
+3. Let `codex-run.sh` push and summarize CI status.
 
-## Collab Pipeline
+## Do not
 
-`/collab-workflow {instruction}` in Cursor/Antigravity orchestrates multi-tool execution:
+- Do not write `status.md`, `relay.md`, `review.md`, or any other per-item md. Only `contract.md` exists, and you do not modify it.
+- Do not edit the contract. Report ambiguity in a commit message or stop with a clear reason.
+- Do not merge the PR. Review and merge are Claude's responsibility.
+- Do not modify `codex-run.sh`.
 
-| Step | Executor | Method |
-|------|----------|--------|
-| 1. Plan | Claude | `claude -p` with work-plan command |
-| 2. Scaffold | Cursor/Antigravity | Direct file creation |
-| 3. Implement | **Codex (you)** | `codex-run.sh` or `codex exec` |
-| 4. Verify | Cursor/Antigravity | Codebase search + contract check |
-| 5. Review | Claude | `claude -p` with work-review command |
-| 6. Revise | Codex → Cursor → Claude | Re-run steps 3→4→5 |
+## Pipeline reference
 
-Human confirms between each step. Full details in `.cursor/rules/collab-pipeline.mdc` or `.agent/workflows/collab-pipeline.md`.
-
-## Never Do
-
-- Do not modify `brief.md`, `contract.md`, or `checklist.md`
-- Do not write `review.md`
-- Do not merge your own branch
-- Do not change `codex-run.sh`
+See `rules/collab-workflow.md` (SSOT) for the 4-stage pipeline, state derivation, and GitHub conventions.

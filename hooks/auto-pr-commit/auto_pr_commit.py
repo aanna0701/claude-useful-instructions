@@ -64,6 +64,50 @@ def _update_work_item_status(repo_root: Path, branch: str, pr_url: str) -> None:
             break
 
 
+_BRANCH_RE = re.compile(r"^feature-(feat|fix|perf|chore|test|refac)-(.+)$")
+
+
+def _work_item_info(git_dir: Path, branch: str) -> tuple[str | None, str | None, Path | None]:
+    """Return (ID, TYPE, contract_path) if this branch maps to a v2 work item."""
+    m = _BRANCH_RE.match(branch)
+    if not m:
+        return None, None, None
+    work_type = m.group(1).upper()
+    slug = m.group(2)
+    items_dir = git_dir / "work" / "items"
+    if not items_dir.is_dir():
+        return None, work_type, None
+    for item_dir in items_dir.iterdir():
+        if not item_dir.is_dir():
+            continue
+        name = item_dir.name
+        if not name.endswith(f"-{slug}"):
+            continue
+        item_id = name[: -(len(slug) + 1)]
+        contract = item_dir / "contract.md"
+        return item_id, work_type, contract if contract.is_file() else None
+    return None, work_type, None
+
+
+def _build_v2_body(git_dir: Path, branch: str, commit_log: str) -> str:
+    """Build a v2-style PR body with machine-readable markers."""
+    item_id, work_type, contract_path = _work_item_info(git_dir, branch)
+    if not item_id:
+        # Non-work-item branch: keep legacy body.
+        return f"## Changes\n{commit_log}\n"
+    slug = branch.split("-", 2)[-1] if "-" in branch else branch
+    contract_ref = f"work/items/{item_id}-{slug}/contract.md"
+    return (
+        f"<!-- work-item:{item_id} -->\n"
+        f"<!-- work-type:{work_type} -->\n\n"
+        f"## Contract\n"
+        f"See `{contract_ref}`\n\n"
+        f"## Acceptance\n"
+        f"- [ ] (transcribe from contract.md)\n\n"
+        f"## Changes\n{commit_log}\n"
+    )
+
+
 def _get_commit_info(git_dir: Path, base: str, head: str) -> tuple[str, str]:
     """Get commit log and derive a PR title."""
     log_result = subprocess.run(
@@ -128,7 +172,7 @@ def _update_existing_pr(git_dir: Path, branch: str, pr_num: int, state: Worktree
 
     # Build new title and body from commits
     commit_log, title = _get_commit_info(git_dir, base, branch)
-    body = f"## Changes\n{commit_log}\n"
+    body = _build_v2_body(git_dir, branch, commit_log)
 
     subprocess.run(
         ["gh", "pr", "edit", str(pr_num), "--repo", repo, "--title", title, "--body", body],
@@ -236,7 +280,7 @@ def main() -> None:
 
     # Build PR body
     commit_log, title = _get_commit_info(root, base, branch)
-    body = f"## Changes\n{commit_log}\n"
+    body = _build_v2_body(root, branch, commit_log)
 
     # Create draft PR
     pr_url = create_draft_pr(

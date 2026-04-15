@@ -1,129 +1,62 @@
-# work-plan — Create Work Items for Delegation
+# work-plan — Create a Work Item
 
-Split topics into parallelizable work items with contract boundaries for Codex/Claude dispatch.
+Create one work item: contract + branch + worktree + draft PR.
 
 ## Input
 
-**$ARGUMENTS**: Feature topics (newline-separated) or path to source RFC/ADR.
-
 ```
-/work-plan DuckDB schema cleanup
-/work-plan --type=chore Dependency upgrade
+/work-plan                  # interactive: type, title, scope, acceptance
+/work-plan "<title>"        # title hint, rest interactive
 ```
 
-## Work Types
+## Steps
 
-| Type | ID Prefix | Branch Pattern | Commit Prefix |
-|------|-----------|----------------|---------------|
-| feat | `FEAT-NNN` | `feature-{slug}` | `feat` |
-| fix | `FIX-NNN` | `feature-fix-{slug}` | `fix` |
-| docs | `DOCS-NNN` | `feature-docs-{slug}` | `docs` |
-| chore | `CHORE-NNN` | `feature-chore-{slug}` | `chore` |
-| refactor | `REFAC-NNN` | `feature-refac-{slug}` | `refactor` |
-| test | `TEST-NNN` | `feature-test-{slug}` | `test` |
-| perf | `PERF-NNN` | `feature-perf-{slug}` | `perf` |
-| audit | `AUDIT-NNN` | `feature-audit-{slug}` | `audit` |
+1. **Clarify contract** with the user (one round of questions): goal, scope in/out, touchable globs, forbidden globs, acceptance criteria, risks. For REFAC also preserve list (public API, behavior invariants).
+2. **Assign ID** `{TYPE}-{NNN}` from `work/items/` counter (`TYPE ∈ {FEAT,FIX,PERF,CHORE,TEST,REFAC}`).
+3. **Derive slug** kebab-case ≤ 40 chars from title.
+4. **Set branch** `feature-{type}-{slug}` (lowercase type, so `REFAC → refac`).
+5. **Acquire lock** `work/locks/planning.lock` via `flock`.
+6. **Write contract** to `work/items/{ID}-{slug}/contract.md` using the schema in `templates/work-item/contract.md`.
+7. **Create branch + worktree**:
+   ```bash
+   PARENT="$(git rev-parse --abbrev-ref HEAD)"
+   git branch "$BRANCH" "$PARENT"
+   WT_PATH="$(dirname "$REPO_ROOT")/${PROJECT}-${BRANCH}"
+   git worktree add "$WT_PATH" "$BRANCH"
+   mkdir -p "$WT_PATH/work/items/{ID}-{slug}"
+   cp "work/items/{ID}-{slug}/contract.md" "$WT_PATH/work/items/{ID}-{slug}/contract.md"
+   ```
+8. **First commit + push** in worktree:
+   ```bash
+   cd "$WT_PATH"
+   git add work/items/{ID}-{slug}/contract.md
+   git commit -s -m "chore(plan): {ID} contract"
+   git push -u origin "$BRANCH"
+   ```
+9. **Create draft PR** with standard body (per `templates/collab-pipeline-body.md`):
+   ```bash
+   gh pr create --draft --title "{ID} {title}" --body-file /tmp/pr-body.md --base "$PARENT"
+   ```
+10. **Release lock**.
 
-**Branch naming rule:** All branches start with `feature-`. For `feat` type, use `feature-{slug}` directly. For all other types, use `feature-{type}-{slug}`.
+## Output
 
-Type resolution: explicit `--type=` > infer from keywords > ask user.
-Audit keywords: "감사", "검증", "정합성", "audit", "check", "consistency", "convention".
+Print:
+- `ID`: FEAT-042
+- `Branch`: feature-feat-user-auth
+- `Worktree`: /abs/path (absolute)
+- `PR`: https://github.com/.../pull/N
 
-## Execution Steps
-
-### Step 1: Gather Context
-
-Read `$ARGUMENTS` (file or topic). For each: Objective, Source, Scope (in/out), Boundaries.
-
-### Step 2: Resolve Base Branch
-
-Use the **current branch** as the base for all worktrees. No branch-map needed.
-
-```bash
-BASE_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+Next step:
+```
+/work-impl {ID}          # FEAT/FIX/PERF/CHORE/TEST
+/work-refactor {ID}      # REFAC
+bash codex-run.sh {ID}   # unattended Codex
 ```
 
-### Step 3: Preflight
+## Errors
 
-Acquire `work/locks/planning.lock`. Verify worktree clean. Refuse if another planning run active.
-
-### Step 4: Decompose
-
-Find independent units (disjoint files, no runtime deps, testable in isolation). Don't split if < 3 files or tightly coupled.
-
-### Step 5: Assign IDs
-
-```bash
-ls work/items/ 2>/dev/null | grep -oP '\w+-\K\d+' | sort -n | tail -1
-```
-
-Sequential `{TYPE}-NNN` (3-digit, zero-padded). Slug: kebab-case, max 30 chars.
-
-### Step 6: Generate Work Items (parallel)
-
-Spawn agents per item. Each generates `brief.md`, `contract.md`, `checklist.md`, `status.md` from templates. (`relay.md` is created by later stages per § Relay Protocol — not seeded here.) Ensure Allowed Modifications are **disjoint** across siblings.
-
-**AUDIT variation**: "Allowed Modifications" → "Audit Scope", "Forbidden Zones" → "Out of Scope", "Interfaces" → "Audit Criteria", "Test Requirements" → "Expected Output Format".
-
-### Step 7: Boundary Overlap Check
-
-Always when 2+ items exist. Extract Allowed Modifications, check path overlaps. Print matrix. If overlaps: suggest narrowing, ask confirmation.
-
-### Step 8: Create Worktrees & Branches
-
-Per `rules/collab-workflow.md` § Worktree Rules (Creation):
-
-```bash
-REPO_ROOT="$(git rev-parse --show-toplevel)"
-PROJECT=$(basename "$REPO_ROOT")
-SLUG="{slug}"                       # e.g. user-auth
-# feat → feature-{slug}, others → feature-{type}-{slug}
-if [[ "$TYPE" == "feat" ]]; then
-  BRANCH="feature-${SLUG}"
-else
-  BRANCH="feature-${TYPE_SHORT}-${SLUG}"  # e.g. feature-fix-login-crash
-fi
-WT_PATH="$(dirname "$REPO_ROOT")/${PROJECT}-${BRANCH}"
-
-BASE_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
-git branch "$BRANCH" "$BASE_BRANCH"
-git worktree add "$WT_PATH" "$BRANCH"
-```
-
-Seed artifacts into worktree, commit. Update `status.md` with absolute `Worktree Path`.
-
-### Step 9: Push Branches, Draft PRs + Batch Manifest
-
-For each item, push the branch and create a Draft PR (the single coordination hub):
-
-```bash
-OWNER_REPO="$(gh repo view --json nameWithOwner -q '.nameWithOwner')"
-git push -u origin "$BRANCH"
-PR_URL=$(gh pr create \
-  --repo "$OWNER_REPO" \
-  --base "$BASE_BRANCH" \
-  --head "$BRANCH" \
-  --title "{TYPE}-NNN: {readable title}" \
-  --body "## Work Item: {slug}\n\nWork item: \`work/items/{slug}/\`" \
-  --draft)
-```
-
-Store PR URL in `status.md`. Write `work/batches/{batch_id}.json`. Release planning lock.
-
-### Step 10: Summary
-
-Print table with absolute worktree paths, then next-step commands.
-
-**MANDATORY NEXT-STEP TEMPLATE** — Print the block below as-is. Fill `«___»` slots with actual IDs. Do NOT add, remove, or reorder lines.
-
-```
-📋 다음 단계
-  /work-scaffold «IDs»              # Cursor 없으면: --claude
-  bash codex-run.sh «IDs»           # Codex 없으면: /work-impl «ID»
-  /work-verify «AUDIT-NNN»          # AUDIT only — 없으면 이 줄 삭제
-```
-
-Fill rules:
-- `«IDs»` → space-separated IDs (e.g., `PERF-154 PERF-155 PERF-156`)
-- `«AUDIT-NNN»` → AUDIT ID if exists, otherwise delete line
-- Lines, commands, order, comments — NEVER change
+- Branch exists: `ERROR: branch {BRANCH} already exists`
+- Worktree exists: `ERROR: worktree {WT_PATH} already exists`
+- Lock held: `ERROR: another /work-plan in progress`
+- `gh` unauthenticated: `ERROR: run 'gh auth login'`

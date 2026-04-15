@@ -1,65 +1,57 @@
-# work-review — Review Implementation Against Contract
+# work-review — Review a PR
 
-Compare implementation against contract, checklist, and brief. Supports batch review.
+Read the PR diff + contract, submit a GitHub review with inline MUST-fix comments.
 
 ## Input
 
-**$ARGUMENTS**: Work item IDs (e.g., `FEAT-001` or `FEAT-001 CHORE-002`).
-
-No arguments: auto-glob for `ready-for-review` items.
-
-## CRITICAL: Worktree-First Gate
-
-**Before reading ANY work item file**, you MUST resolve the worktree path. The cwd copy of `status.md` is a stale seed — it does NOT reflect Codex/agent progress.
-
-❌ WRONG: `Read work/items/FEAT-001-foo/status.md` (cwd — stale, shows `open` even when done)
-✅ RIGHT: Resolve worktree path FIRST → `Read /abs/path/to/worktree/work/items/FEAT-001-foo/status.md`
-
-**Validation**: After resolving `$WT_PATH`, confirm the path does NOT equal `$(git rev-parse --show-toplevel)`. If it does, you are reading from main repo — STOP and re-resolve via `git worktree list`.
+```
+/work-review {ID}      # e.g. /work-review FEAT-042
+```
 
 ## Steps
 
-1. **Resolve worktree**: Per `rules/collab-workflow.md` § Work Item Discovery (searches cwd, worktrees, sibling dirs), then § Worktree Resolution. Set `$WT_PATH` (absolute). **Gate: do NOT proceed to step 2 until `$WT_PATH` is resolved and validated.** All subsequent reads use `$WT_PATH/work/items/{SLUG}/`.
-2. **Read relay**: Per `rules/collab-workflow.md` § Read Before Act — use `gh api .../issues/{PR}/comments` to read impl + verify results (filter `<!-- relay:impl: -->` and `<!-- relay:verify: -->`). Or read `pr-relay.md` / `relay.md` as fallback. Factor verify failures into review (raise severity if tests failed). Include relay summary in PR reviewer context.
-3. **Pre-flight**: Read brief/contract/checklist/status (parallel). Require `ready-for-review` or `revising`. Acquire lock per § Locks.
-4. **Branch map validation**: Per `rules/review-merge-policy.md` § Merge Gating. Check freshness, merge target, role consistency.
-5. **Resolve PR**: `status.md` PR field > `gh pr list --head <branch>` > create as fallback.
-6. **Review changed files**: From status.md `Changed Files` or `git log --name-only`.
-7. **Generate review**: Spawn `pr-reviewer` agent. Decision: MERGE / REVISE / REJECT. Write `review.md`. Use `git add -f work/items/{SLUG}/`.
-8. **Relay**: Append `review` block to `relay.md` with decision, must_fix/optional counts, and items list.
-   - **PR Comment Relay** (per § PR Comment Relay):
+1. **Resolve PR** by branch:
+   ```bash
+   PR=$(gh pr list --head "feature-*-${slug}" --json number,url,headRefName,baseRefName --jq '.[0]')
+   ```
+2. **Read inputs**:
+   - `contract.md` in the worktree (resolve worktree via `git worktree list`)
+   - PR diff: `gh pr diff $PR_NUMBER`
+   - CI status: `gh pr checks $PR_NUMBER`
+3. **Evaluate** against contract:
+   - Boundaries respected (Touch / Forbidden / Preserve)?
+   - Acceptance criteria satisfied?
+   - CI green?
+   - Code quality (readability, error handling, tests coverage of acceptance)?
+4. **Classify findings**:
+   - **MUST-fix** → inline comments at `path:line` via GraphQL `addPullRequestReviewThread`:
+     ```bash
+     gh api graphql -f query='
+       mutation($prId:ID!,$body:String!,$path:String!,$line:Int!,$side:DiffSide!){
+         addPullRequestReviewThread(input:{
+           pullRequestId:$prId, body:$body, path:$path, line:$line, side:$side
+         }){ thread{ id } }
+       }' -f prId=$PR_NODE_ID -f body="$comment" -f path="$file" -F line=$line -f side=RIGHT
      ```
-     # Extract PR number from status.md PR field URL (e.g., .../pull/42 → 42)
-     add_issue_comment(issue_number={PR_NUMBER}, body="<!-- relay:review:{timestamp} --> ...")
-     # Fallback: gh pr comment {PR_NUMBER} --body "..."
+   - **SHOULD / NICE** → top-level review body.
+5. **Submit review**:
+   - If MUST-fix present:
+     ```bash
+     gh pr review $PR_NUMBER --request-changes --body "$summary"
      ```
+   - Else if all good:
+     ```bash
+     gh pr review $PR_NUMBER --approve --body "$summary"
+     ```
+6. **Output** — review URL + decision + count of MUST-fix / SHOULD.
 
-### MERGE
+## After review
 
-Per `rules/review-merge-policy.md`, execute in order (stop on first failure):
+- `CHANGES_REQUESTED` → user runs `/work-impl {ID}` or `/work-refactor {ID}` again (re-entry reads unresolved threads automatically).
+- `APPROVED` + CI green → user runs `gh pr merge {N} --squash --delete-branch`.
 
-1. **Acquire merge lock**: `source lib/merge-lock.sh && acquire_merge_lock` — serializes concurrent merges.
-2. **Pre-merge fetch**: `git fetch origin {merge_target}` — ensure merge target is current.
-3. **Check mergeability**: `gh pr view {pr} --json mergeable -q .mergeable` — must be `MERGEABLE`. If `CONFLICTING`, report conflicting files and STOP.
-4. **Merge**: Delegate to `pr-reviewer` agent step 8 (squash merge → verify → cleanup).
-5. **Post-merge**: Remove worktree (`git worktree remove`), prune refs, doc sync on working parent, remove `work/items/{SLUG}/` dir.
-6. **Release lock**: Automatic on exit via trap.
+## Errors
 
-**On failure at any step**: preserve branch + worktree, report error, release lock. Never delete branch on merge failure.
-
-### REVISE
-
-Write MUST-fix to review.md. Status → `revising`. Spawn `work-reviser` agent.
-
-**MANDATORY NEXT-STEP TEMPLATE** — Print the block below as-is. Fill `«___»` slots with actual ID. Do NOT add, remove, or reorder lines.
-
-```
-📋 다음 단계 (REVISE)
-  bash codex-run.sh «ID»           # Codex 없으면: /work-impl «ID»
-  /work-verify «ID»                # Cursor 없으면: --claude
-  /work-review «ID»
-```
-
-### REJECT
-
-State reason. Close PR. Remove `work/items/{SLUG}/`.
+- `gh` failure → raise, no fallback.
+- PR not found → `ERROR: no open PR on head feature-*-${slug}`.
+- CI still running → warn but allow review (user decision).

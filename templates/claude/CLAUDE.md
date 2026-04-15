@@ -1,18 +1,46 @@
 # Project Instructions
 
-## Claude-Codex Collaboration
+## Collab Workflow (v2)
 
-This project uses a structured handoff workflow. See `.claude/rules/collab-workflow.md` for the full protocol.
+This project uses a PR-native collaboration workflow. State is derived from GitHub PR + git. No md file stores state.
 
-- **Claude**: spec owner, integrator, final authority
-- **Codex**: implementer farm (reads `AGENTS.md`)
+SSOT: `.claude/rules/collab-workflow.md`.
 
-Commands: `/work-plan`, `/work-status`, `/work-review`, `/work-impl`, `/work-revise`
+### Pipeline
 
-Work items at `work/items/FEAT-NNN-slug/` with: `brief.md`, `contract.md`, `checklist.md`, `status.md`, `review.md`, `relay.md`
+```
+plan → impl | refactor → review → merge
+              ▲              │
+              └ CHANGES_REQUESTED
+```
+
+### Commands (flag-free)
+
+- `/work-plan` — create item (contract + branch + worktree + draft PR)
+- `/work-impl {ID}` — FEAT / FIX / PERF / CHORE / TEST
+- `/work-refactor {ID}` — REFAC
+- `/work-review {ID}` — `gh pr review` with inline MUST-fix
+- `/work-status [ID]` — read-only, `gh` + `git` derived
+
+Unattended: `bash codex-run.sh {ID}`.
+
+### Per-item file
+
+One file only: `work/items/{ID}-{slug}/contract.md`. No status / relay / review / checklist / brief.
+
+### GitHub conventions
+
+- Branch: `feature-{type}-{slug}`
+- Merge: squash only
+- MUST-fix: inline review comments (resolved via GraphQL `resolveReviewThread`)
+- CI required: `.github/workflows/pr-checks.yml` (bundled)
+- pre-commit (local) + CI (remote): intentional overlap
+
+<!-- USER SECTION BELOW -->
 
 ## Code Standards
 
-<!-- Add project-specific standards below -->
-- All code and comments in English
-- Follow existing project conventions
+- All code and comments in English.
+- Follow existing project conventions.
+- Python: uv-managed (`uv run ...`).
+- All commits signed: `git commit -s`.
