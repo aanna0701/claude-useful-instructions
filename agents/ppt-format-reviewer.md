@@ -3,6 +3,7 @@ name: ppt-format-reviewer
 description: "PPT 템플릿 포맷 준수 여부를 최종 검수합니다. 폰트, 레이아웃, 색상, 도형 등 템플릿 위반 탐지."
 tools: Read, Bash
 model: sonnet
+effort: medium
 ---
 
 # PPT Format Compliance Reviewer

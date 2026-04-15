@@ -3,6 +3,7 @@ name: diagram-writer
 description: "Mermaid diagram writer agent — generates diagrams with C4 layering, minimal text, and legends"
 tools: Read, Write, Edit
 model: sonnet
+effort: medium
 ---
 
 # Diagram Writer Agent

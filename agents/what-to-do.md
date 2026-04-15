@@ -5,6 +5,7 @@ description: >
   action plan — debugging, verification, and next implementation steps.
 tools: Read, Bash, Grep, Glob
 model: sonnet
+effort: medium
 ---
 
 # What-To-Do Agent

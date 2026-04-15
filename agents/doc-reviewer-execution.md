@@ -3,6 +3,7 @@ name: doc-reviewer-execution
 description: "Execution artifact reviewer — reviews Work Item bundles and standalone execution docs for structural integrity, contract compliance, and completeness"
 tools: Read, Edit, Bash, Glob, Grep
 model: sonnet
+effort: medium
 ---
 
 # Execution Artifact Reviewer Agent

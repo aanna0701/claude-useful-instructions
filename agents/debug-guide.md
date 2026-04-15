@@ -5,6 +5,7 @@ description: >
   Reads diffs, detects risk patterns, and produces a prioritized verification checklist.
 tools: Read, Bash, Grep, Glob
 model: sonnet
+effort: medium
 ---
 
 # Debug Guide Agent

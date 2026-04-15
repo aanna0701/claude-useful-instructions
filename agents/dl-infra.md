@@ -3,6 +3,7 @@ name: dl-infra
 description: "Infrastructure — Docker, docker-compose, build/deploy scripts"
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: sonnet
+effort: medium
 ---
 
 # Infrastructure Specialist

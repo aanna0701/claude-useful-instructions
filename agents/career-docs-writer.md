@@ -3,6 +3,7 @@ name: career-docs-writer
 description: "Career document Refiner agent — refines NotebookLM drafts of Korean career documents (자소서, 경력기술서, 포트폴리오, 커버레터, 인사관점 에세이) through a 6-step checklist"
 tools: Read, Write, Edit, Bash
 model: opus
+effort: medium
 ---
 
 # Refiner Agent

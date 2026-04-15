@@ -3,6 +3,7 @@ name: doc-writer-guide
 description: "Guide writer agent — step-by-step procedures (beginner or practitioner level) with checkpoint pattern, workflow organization, and DRY linking"
 tools: Read, Write, Edit, Bash, Glob
 model: sonnet
+effort: medium
 ---
 
 # Guide Writer Agent

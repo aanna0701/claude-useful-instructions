@@ -9,6 +9,7 @@ tools:
   - Edit
   - Bash
   - Glob
+effort: medium
 ---
 
 # Review Writer Agent

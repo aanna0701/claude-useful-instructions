@@ -3,6 +3,7 @@ name: dl-data
 description: "Data pipeline — preprocessing, collection, labeling, dataset format conversion (Docker)"
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: sonnet
+effort: medium
 ---
 
 # Data Pipeline Specialist

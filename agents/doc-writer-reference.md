@@ -3,6 +3,7 @@ name: doc-writer-reference
 description: "Reference document writer agent — API/Config/CLI references with tables-first approach, consistent structure, and code synchronization"
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: sonnet
+effort: medium
 ---
 
 # Reference Writer Agent

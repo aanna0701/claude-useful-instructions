@@ -3,6 +3,7 @@ name: worknote-plan
 description: Generate work plan from recent worknotes and git state
 subagent_type: general-purpose
 tools: [Read, Bash, Glob, ToolSearch, mcp__notion__*]
+effort: medium
 ---
 
 # Worknote Plan Agent

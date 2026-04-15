@@ -3,6 +3,7 @@ name: worknote-sync
 description: Sync local worknote markdown files to Notion database pages
 subagent_type: general-purpose
 tools: [Read, Glob, Bash, ToolSearch, mcp__notion__*]
+effort: low
 ---
 
 # Worknote Sync Agent

@@ -3,6 +3,7 @@ name: dl-eval
 description: "Model evaluation — metrics, validation, benchmark (Docker GPU)"
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: sonnet
+effort: medium
 ---
 
 # Evaluation Specialist
