@@ -757,44 +757,81 @@ remove_work_dir() {
 
 ensure_collab_scaffold() {
   mkdir -p "$PROJECT_ROOT/work/items"
-  mkdir -p "$PROJECT_ROOT/work/batches"
-  mkdir -p "$PROJECT_ROOT/work/locks"
 }
 
-ensure_github_labels() {
-  # Create status labels used by the collab workflow (work-scaffold, work-impl, etc.)
+ensure_branch_protection() {
+  # Configure GitHub branch protection + squash-only repo settings.
+  # Requires `gh` auth with admin:repo on the target repository.
   if ! command -v gh &>/dev/null; then
-    echo "  NOTE: gh CLI not found — skipping GitHub label creation"
+    echo "  NOTE: gh CLI not found — skipping branch protection setup"
     return
   fi
 
-  # Detect repo from PROJECT_ROOT git remote
   local repo
   repo=$(git -C "$PROJECT_ROOT" remote get-url origin 2>/dev/null | sed -E 's#.*github\.com[:/]##; s/\.git$//')
   if [[ -z "$repo" ]]; then
-    echo "  NOTE: No GitHub remote detected — skipping label creation"
+    echo "  NOTE: No GitHub remote detected — skipping branch protection setup"
     return
   fi
 
-  echo "  Creating collab status labels on $repo..."
-  local -A labels=(
-    ["status:planned"]="0E8A16"
-    ["status:scaffolded"]="1D76DB"
-    ["status:implementing"]="FBCA04"
-    ["status:ready-for-review"]="D93F0B"
-    ["status:revising"]="BFD4F2"
-    ["status:merged"]="6F42C1"
-  )
+  # Resolve default branch
+  local default_branch
+  default_branch=$(gh api "repos/$repo" --jq .default_branch 2>/dev/null || true)
+  if [[ -z "$default_branch" || "$default_branch" == "null" ]]; then
+    echo "  NOTE: Could not resolve default branch — skipping branch protection setup"
+    return
+  fi
 
-  for label in "${!labels[@]}"; do
-    local color="${labels[$label]}"
-    if gh label create "$label" --color "$color" --repo "$repo" 2>/dev/null; then
-      echo "    ✓ $label"
-    else
-      # Label already exists — not an error
-      true
-    fi
-  done
+  echo "  Configuring branch protection on $repo@$default_branch..."
+
+  # Backup current protection (if any)
+  local backup_file="$PROJECT_ROOT/.branch-protection-backup.json"
+  if gh api "repos/$repo/branches/$default_branch/protection" >"$backup_file" 2>/dev/null; then
+    echo "    ✓ Existing protection backed up to .branch-protection-backup.json"
+  else
+    rm -f "$backup_file"
+  fi
+
+  # Apply v2 protection
+  local protection_json
+  protection_json=$(cat <<'JSON'
+{
+  "required_status_checks": {
+    "strict": true,
+    "contexts": ["check"]
+  },
+  "enforce_admins": false,
+  "required_pull_request_reviews": {
+    "required_approving_review_count": 1,
+    "dismiss_stale_reviews": true
+  },
+  "required_conversation_resolution": true,
+  "restrictions": null,
+  "allow_force_pushes": false,
+  "allow_deletions": false
+}
+JSON
+)
+  if echo "$protection_json" | gh api -X PUT "repos/$repo/branches/$default_branch/protection" --input - >/dev/null 2>&1; then
+    echo "    ✓ Branch protection applied"
+  else
+    echo "    WARN: Branch protection failed (needs admin:repo token). Configure manually:"
+    echo "      Settings → Branches → Add rule on $default_branch"
+  fi
+
+  # Repo-level merge settings: squash only, auto-delete branches
+  if gh api -X PATCH "repos/$repo" \
+      -F allow_squash_merge=true \
+      -F allow_merge_commit=false \
+      -F allow_rebase_merge=false \
+      -F delete_branch_on_merge=true \
+      -F squash_merge_commit_title=PR_TITLE \
+      -F squash_merge_commit_message=PR_BODY \
+      >/dev/null 2>&1; then
+    echo "    ✓ Squash-only merge + auto-delete branches enabled"
+  else
+    echo "    WARN: Repo settings update failed (needs admin:repo token)"
+  fi
 }
 
 ensure_cursor_mcp() {
@@ -995,7 +1032,7 @@ done
 if $INSTALL_HAS_COLLAB; then
   ensure_collab_scaffold
   ensure_cursor_mcp
-  ensure_github_labels
+  ensure_branch_protection
 fi
 
 # ── Enable worktree guard for projects that install core or collab ─────────
