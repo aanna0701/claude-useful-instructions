@@ -29,9 +29,69 @@ from worktree_state import WorktreeState  # noqa: E402
 
 
 
+_HUB_PROTECTED = {
+    "main", "master", "develop", "research", "staging",
+    "feature-init-dev",
+}
+
+
+def _is_protected_branch(branch: str) -> bool:
+    """Never touch integration / hub branches."""
+    import os as _os
+    extra = _os.environ.get("GIT_CLEANUP_PROTECTED_BRANCHES", "")
+    extra_set = {b.strip() for b in extra.split(",") if b.strip()}
+    return branch in (_HUB_PROTECTED | extra_set)
+
+
+def _is_base_of_open_pr(repo: str | None, branch: str) -> bool:
+    """True if any open PR targets *branch* as its base."""
+    if not repo:
+        return False
+    check = subprocess.run(
+        ["gh", "pr", "list", "--repo", repo, "--base", branch,
+         "--state", "open", "--json", "number", "-q", "length"],
+        capture_output=True, text=True, timeout=15,
+    )
+    try:
+        return int((check.stdout or "0").strip()) > 0
+    except ValueError:
+        return False
+
+
 def _cleanup_worktree(main_root: Path, wt_path: Path, branch: str) -> None:
-    """Remove worktree, local branch, and remote branch."""
+    """Remove worktree, local branch, and remote branch.
+
+    Defense-in-depth: refuses to delete protected hub branches or branches
+    that are the base of any open PR. Upstream callers should filter first,
+    but a buggy caller shouldn't be able to nuke the integration branch.
+    """
     wt_str = str(wt_path)
+    repo = resolve_owner_repo(main_root)
+
+    if _is_protected_branch(branch):
+        print(
+            f"[worktree-cleanup] Refuse to delete protected branch: {branch}",
+            file=sys.stderr,
+        )
+        # Still remove the worktree directory — branch is the protected part.
+        if wt_path.exists() and wt_path != main_root:
+            subprocess.run(
+                ["git", "worktree", "remove", wt_str, "--force"],
+                capture_output=True, text=True, cwd=str(main_root),
+            )
+        return
+
+    if _is_base_of_open_pr(repo, branch):
+        print(
+            f"[worktree-cleanup] Refuse to delete {branch}: base of open PR(s)",
+            file=sys.stderr,
+        )
+        if wt_path.exists() and wt_path != main_root:
+            subprocess.run(
+                ["git", "worktree", "remove", wt_str, "--force"],
+                capture_output=True, text=True, cwd=str(main_root),
+            )
+        return
 
     # Remove git worktree
     if wt_path.exists():
@@ -48,7 +108,6 @@ def _cleanup_worktree(main_root: Path, wt_path: Path, branch: str) -> None:
     )
 
     # Delete remote branch
-    repo = resolve_owner_repo(main_root)
     if repo:
         subprocess.run(
             ["git", "push", "origin", "--delete", branch],
@@ -167,7 +226,16 @@ def _cleanup_orphan_branches(main_root: Path, repo: str | None) -> None:
         return
 
     safe_prefixes = ("feature-", "tmp/guard-")
-    protected = {"main", "master", "develop", "research", "staging"}
+    protected = {
+        "main", "master", "develop", "research", "staging",
+        # Integration / hub branches — never auto-delete. Extend via
+        # GIT_CLEANUP_PROTECTED_BRANCHES env (comma-separated).
+        "feature-init-dev",
+    }
+    import os as _os
+    extra = _os.environ.get("GIT_CLEANUP_PROTECTED_BRANCHES", "")
+    if extra:
+        protected.update(b.strip() for b in extra.split(",") if b.strip())
 
     for branch in result.stdout.strip().splitlines():
         branch = branch.strip()
@@ -178,11 +246,11 @@ def _cleanup_orphan_branches(main_root: Path, repo: str | None) -> None:
         if not any(branch.startswith(p) for p in safe_prefixes):
             continue
 
-        # Safety: never delete a branch with an OPEN PR. ancestry-into-main can
-        # be true the instant a feature branch is created from main HEAD, before
-        # any merge happens. Without this check, creating a feature branch and
-        # pushing it would race the cleanup hook and the head_ref_deleted event
-        # would auto-close the brand-new PR.
+        # Safety 1: never delete a branch with an OPEN PR as HEAD.
+        # ancestry-into-main can be true the instant a feature branch is created
+        # from main HEAD, before any merge happens. Without this check, creating
+        # a feature branch and pushing it would race the cleanup hook and the
+        # head_ref_deleted event would auto-close the brand-new PR.
         if repo:
             check = subprocess.run(
                 ["gh", "pr", "view", branch, "--repo", repo, "--json", "state",
@@ -191,6 +259,26 @@ def _cleanup_orphan_branches(main_root: Path, repo: str | None) -> None:
             )
             pr_state = check.stdout.strip() if check.returncode == 0 else ""
             if pr_state == "OPEN":
+                continue
+
+            # Safety 2: never delete a branch that is the BASE of any open PR.
+            # Deleting it triggers base_ref_deleted on GitHub which auto-closes
+            # every child PR (observed case: hub branch for stacked PRs).
+            base_check = subprocess.run(
+                ["gh", "pr", "list", "--repo", repo, "--base", branch,
+                 "--state", "open", "--json", "number", "-q", "length"],
+                capture_output=True, text=True, timeout=15,
+            )
+            try:
+                open_children = int((base_check.stdout or "0").strip())
+            except ValueError:
+                open_children = 0
+            if open_children > 0:
+                print(
+                    f"[worktree-cleanup] Skip {branch}: base of "
+                    f"{open_children} open PR(s)",
+                    file=sys.stderr,
+                )
                 continue
 
         # Delete local branch

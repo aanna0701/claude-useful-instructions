@@ -32,13 +32,29 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: ${{ github.event.pull_request.head.ref }}
           REPO: ${{ github.repository }}
+          # Comma-separated extra branches to never delete. Configure via the
+          # repository action variable `PROTECTED_BRANCHES` (Settings → Secrets
+          # and variables → Actions → Variables). Defaults below are always on.
+          EXTRA_PROTECTED: ${{ vars.PROTECTED_BRANCHES }}
         run: |
           echo "Merged branch: $BRANCH"
 
-          # Skip protected branches (main, develop, research + any 'main/*' style)
-          if echo "$BRANCH" | grep -qE '^(main|develop|research)$'; then
+          # Always-protected: primary release branches + common integration
+          # hubs. Extend per-repo via the PROTECTED_BRANCHES action variable.
+          DEFAULT_PROTECTED='^(main|master|develop|research|staging|feature-init-dev)$'
+          if echo "$BRANCH" | grep -qE "$DEFAULT_PROTECTED"; then
             echo "SKIP: '$BRANCH' is a protected base branch — never delete."
             exit 0
+          fi
+          if [ -n "$EXTRA_PROTECTED" ]; then
+            IFS=',' read -ra EXTRA_LIST <<< "$EXTRA_PROTECTED"
+            for p in "${EXTRA_LIST[@]}"; do
+              p_trim="$(echo "$p" | xargs)"
+              if [ -n "$p_trim" ] && [ "$BRANCH" = "$p_trim" ]; then
+                echo "SKIP: '$BRANCH' listed in PROTECTED_BRANCHES — never delete."
+                exit 0
+              fi
+            done
           fi
 
           # Check if any open PRs use this branch as their base
