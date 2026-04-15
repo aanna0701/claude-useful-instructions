@@ -1,6 +1,8 @@
 # work-impl — Implement a Work Item
 
-For `FEAT / FIX / PERF / CHORE / TEST`. Runs in the current session (Claude or Cursor). For unattended Codex, use `bash codex-run.sh {ID}` instead.
+For `FEAT / FIX / PERF / CHORE / TEST`.
+
+**Default flow:** try **Codex first** (unattended via `codex-run.sh`), then fall back to the current session (Claude/Cursor) if Codex fails, stalls, or leaves the contract unmet. Set `WORK_IMPL_SKIP_CODEX=1` to skip the Codex pass and implement directly in-session.
 
 ## Input
 
@@ -9,6 +11,18 @@ For `FEAT / FIX / PERF / CHORE / TEST`. Runs in the current session (Claude or C
 ```
 
 ## Steps
+
+0. **Codex-first pass** (skip if `WORK_IMPL_SKIP_CODEX=1` or `codex` CLI not installed):
+   ```bash
+   if [ -z "${WORK_IMPL_SKIP_CODEX:-}" ] && command -v codex >/dev/null 2>&1; then
+     bash "$(git rev-parse --show-toplevel)/codex-run.sh" {ID} || CODEX_FAILED=1
+   else
+     CODEX_FAILED=1
+   fi
+   ```
+   After the Codex pass, re-check PR state:
+   - If PR is green (`statusCheckRollup` all SUCCESS) and acceptance is met → skip to step 7 (promote draft → ready) and 8 (summary).
+   - If Codex stalled, pushed nothing, or left failing checks / unresolved threads → continue from step 1 to finish the work in-session.
 
 1. **Resolve worktree** by branch convention:
    ```bash
