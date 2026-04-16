@@ -53,7 +53,7 @@ cui-install --base --workflow /path/to/project
 |----------|-------------------|----------------------------------------------------------------------------------------------|
 | base     | `base`            | `git-auto-pull`, `branch-naming`, `guard-branch`, `guard-merge`, `auto-pr-commit`, `auto-pr`, `worktree-cleanup` hooks; `smart-git-commit-push`, `optimize-tokens`, `debug-guide`, `what-to-do` commands & agents; token analyzers; `pre-commit` template |
 | workflow | `workflow`        | Claude-Codex-Cursor work items (`/work-plan`, `/work-impl`, `/work-refactor`, `/work-review`, `/work-status`), `collab-workflow` skill, `pr-reviewer` / `ci-audit-agent`, CI (`pr-checks.yml`, `branch-auto-sync.yml`, `safe-branch-cleanup.yml`), `codex-run.sh`, `AGENTS.md`, `CLAUDE.md` |
-| domain   | `docs`            | `diataxis-doc-system`, `diagram-architect` skills + doc/diagram agents + `/write-doc`, `/init-docs`, `/sync-docs`, `/polish-doc` |
+| domain   | `docs`            | `diataxis-doc-system`, `diagram-architect` skills + doc/diagram agents + `/write-doc`, `/init-docs`, `/sync-docs` (v2: GitNexus + Starlight), `/polish-doc` |
 | domain   | `data-pipeline`   | `data-pipeline-architect` skill                                                              |
 | domain   | `career`          | `career-docs` skill + writer/reviewer/reviser agents                                         |
 | domain   | `dl`              | `pytorch-dl-standards` rules + DL agents (`capture`, `data`, `model`, `train`, `eval`, `infra`) |
@@ -179,7 +179,7 @@ The workflow layer has **no fallback** for `gh` failures — they raise errors.
 
 | Bundle           | Trigger examples (skills auto-fire)                                  |
 |------------------|---------------------------------------------------------------------|
-| `docs`           | "Write docs", "Design doc", "API docs", "Draw diagram", "ERD"       |
+| `docs`           | "Write docs", "Design doc", "API docs", "Draw diagram", "ERD", "Sync docs" — `/sync-docs` v2 auto-detects Starlight wiki and GitNexus code index for code-level doc sync |
 | `data-pipeline`  | "Design data pipeline", "ETL architecture"                          |
 | `career`         | "자소서 써줘", "Cover letter", "경력기술서"                          |
 | `dl`             | PyTorch DL standards; manual invocation of DL agents                |
@@ -188,6 +188,38 @@ The workflow layer has **no fallback** for `gh` failures — they raise errors.
 | `google-style`   | `/refactor-google-style` command                                     |
 
 Install only the domains you need. Domain bundles are independent of each other.
+
+### GitNexus setup (optional — enhances `/sync-docs`)
+
+GitNexus indexes your codebase into a knowledge graph (symbols, call chains, clusters, processes). When available, `/sync-docs` v2 uses it for code-level documentation sync instead of file-level diffs.
+
+```bash
+# 1. Install
+npm install -g gitnexus
+
+# 2. Register as MCP server for Claude Code
+claude mcp add gitnexus -- npx -y gitnexus@latest mcp
+
+# 3. Index a project (run from project root)
+cd /path/to/your-project
+gitnexus analyze
+
+# 4. (Optional) Skip embeddings for faster indexing
+gitnexus analyze --skip-embeddings
+```
+
+Add `.gitnexus/` to your project's `.gitignore`:
+```bash
+echo '.gitnexus/' >> .gitignore
+```
+
+`/sync-docs` auto-detects GitNexus — no flags needed. Without it, sync falls back to git-diff-based analysis.
+
+| With GitNexus | Without |
+|---|---|
+| "function `train()` added `optimizer` param, callers updated — regenerate training-config.md from actual code" | "trainer.py changed — update docs that reference it" |
+
+Re-index after major changes: `gitnexus analyze`. Stale index (>24h) triggers a warning.
 
 ---
 

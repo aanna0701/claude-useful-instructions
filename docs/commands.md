@@ -217,13 +217,45 @@ mkdocs.yml                # MkDocs Material config
 
 ## /sync-docs
 
-Sync project documentation to the current codebase state. Detects outdated docs and updates them.
+Sync project documentation to the current codebase state. Uses specialized agents (Sonnet for mechanical tasks, Opus for code-understanding-based writing) and auto-detects available capabilities.
 
 **Usage**:
 ```
-/sync-docs              # Sync all changed .md files
+/sync-docs              # Sync all stale documentation
 /sync-docs README.md    # Sync specific file only
 ```
+
+### Auto-detected Modes
+
+| Feature | Detection | Effect |
+|---|---|---|
+| **Starlight** | `astro.config.mjs` + `@astrojs/starlight` import | Wiki pages (`src/content/docs/`) synced, sidebar report, dashboard data updated |
+| **GitNexus** | MCP `list_repos` or `.gitnexus/` directory | Symbol-level blast radius analysis, semantic doc matching, code-based rewriting |
+| **Multi-worktree** | `git worktree list` >1 entry | Cross-worktree scan |
+
+### Agent Delegation
+
+| Task | Agent | Why |
+|---|---|---|
+| Scan, diff, metadata, standard docs, dashboard | **Sonnet** | Mechanical collection and value replacement |
+| Code understanding (GitNexus analysis) | **Opus** | Symbol relationship reasoning |
+| Wiki page rewriting | **Opus** | Needs deep code understanding to write accurate docs |
+| Architecture diagram regeneration | **Opus** | Process/cluster to mermaid conversion |
+
+### Wiki Page Update Policy (Starlight)
+
+| Page type | Policy |
+|---|---|
+| **Reference** (API, schema, config) | Aggressive rewrite from actual code |
+| **Guide** (how-to, setup, workflow) | Preserve prose, update commands/values |
+| **Explanation** (architecture, design) | Flag only, no auto-edit |
+
+Page type inferred from: frontmatter `type` field > directory path > content patterns.
+
+### Key Difference: GitNexus On vs Off
+
+- **Without GitNexus**: file-level — "this file changed, update docs that reference it"
+- **With GitNexus**: code-level — "this function's signature changed, its callers changed, regenerate the docs from what the code actually does now"
 
 ---
 
