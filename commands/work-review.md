@@ -39,16 +39,31 @@ Read the PR diff + contract, submit a GitHub review with inline MUST-fix comment
      ```bash
      gh pr review $PR_NUMBER --request-changes --body "$summary"
      ```
-   - Else if all good:
+     Also remove any stale review label (so guard-merge keeps blocking):
      ```bash
-     gh pr review $PR_NUMBER --approve --body "$summary"
+     for lbl in $(gh pr view $PR_NUMBER --json labels --jq '.labels[].name' | grep '^reviewed:passed:'); do
+       gh pr edit $PR_NUMBER --remove-label "$lbl"
+     done
      ```
-6. **Output** — review URL + decision + count of MUST-fix / SHOULD.
+   - Else if all good — approve **and mint the merge gate label**:
+     ```bash
+     gh pr review $PR_NUMBER --approve --body "$summary" || true  # self-approve may fail; that's ok
+     HEAD_SHA=$(gh pr view $PR_NUMBER --json headRefOid --jq .headRefOid)
+     SHORT=${HEAD_SHA:0:7}
+     # clear stale review labels for older shas
+     for lbl in $(gh pr view $PR_NUMBER --json labels --jq '.labels[].name' | grep '^reviewed:passed:' | grep -v "reviewed:passed:$SHORT"); do
+       gh pr edit $PR_NUMBER --remove-label "$lbl"
+     done
+     # ensure label exists in repo (idempotent), then apply
+     gh label create "reviewed:passed:$SHORT" --color "0E8A16" --description "work-review passed at $SHORT" 2>/dev/null || true
+     gh pr edit $PR_NUMBER --add-label "reviewed:passed:$SHORT"
+     ```
+6. **Output** — review URL + decision + count of MUST-fix / SHOULD + (on approve) gate label `reviewed:passed:{short_sha}`.
 
 ## After review
 
-- `CHANGES_REQUESTED` → user runs `/work-impl {ID}` or `/work-refactor {ID}` again (re-entry reads unresolved threads automatically).
-- `APPROVED` + CI green → user runs `gh pr merge {N} --squash --delete-branch`.
+- `CHANGES_REQUESTED` → user runs `/work-impl {ID}` or `/work-refactor {ID}` again. A new push changes HEAD sha, which invalidates the previous `reviewed:passed:*` label — `/work-review` must re-run before merge.
+- `APPROVED` + CI green + `reviewed:passed:{HEAD_short}` label → user runs `gh pr merge {N} --squash --delete-branch`. The `guard-merge` hook checks for this label/sha match and blocks the merge otherwise (covering `gh pr merge`, `gh api .../pulls/N/merge`, and MCP merge tools).
 
 ## Errors
 

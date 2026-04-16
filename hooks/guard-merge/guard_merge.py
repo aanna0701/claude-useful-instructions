@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
-"""Claude Code PreToolUse hook — block merges into protected branches.
+"""Claude Code PreToolUse hook — gate merges behind a review label.
 
-Blocks any attempt (via Bash or GitHub MCP tool) to merge into:
-  main, develop, research
+Policy:
+  - A merge attempt is allowed only if the target PR carries a label of the
+    form `reviewed:passed:{short_sha}` whose sha matches the PR's current
+    HEAD commit. This ties the approval to a specific revision — any new
+    push invalidates the gate.
 
 Caught operations:
-  - git merge <protected>
-  - git push [remote] <protected>  (including HEAD:<protected>)
-  - gh pr merge  (target branch unknown from command; block entirely)
-  - mcp__*__merge_pull_request  (GitHub MCP merge tool)
+  - gh pr merge [N] [...]
+  - gh api ... pulls/<N>/merge        (REST merge endpoint — any verb)
+  - mcp__*__merge_pull_request        (GitHub MCP merge tool)
+  - git merge <protected>             (protected = hub branches, static)
+  - git push [remote] <protected>
 
 Exit codes:
   0 — allow
@@ -18,21 +22,34 @@ from __future__ import annotations
 
 import json
 import re
+import subprocess
 import sys
 
+# Static hub branches — direct `git merge` / `git push` to these is always blocked.
+# The review-label gate below applies on top of this, for PR-based merges.
 PROTECTED_BRANCHES = {"main", "develop", "research"}
 _PROTECTED_PAT = "|".join(PROTECTED_BRANCHES)
 
-# git merge <protected>
+REVIEW_LABEL_PREFIX = "reviewed:passed:"
+
 _GIT_MERGE_RE = re.compile(
     r"\bgit\s+merge\b.*?\s+(?:" + _PROTECTED_PAT + r")(?:\s|$)"
 )
-# git push [remote] <protected>  or  git push origin HEAD:<protected>
 _GIT_PUSH_RE = re.compile(
     r"\bgit\s+push\b.*?(?:HEAD:)?(?:" + _PROTECTED_PAT + r")(?:\s|$)"
 )
-# gh pr merge (any form — target branch is PR's base, not in the command)
-_GH_PR_MERGE_RE = re.compile(r"\bgh\s+pr\s+merge\b")
+_GH_PR_MERGE_RE = re.compile(r"\bgh\s+pr\s+merge\b(?:\s+(\d+))?")
+_GH_API_MERGE_RE = re.compile(r"\bgh\s+api\b[^\n]*?/pulls/(\d+)/merge\b")
+
+# Commands that cannot perform a merge — skip pattern scan entirely so
+# merge-keyword false positives inside commit messages / PR bodies / echo
+# strings don't block the command.
+_BYPASS_RE = re.compile(
+    r"^\s*git\s+(?:commit|tag|log|show|blame|diff|stash|notes)\b"
+    r"|^\s*gh\s+(?:pr\s+(?:create|edit|comment|view|list|diff|checks|ready|close|reopen|review)|"
+    r"issue|release|repo|api\s+graphql|run|workflow|label)\b"
+    r"|^\s*echo\b|^\s*cat\b|^\s*printf\b"
+)
 
 
 def _block(msg: str) -> None:
@@ -40,52 +57,129 @@ def _block(msg: str) -> None:
     sys.exit(2)
 
 
-def _matched_branch(pattern: re.Pattern, command: str) -> str:
-    """Return the first protected branch name found in command, or empty string."""
-    m = pattern.search(command)
-    if not m:
-        return ""
-    for b in PROTECTED_BRANCHES:
-        if re.search(r"(?:HEAD:)?" + re.escape(b) + r"(?:\s|$)", command):
-            return b
-    return ""
+def _gh_json(args: list[str]) -> dict | list | None:
+    try:
+        out = subprocess.run(
+            ["gh", *args], capture_output=True, text=True, timeout=10
+        )
+        if out.returncode != 0:
+            return None
+        return json.loads(out.stdout)
+    except (subprocess.SubprocessError, json.JSONDecodeError, FileNotFoundError):
+        return None
+
+
+def _resolve_pr_number(explicit: str | None) -> int | None:
+    if explicit:
+        try:
+            return int(explicit)
+        except ValueError:
+            return None
+    # Fallback: current branch → PR
+    data = _gh_json(["pr", "view", "--json", "number"])
+    if isinstance(data, dict) and isinstance(data.get("number"), int):
+        return data["number"]
+    return None
+
+
+def _check_review_gate(pr_number: int, origin: str) -> None:
+    """Block merge if PR lacks `reviewed:passed:{head_sha}` label."""
+    data = _gh_json(
+        ["pr", "view", str(pr_number), "--json", "labels,headRefOid,url"]
+    )
+    if not isinstance(data, dict):
+        _block(
+            f"BLOCKED: PR #{pr_number} 상태 조회 실패 ({origin}).\n"
+            f"gh 인증 / 네트워크를 확인하거나 수동으로 리뷰 게이트 통과 후 재시도하세요."
+        )
+
+    head_sha: str = data.get("headRefOid", "") or ""
+    short = head_sha[:7]
+    labels = {
+        lbl.get("name", "") for lbl in data.get("labels", []) if isinstance(lbl, dict)
+    }
+    expected = f"{REVIEW_LABEL_PREFIX}{short}"
+
+    stale = sorted(
+        lbl for lbl in labels
+        if lbl.startswith(REVIEW_LABEL_PREFIX) and lbl != expected
+    )
+
+    if expected in labels:
+        return  # ✅ approved for this exact sha
+
+    stale_note = (
+        f"\n  이전 리뷰 라벨({', '.join(stale)})은 현재 HEAD({short})와 불일치 "
+        f"→ 재푸시 후 `/work-review` 재실행 필요."
+        if stale else ""
+    )
+    _block(
+        f"BLOCKED: PR #{pr_number} 머지 시도가 차단되었습니다 ({origin}).\n"
+        f"  현재 HEAD: {short}\n"
+        f"  필요한 라벨: `{expected}`\n"
+        f"  PR URL: {data.get('url', '')}{stale_note}\n"
+        f"`/work-review {pr_number}` 를 실행해 리뷰 통과 후 재시도하세요."
+    )
 
 
 def _check_bash(command: str) -> None:
+    # Fast bypass: commands that cannot cause a merge (commit messages, PR
+    # descriptions, echo/cat strings) frequently contain the literal tokens
+    # we match on. Skip them to avoid blocking on text-payload false matches.
+    first_line = command.lstrip().splitlines()[0] if command.strip() else ""
+    if _BYPASS_RE.match(first_line):
+        return
+
     if _GIT_MERGE_RE.search(command):
-        branch = _matched_branch(_GIT_MERGE_RE, command) or "<protected>"
         _block(
-            f"BLOCKED: `git merge {branch}` 실행이 차단되었습니다.\n"
-            f"'{branch}'는 보호된 브랜치입니다 (main / develop / research).\n"
-            f"직접 머지할 수 없습니다 — PR을 통해 팀 리뷰 후 머지하세요."
+            "BLOCKED: 보호된 브랜치(main / develop / research)로의 `git merge` 차단.\n"
+            "PR을 통해 `/work-review` 게이트 통과 후 머지하세요."
         )
 
     if _GIT_PUSH_RE.search(command):
-        branch = _matched_branch(_GIT_PUSH_RE, command) or "<protected>"
         _block(
-            f"BLOCKED: `{branch}` 브랜치에 직접 push가 차단되었습니다.\n"
-            f"'{branch}'는 보호된 브랜치입니다 (main / develop / research).\n"
-            f"PR을 통해 머지하세요."
+            "BLOCKED: 보호된 브랜치(main / develop / research)로의 직접 push 차단.\n"
+            "PR을 통해 머지하세요."
         )
 
-    if _GH_PR_MERGE_RE.search(command):
-        _block(
-            "BLOCKED: `gh pr merge` 명령이 차단되었습니다.\n"
-            "보호된 브랜치(main / develop / research)로의 자동 머지는 허용되지 않습니다.\n"
-            "GitHub 웹 UI에서 직접 머지하거나 팀 승인 후 진행하세요."
-        )
+    m = _GH_API_MERGE_RE.search(command)
+    if m:
+        pr = _resolve_pr_number(m.group(1))
+        if pr is None:
+            _block(
+                "BLOCKED: `gh api .../pulls/N/merge` — PR 번호 해석 실패.\n"
+                "리뷰 게이트 통과 여부를 확인할 수 없어 차단합니다."
+            )
+        _check_review_gate(pr, "gh api pulls/N/merge")
+        return
+
+    m = _GH_PR_MERGE_RE.search(command)
+    if m:
+        pr = _resolve_pr_number(m.group(1))
+        if pr is None:
+            _block(
+                "BLOCKED: `gh pr merge` — PR 번호 해석 실패 (현재 브랜치에 열린 PR 없음).\n"
+                "리뷰 게이트 통과 여부를 확인할 수 없어 차단합니다."
+            )
+        _check_review_gate(pr, "gh pr merge")
+        return
 
 
 def _check_mcp_merge(tool_name: str, tool_input: dict) -> None:
-    owner = tool_input.get("owner", "")
-    repo = tool_input.get("repo", "")
-    pr = tool_input.get("pull_number", tool_input.get("pullNumber", "?"))
-    _block(
-        f"BLOCKED: GitHub MCP merge_pull_request 호출이 차단되었습니다.\n"
-        f"  PR #{pr}  ({owner}/{repo})\n"
-        f"보호된 브랜치(main / develop / research)로의 자동 머지는 허용되지 않습니다.\n"
-        f"GitHub 웹 UI에서 직접 머지하거나 팀 승인 후 진행하세요."
-    )
+    pr = tool_input.get("pull_number") or tool_input.get("pullNumber")
+    try:
+        pr_int = int(pr) if pr is not None else None
+    except (TypeError, ValueError):
+        pr_int = None
+
+    if pr_int is None:
+        owner = tool_input.get("owner", "?")
+        repo = tool_input.get("repo", "?")
+        _block(
+            f"BLOCKED: MCP merge_pull_request — PR 번호 누락 ({owner}/{repo}).\n"
+            f"리뷰 게이트 통과 여부를 확인할 수 없어 차단합니다."
+        )
+    _check_review_gate(pr_int, f"MCP {tool_name}")
 
 
 def main() -> None:

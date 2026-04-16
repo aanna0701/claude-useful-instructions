@@ -85,14 +85,15 @@ The `base` bundle installs the strict worktree-based git workflow:
 ```
 Code edit on main repo
   → guard-branch blocks it
-  → creates worktree (feature-*) + GitHub Issue
+  → creates worktree (feature-adhoc-{MMDD-HHMM})
   → redirects edit to worktree
 
 First commit in worktree
-  → auto-pr-commit pushes branch + creates draft PR (Closes #issue)
+  → auto-pr-commit pushes branch + creates draft PR
+    (body injected from templates/collab-pipeline-body.md)
 
 PR merged (local or remote)
-  → post_merge_pull fast-forwards the main worktree
+  → git-auto-pull fast-forwards the main worktree
   → worktree-cleanup deletes merged worktree + local + remote branch
 ```
 
@@ -102,10 +103,15 @@ PR merged (local or remote)
 |----------|--------------------------------|-------------------------------|
 | feat     | `feature-{slug}`               | `feature-user-auth`           |
 | fix      | `feature-fix-{slug}`           | `feature-fix-login-crash`     |
-| refactor | `feature-refac-{slug}`         | `feature-refac-db-schema`     |
+| refac    | `feature-refac-{slug}`         | `feature-refac-db-schema`     |
 | docs     | `feature-docs-{slug}`          | `feature-docs-api-guide`      |
 | perf     | `feature-perf-{slug}`          | `feature-perf-query-cache`    |
-| adhoc    | `feature-adhoc-{MMDD-HHMM}`    | `feature-adhoc-0408-1530`     |
+| test     | `feature-test-{slug}`          | `feature-test-auth-fuzz`      |
+| chore    | `feature-chore-{slug}`         | `feature-chore-bump-deps`     |
+| audit    | `feature-audit-{slug}`         | `feature-audit-ci-topology`   |
+| adhoc    | `feature-adhoc-{slug}`         | `feature-adhoc-0408-1530`     |
+
+`adhoc` is auto-created by `guard-branch` with a `MMDD-HHMM` stamp; manual slugs are also accepted. Enforced by `hooks/branch-naming`.
 
 ### Hooks
 
@@ -125,6 +131,7 @@ PR merged (local or remote)
 |----------|-------------|------|---------------|
 | Python   | ruff-format | ruff | pyright, mypy |
 | C++      | clang-format| —    | —             |
+| General  | end-of-file-fixer, trailing-whitespace | check-yaml, check-added-large-files (≤1000 kB) | — |
 
 ---
 
@@ -134,8 +141,8 @@ PR + git are the single source of truth. No markdown file stores state.
 
 ```
 /work-plan (Claude) ──▶ /work-impl | /work-refactor (session AI) ──(push → CI)──▶ /work-review (Claude) ──▶ merge
-                                     ▲                                                     │
-                                     └──────────── CHANGES_REQUESTED ─────────────────────┘
+                        ▲                                                                  │
+                        └─────────────────────── CHANGES_REQUESTED ────────────────────────┘
 ```
 
 - **5 commands, 0 flags**: `/work-plan`, `/work-impl`, `/work-refactor`, `/work-review`, `/work-status`
