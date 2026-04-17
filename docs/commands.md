@@ -4,50 +4,6 @@ Commands are user-invocable slash commands (`.md` files) under `.claude/commands
 
 ---
 
-## /branch-init
-
-Detect or configure the branch hierarchy for the current project. Persists the result in `.claude/branch-map.yaml`.
-
-**Usage**:
-```
-/branch-init              # Auto-detect from existing branches
-/branch-init develop      # Set develop as working parent
-/branch-init research     # Set research as working parent
-```
-
-### Workflow
-
-| Step | Action |
-|------|--------|
-| 1 | Check for existing `.claude/branch-map.yaml` |
-| 2 | Detect integration branches (main, develop, research, etc.) |
-| 3 | Build trunk chain and set working parent |
-| 4 | Confirm with user |
-| 5 | Write `.claude/branch-map.yaml` |
-| 6 | Auto-audit GHA workflows if `.github/workflows/` exists |
-
-Works standalone (single agent) or with the collab workflow. Part of the **core** bundle.
-
----
-
-## /branch-status
-
-Show current branch hierarchy, freshness state, and work item branch mappings.
-
-**Usage**:
-```
-/branch-status            # Full status
-/branch-status --brief    # One-line summary
-```
-
-### Output
-
-- Trunk chain and working parent
-- Current branch freshness vs parent (ahead/behind)
-- Work item branch mappings (if collab workflow active)
-
----
-
 ## /gha-branch-sync
 
 Audit GitHub Actions workflows against the project's branch map configuration.
@@ -453,3 +409,65 @@ uv run playwright install chromium
 ```
 
 Requires `playwright` and `pillow` (auto-installed via `pyproject.toml`).
+
+---
+
+## /generate-ppt
+
+Fill a pre-formatted PowerPoint template (`.potx` or `.pptx`) with content drawn from source material. Treats the template as an immutable design system — inserts content only.
+
+**Usage**:
+```
+/generate-ppt
+```
+
+When invoked, Claude asks for:
+
+1. **Base PPT template** — `.potx` or `.pptx`
+2. **Source material** — draft, memo, paper, notes
+3. **Presentation goal** — investor pitch, tech talk, internal report, etc.
+4. **Audience** — investors, engineers, executives, etc.
+
+### Pipeline (`ppt-generation` skill)
+
+| Step | Action |
+|------|--------|
+| 1 | Template analysis (guard) |
+| 2 | Slot extraction |
+| 3 | Source compression |
+| 4 | Slide message design |
+| 5 | Content generation |
+| 6 | XML insertion |
+| 7 | Density check (`ppt-density-checker`) |
+| 8 | Format compliance review (`ppt-format-reviewer`) |
+
+Absolute rule: fonts, layouts, colors, and shapes are never modified — only placeholder content is filled.
+
+---
+
+## /refactor-google-style
+
+Apply the Google C++ / Python Style Guide across the repository. Orchestrates a mechanical formatting pass followed by semantic rewrites via language-specific agents.
+
+**Usage**:
+```
+/refactor-google-style                # All C++ + Python files
+/refactor-google-style src/           # Scope to a path
+/refactor-google-style src/foo.cc     # Single file
+/refactor-google-style --cpp-only
+/refactor-google-style --python-only
+/refactor-google-style --dry-run      # Report only, no writes
+```
+
+### Workflow
+
+| Step | Action |
+|------|--------|
+| 1 | Scope discovery (glob C++/Python, exclude `.venv/`, `build/`, `dist/`, `third_party/`, `vendor/`) |
+| 2 | Install/verify config (`.clang-format`, ruff section in `pyproject.toml`, Cursor mdc rules) |
+| 3 | Mechanical pass — `clang-format -i`, `ruff check --fix --unsafe-fixes` + `ruff format` |
+| 4 | Semantic pass — dispatch `google-style-refactor-cpp` / `google-style-refactor-python` agents in parallel (batches of ≤20) |
+| 5 | Verify — re-run formatters, run project tests when discoverable |
+| 6 | Per-language summary (files changed, top rule categories, human-review flags) |
+
+Preconditions: clean worktree (or explicit confirmation), `ruff` installed for Python, `clang-format` on PATH for C++.

@@ -122,7 +122,7 @@ project/
 │   └── locks/                         # planning.lock, merge.lock
 ├── .github/workflows/pr-checks.yml    # CI (required)
 └── .claude/
-    ├── rules/{collab-workflow,branch-map-policy,review-merge-policy}.md
+    ├── rules/{collab-workflow,review-merge-policy}.md
     ├── commands/work-{plan,impl,refactor,review,status}.md
     ├── agents/pr-reviewer.md
     ├── skills/collab-workflow/SKILL.md

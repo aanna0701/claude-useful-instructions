@@ -83,27 +83,6 @@ Used by the `/optimize-tokens` command. Invoked inline (no standalone frontmatte
 
 ---
 
-## Work Journal Agents
-
-Used by the `worknote` skill. Daily work journal management with Notion sync. Declared as `subagent_type: general-purpose`, so model inherits from the session.
-
-| Agent | Model | Effort | Role |
-|-------|-------|--------|------|
-| `worknote-sync` | inherit | low | Push local `~/.claude/worknote/*.md` to Notion DB (one page per project per day) |
-| `worknote-review` | inherit | medium | Query Notion by date range, generate 3-section narrative summary per project |
-| `worknote-plan` | inherit | medium | Generate prioritized work plan from recent entries + git state |
-
-### Data Flow
-
-```
-Stop hook → local md → worknote-sync → Notion DB
-                                         ↓
-                        worknote-review ← query by period
-                        worknote-plan  ← query + git branches
-```
-
----
-
 ## Collaboration Agents
 
 Used by the `collab-workflow` skill and `/work-*` commands.
@@ -111,18 +90,51 @@ Used by the `collab-workflow` skill and `/work-*` commands.
 | Agent | Model | Effort | Role |
 |-------|-------|--------|------|
 | `pr-reviewer` | **opus** | **max** | Review PRs against work item contracts |
-| `work-reviser` | sonnet | medium | Re-dispatch failed review items with targeted fixes |
-| `cursor-prompt-builder` | sonnet | medium | Parse contracts, detect type from ID prefix, assemble Cursor/Antigravity prompts + rules |
 
-### cursor-prompt-builder
+Revise loop is handled by re-running `/work-impl {ID}` or `/work-refactor`, which fetches unresolved PR review threads via GraphQL — no separate reviser agent. Cursor/Antigravity parity is maintained through per-bundle `.cursor/rules/*.mdc` files dropped at install time, not a runtime agent.
 
-Invoked by `/work-scaffold` and `/work-verify`. Handles the full pipeline:
+---
 
-1. Detects work item type from ID prefix (FEAT → `scaffold-feat.md`, REFAC → `scaffold-refactor.md`, AUDIT → `verify-audit.md`)
-2. Parses `brief.md` and `contract.md` into structured data
-3. Selects the type-specific template from `.claude/templates/cursor/`
-4. Fills template variables and returns the rendered prompt
-5. For scaffold mode: derives glob patterns from contract paths and generates `.cursor/rules/{SLUG}-guard.mdc` (contract boundary enforcement) and `{SLUG}-forbidden.mdc` (forbidden zone warning)
+## Diagnostic Agents
+
+Used by the `/debug-guide` and `/what-to-do` commands. Both analyze recent git commits without editing code.
+
+| Agent | Model | Effort | Role |
+|-------|-------|--------|------|
+| `debug-guide` | sonnet | medium | Scan recent diffs, detect risk patterns (error handling, concurrency, config changes), output prioritized verification checklist |
+| `what-to-do` | sonnet | medium | Summarize recent work and categorize next steps into Verify / Debug / Implement |
+
+---
+
+## Doc Polisher
+
+| Agent | Model | Effort | Description |
+|-------|-------|--------|-------------|
+| `doc-polisher` | sonnet | medium | Applies writing-style and structural fixes directly to existing docs (counterpart to `doc-reviewer`, which only suggests). Invoked by `/polish-doc`. |
+
+---
+
+## PPT Generation Agents
+
+Used by the `/generate-ppt` command and `ppt-generation` skill. Both run after content injection to enforce the template's design contract.
+
+| Agent | Model | Effort | Role |
+|-------|-------|--------|------|
+| `ppt-density-checker` | sonnet | medium | Detect over-dense slides; flag slides violating density budgets |
+| `ppt-format-reviewer` | sonnet | medium | Final compliance check for fonts, layout, colors, shapes against the base template |
+
+---
+
+## Google Style Refactor Agents
+
+Used by the `/refactor-google-style` command and `google-style-refactor` skill. Dispatched in parallel on file batches after the mechanical formatter pass.
+
+| Agent | Scope | Model | Effort |
+|-------|-------|-------|--------|
+| `google-style-refactor-cpp` | `*.{cpp,cc,cxx,h,hpp}` semantic rewrite (naming, includes, ownership, docstrings) | sonnet | medium |
+| `google-style-refactor-python` | `*.py` semantic rewrite (docstrings, type hints, naming, import groups) | sonnet | medium |
+
+Each agent reads `rules/google-style-{cpp,python}.md` before rewriting.
 
 ---
 
@@ -134,7 +146,7 @@ Used by the `/gha-branch-sync` command. Audits GitHub Actions workflows against 
 |-------|-------|--------|-------------|
 | `ci-audit-agent` | **opus** | **max** | Scans `.github/workflows/` for hardcoded branch targets, missing freshness checks, missing path filters, and drift detection gaps. Reports issues and recommends minimal diffs. |
 
-Reads `.claude/branch-map.yaml`, `.claude/rules/branch-map-policy.md`, and `.claude/rules/review-merge-policy.md` before analysis.
+Reads `.claude/branch-map.yaml` and `.claude/rules/review-merge-policy.md` before analysis.
 
 ---
 
@@ -195,12 +207,10 @@ Reasoning effort should match the agent's responsibility, and model should match
 
 | Effort | Default model | When to use | Agents in this repo |
 |--------|---------------|-------------|---------------------|
-| `low` | sonnet (or haiku) | Mechanical data movement, simple sync/format tasks | `worknote-sync` |
-| `medium` | sonnet | Standard code/doc generation, straightforward analysis, routine writing | `dl-*`, `debug-guide`, `what-to-do`, `diagram-writer`, `doc-polisher`, most `doc-writer-*`, `doc-reviewer-execution`, `ppt-*`, `worknote-plan`, `worknote-review` |
+| `low` | sonnet (or haiku) | Mechanical data movement, simple sync/format tasks | — |
+| `medium` | sonnet | Standard code/doc generation, straightforward analysis, routine writing | `dl-*`, `debug-guide`, `what-to-do`, `diagram-writer`, `doc-polisher`, most `doc-writer-*`, `doc-reviewer-execution`, `ppt-density-checker`, `ppt-format-reviewer`, `google-style-refactor-cpp`, `google-style-refactor-python` |
 | `medium` | opus | Medium tasks that still benefit from Opus quality (e.g. Korean career documents with strong tone requirements) | `career-docs-writer`, `career-docs-reviser` |
 | `high` | sonnet | Senior sonnet judgment calls where opus isn't warranted (none currently) | — |
 | `max` | **opus only** | Deep-judgment tasks: quality scoring, cross-system audits, final review gates, architectural decisions | `pr-reviewer`, `doc-reviewer`, `ci-audit-agent`, `career-docs-reviewer`, `doc-writer-explain` |
 
 **Pipeline guideline**: early stages (scaffold / first-pass generation) use `medium` + sonnet; any deep-judgment / review-gate / audit stage uses `max` + opus. `high` without opus is reserved for the rare case where sonnet is preferred but the task still needs stretched reasoning.
-
-**Pipeline guideline**: early stages (scaffold / first-pass generation) use `medium`; final review or merge-gating stages use `high` (or `max` on Opus for the hardest cases).

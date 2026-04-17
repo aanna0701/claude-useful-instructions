@@ -17,7 +17,7 @@ Check whether CI/CD workflows align with the project's branch hierarchy and merg
 
 ### Step 1: Read Branch Map
 
-Read `.claude/branch-map.yaml`. If missing, auto-initialize by running `/branch-init` logic inline (detect branches, confirm with user, write config), then continue.
+Read `.claude/branch-map.yaml`. If missing, auto-initialize inline (detect integration branches via `git branch -r`, confirm trunk chain + working parent with the user, write the config), then continue.
 
 ### Step 2: Inventory Workflows
 

@@ -21,8 +21,6 @@ State is derived from the GitHub PR + git. No per-item status / brief / checklis
 | Review + merge | `/work-review` |
 | Status | `/work-status` |
 | Unattended Codex run | `bash codex-run.sh {ID}` |
-| Branch hierarchy | `/branch-init` |
-| Branch state | `/branch-status` |
 | CI audit | `/gha-branch-sync` |
 
 `/work-impl` runs `codex-run.sh` first by default and falls back to the current session if Codex stalls or leaves the contract unmet. Set `WORK_IMPL_SKIP_CODEX=1` to skip the Codex pass.
@@ -31,7 +29,7 @@ Re-entry (`reviewDecision=CHANGES_REQUESTED`) is handled inline: `/work-impl` an
 
 ## References
 
-- Rules: `collab-workflow.md`, `branch-map-policy.md`, `review-merge-policy.md`
+- Rules: `collab-workflow.md`, `review-merge-policy.md`
 - Config: `.claude/branch-map.yaml`
 - Scripts: `codex-run.sh`, `lib/codex-run-*.sh`
 - Templates: `.claude/templates/work-item/contract.md`

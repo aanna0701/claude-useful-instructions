@@ -195,54 +195,6 @@ HTML presentation formatting skill. Converts existing HTML slides into a standar
 
 ---
 
-## worknote
-
-Daily work journal backed by local markdown + Notion sync. Records git activity per session via Stop hook, then supports syncing to Notion, reviewing by period, and generating work plans.
-
-**Triggers**: "worknote", "업무일지", "업무 기록", "오늘 뭐했", "작업 기록", "work note", "work log", "daily log", "what did I do"
-
-### Subcommands
-
-| Command | Action | Notion Required |
-|---------|--------|:---:|
-| `/worknote` | View today's local worknote | No |
-| `/worknote sync` | Push local md → Notion DB | Yes |
-| `/worknote review <period>` | Query Notion + contextual summary | Yes |
-| `/worknote plan [period]` | Generate prioritized work plan | Yes |
-
-### Scope Flags
-
-| Flag | Behavior |
-|------|----------|
-| (default) | Current repo only |
-| `--project <name>` | Specific project |
-| `--all` | All projects, grouped |
-
-### Review Output Format
-
-Per-project 3-section narrative: **작업 내용** (what/why) → **결과** (outcomes) → **추가 고려사항** (follow-ups, risks).
-
-### Architecture
-
-```
-Stop hook (shell, 0 tokens) → ~/.claude/worknote/YYYY-MM-DD.md
-  ↓ /worknote sync
-worknote-sync agent → Notion DB (one page per project per day)
-  ↓ /worknote review
-worknote-review agent → contextual summary
-  ↓ /worknote plan
-worknote-plan agent → prioritized work plan
-```
-
-### Related
-
-- **`worknote-sync`** agent: Local → Notion push
-- **`worknote-review`** agent: Period-based contextual summary
-- **`worknote-plan`** agent: Work plan generation
-- **Notion MCP**: Required for sync/review/plan (see README Prerequisites)
-
----
-
 ## career-docs
 
 Korean career document generation & refinement skill. NotebookLM drafts; AI refines through a 6-step checklist and iterative Writer-Reviewer loop.
@@ -308,7 +260,6 @@ PR-native collaboration workflow for structured plan → implement → review cy
 | Refactor (REFAC) | `/work-refactor` |
 | Review + merge | `/work-review` |
 | Check status | `/work-status` |
-| Set up branch hierarchy | `/branch-init` |
 | Audit CI workflows | `/gha-branch-sync` |
 
 ### Pipeline
@@ -324,3 +275,77 @@ Revise loop: if `reviewDecision=CHANGES_REQUESTED`, re-run `/work-impl {ID}` (or
 - **[Collab Workflow](collab-workflow.md)**: Architecture, setup, walkthrough
 - **[Migration v1 → v2](MIGRATION-v2.md)**: What changed in v2
 - **Commands**: `/work-plan`, `/work-impl`, `/work-refactor`, `/work-review`, `/work-status`
+
+---
+
+## google-style-refactor
+
+Refactor an entire C++/Python codebase to the Google Style Guide. Runs mechanical formatters first, then dispatches language-specific semantic agents in parallel.
+
+**Triggers**: "google style", "google style guide", "Google C++ style", "Google Python style", "refactor to google", "/refactor-google-style"
+
+### Rules (auto-loaded)
+
+| File | Covers |
+|------|--------|
+| `rules/google-style-cpp.md` | C++ formatting, naming, includes, ownership, language features |
+| `rules/google-style-python.md` | Python formatting, naming, docstrings, type hints, imports |
+
+### Pipeline
+
+```
+[Scope] → Mechanical pass → Semantic pass (parallel agents) → Verify
+          (clang-format, ruff)  (google-style-refactor-{cpp,python})  (re-format + tests)
+```
+
+### Agents
+
+| Agent | Scope | Model | Effort |
+|-------|-------|-------|--------|
+| `google-style-refactor-cpp` | `*.{cpp,cc,h,hpp}` semantic rewrite | sonnet | medium |
+| `google-style-refactor-python` | `*.py` semantic rewrite | sonnet | medium |
+
+### Cursor Parity
+
+Installing the `google-style` bundle also writes `.cursor/rules/google-style-{cpp,python}.mdc` with glob triggers so Cursor's inline AI applies the same rules.
+
+### Related
+
+- **`/refactor-google-style`** command: Entry point
+- **Tooling installed**: `.clang-format` (Google preset), `pyproject.toml` ruff section, Cursor mdc rules
+
+---
+
+## ppt-generation
+
+Fill a pre-formatted PowerPoint template (`.potx` or `.pptx`) with content from source material. Treats the base template as an **immutable design system** — inserts content only, never modifies fonts, layouts, colors, or shapes.
+
+**Triggers**: "fill template", "populate slides", "use this template", "base PPT", ".potx", "템플릿에 내용 넣어줘", "베이스 PPT에 채워줘", "템플릿 기반으로 발표자료 만들어줘"
+
+### Non-Negotiable Rules
+
+1. Never change fonts, font sizes, bullet styles, colors, spacing, or positions
+2. Never move, resize, or delete shapes/text boxes/images
+3. Only replace placeholder text or insert into designated slots
+4. Inherit all `<a:rPr>` and `<a:pPr>` from the template
+5. Content is concise, technical, one core message per slide
+6. No decorative elements, animations, or new shapes
+
+### 8-Step Pipeline
+
+| Step | Action |
+|------|--------|
+| 1 | Template analysis (guard) — slideLayout XML, placeholders, fixed elements |
+| 2 | Slot extraction — idx, position, size, bullet hierarchy |
+| 3 | Source compression — extract key facts from source docs |
+| 4 | Slide message design — one core message per slide |
+| 5 | Content generation — phrase-first, presentation-ready |
+| 6 | XML insertion — into designated placeholders only |
+| 7 | Density check — `ppt-density-checker` agent |
+| 8 | Format compliance review — `ppt-format-reviewer` agent |
+
+### Related
+
+- **`/generate-ppt`** command: Entry point
+- **`ppt-density-checker`** agent: Detect over-dense slides
+- **`ppt-format-reviewer`** agent: Enforce template design contract
