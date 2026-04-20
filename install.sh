@@ -15,6 +15,7 @@
 #   --workflow      [workflow] Claude-Codex collaboration (work items, AGENTS.md/CLAUDE.md, codex-run)
 #   --docs          [domain] Documentation & diagrams
 #   --data-pipeline [domain] Data pipeline architect
+#   --codebase      [domain] Codebase Q&A (GitNexus-backed)
 #   --career        [domain] Career document tools
 #   --dl            [domain] PyTorch DL standards + agents
 #   --presentation  [domain] HTML presentation generator
@@ -90,6 +91,12 @@ BUNDLE_DATA_PIPELINE=(
   "skills:data-pipeline-architect"
 )
 
+BUNDLE_CODEBASE=(
+  "skills:codebase-qa"
+  "agents:codebase-researcher.md"
+  "commands:codebase-ask.md"
+)
+
 BUNDLE_CAREER=(
   "skills:career-docs"
   "agents:career-docs-writer.md"
@@ -161,12 +168,13 @@ BUNDLE_GOOGLE_STYLE=(
 #   base      — git hooks, commit/push helpers, token/debug utilities (always install)
 #   workflow  — Claude-Codex collaboration layer on top of base
 #   domain-*  — task-specific bundles (install per project need)
-BUNDLE_NAMES=("base" "workflow" "docs" "data-pipeline" "career" "dl" "presentation" "ppt-generation" "google-style")
+BUNDLE_NAMES=("base" "workflow" "docs" "data-pipeline" "codebase" "career" "dl" "presentation" "ppt-generation" "google-style")
 BUNDLE_DESCRIPTIONS=(
   "[base] git hooks + commit/push helpers + token/debug utilities"
   "[workflow] Claude-Codex collaboration: work items, AGENTS.md/CLAUDE.md, codex-run, PR workflows"
   "[domain] Documentation & diagrams (diataxis framework, doc agents, diagram-architect)"
   "[domain] Data pipeline architect skill"
+  "[domain] Codebase Q&A (GitNexus-backed skill/agent/command for code questions)"
   "[domain] Career document tools (cover letters, Korean)"
   "[domain] PyTorch DL standards + agents (capture, data, model, train, eval, infra)"
   "[domain] HTML presentation generator (16:9 dark theme slides + PDF export)"
@@ -192,6 +200,7 @@ while [[ $# -gt 0 ]]; do
     --workflow)      SELECTED_BUNDLES+=("workflow"); shift ;;
     --docs)          SELECTED_BUNDLES+=("docs"); shift ;;
     --data-pipeline) SELECTED_BUNDLES+=("data-pipeline"); shift ;;
+    --codebase)      SELECTED_BUNDLES+=("codebase"); shift ;;
     --career)        SELECTED_BUNDLES+=("career"); shift ;;
     --dl)            SELECTED_BUNDLES+=("dl"); shift ;;
     --presentation)  SELECTED_BUNDLES+=("presentation"); shift ;;
@@ -319,6 +328,7 @@ get_bundle_items() {
     workflow)        printf '%s\n' "${BUNDLE_WORKFLOW[@]}" ;;
     docs)            printf '%s\n' "${BUNDLE_DOCS[@]}" ;;
     data-pipeline)   printf '%s\n' "${BUNDLE_DATA_PIPELINE[@]}" ;;
+    codebase)        printf '%s\n' "${BUNDLE_CODEBASE[@]}" ;;
     career)          printf '%s\n' "${BUNDLE_CAREER[@]}" ;;
     dl)              printf '%s\n' "${BUNDLE_DL[@]}" ;;
     presentation)    printf '%s\n' "${BUNDLE_PRESENTATION[@]}" ;;
