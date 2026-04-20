@@ -245,6 +245,51 @@ User Input (doc type + JD/context + constraints)
 
 ---
 
+## codebase-qa
+
+GitNexus-backed codebase Q&A skill. Answers questions about symbols, impact, call flow, and architecture using the GitNexus knowledge graph. Read-only — never edits code. All evidence cited as `file:line`.
+
+**Triggers**: "이 함수 바꾸면 뭐가 깨져?", "이 API 어떻게 흘러가?", "인증 처리하는 코드 찾아줘", "이 심볼 누가 쓰냐?", "where is X defined", "impact of removing Y", "who calls", "who depends on", "blast radius", "call graph", "codebase question"
+
+### Workflow
+
+```
+[질문] → Phase 1: 전처리 → Phase 2: 분류 → Phase 3: 실행 → Phase 4: 답변
+         (repo/index 확인)   (intent 맵핑)   (직접 or 위임)   (file:line + 요약)
+```
+
+### Intent Classification
+
+| Intent | GitNexus tools |
+|---|---|
+| symbol-lookup | `context`, `shape_check` |
+| impact | `impact`, `api_impact` |
+| flow-trace | `route_map`, `context`, `cypher` |
+| semantic | `query`, `group_query` |
+| structure | `group_list`, `group_contracts`, `cypher` |
+| change-impact | `detect_changes`, `impact` |
+| api-surface | `route_map`, `tool_map` |
+| rename-safety | `rename` (dry-run), `context` |
+
+### Routing
+
+| Complexity | Route |
+|---|---|
+| Single intent + single symbol | **Direct** — 1–2 parallel GitNexus calls in-skill |
+| 2+ intents OR cross-symbol impact OR semantic search | **Delegate** to `codebase-researcher` agent |
+
+### Preconditions
+
+GitNexus indexed for the repo (`gitnexus analyze`). Stale index (>24h) triggers a warning in the answer header. Without GitNexus the skill stops and prints install instructions — no fallback.
+
+### Related
+
+- **`/codebase-ask`** command: Entry point
+- **`codebase-researcher`** agent: Multi-hop delegation target
+- **References**: `skills/codebase-qa/references/gitnexus-tools.md` (tool cheatsheet)
+
+---
+
 ## collab-workflow
 
 PR-native collaboration workflow for structured plan → implement → review cycles between Claude and Codex. State is derived from the GitHub PR + git — no per-item status md files.

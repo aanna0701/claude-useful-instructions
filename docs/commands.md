@@ -298,6 +298,36 @@ Categorizes next steps into: **Verify** (test what was built), **Debug** (invest
 
 ---
 
+## /codebase-ask
+
+Answer a question about the codebase using GitNexus MCP tools. Read-only — never edits code.
+
+**Usage**:
+```
+/codebase-ask <question>
+/codebase-ask <question> --focus=<area>
+/codebase-ask <question> --deep
+```
+
+### Flags
+
+| Flag | Effect |
+|---|---|
+| `--focus=<area>` | Area hint (e.g., `--focus=auth`, `--focus=training-pipeline`) |
+| `--deep` | Force delegation to `codebase-researcher` even for simple questions |
+
+### Workflow
+
+| Step | Action |
+|------|--------|
+| 1 | Parse `$ARGUMENTS` → `QUESTION`, `FOCUS`, `DEEP` |
+| 2 | Dispatch to `codebase-qa` skill (preflight + intent classify + direct-or-delegate) |
+| 3 | Present skill answer; highlight `(unverified)` symbols or stale index at top |
+
+If GitNexus isn't installed/indexed, the command prints setup instructions (`npm install -g gitnexus`, `claude mcp add gitnexus …`, `gitnexus analyze`). See [README.md](../README.md) "GitNexus setup" section.
+
+---
+
 ## /smart-git-commit-push
 
 Analyze changes, auto-split by feature into separate commits, and push.

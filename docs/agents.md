@@ -106,6 +106,18 @@ Used by the `/debug-guide` and `/what-to-do` commands. Both analyze recent git c
 
 ---
 
+## Codebase Research Agent
+
+Used by the `codebase-qa` skill and `/codebase-ask` command. Read-only — never edits code.
+
+| Agent | Model | Effort | Role |
+|-------|-------|--------|------|
+| `codebase-researcher` | **opus** | high | Orchestrates GitNexus MCP calls (`context`, `impact`, `api_impact`, `query`, `detect_changes`, `route_map`, `tool_map`, `cypher`, `shape_check`, `rename`, `group_*`) in parallel to answer multi-hop questions ("what breaks if I change X?", "how does request flow from Y?", "who depends on Z?"). Returns a synthesized report with `file:line` anchors. |
+
+Delegation trigger: 2+ intents, multiple symbols, or semantic search required. Simple single-symbol lookups stay in-skill. The agent uses `Read` / `Grep` / `Glob` only to verify stale GitNexus hits.
+
+---
+
 ## Doc Polisher
 
 | Agent | Model | Effort | Description |

@@ -55,6 +55,7 @@ cui-install --base --workflow /path/to/project
 | workflow | `workflow`        | Claude-Codex-Cursor work items (`/work-plan`, `/work-impl`, `/work-refactor`, `/work-review`, `/work-status`), `collab-workflow` skill, `pr-reviewer` / `ci-audit-agent`, CI (`pr-checks.yml`, `branch-auto-sync.yml`, `safe-branch-cleanup.yml`), `codex-run.sh`, `AGENTS.md`, `CLAUDE.md` |
 | domain   | `docs`            | `diataxis-doc-system`, `diagram-architect` skills + doc/diagram agents + `/write-doc`, `/init-docs`, `/sync-docs` (v2: GitNexus + Starlight), `/polish-doc` |
 | domain   | `data-pipeline`   | `data-pipeline-architect` skill                                                              |
+| domain   | `codebase`        | `codebase-qa` skill + `codebase-researcher` agent + `/codebase-ask` (GitNexus-backed)        |
 | domain   | `career`          | `career-docs` skill + writer/reviewer/reviser agents                                         |
 | domain   | `dl`              | `pytorch-dl-standards` rules + DL agents (`capture`, `data`, `model`, `train`, `eval`, `infra`) |
 | domain   | `presentation`    | `html-presentation` skill + slide commands + PDF export                                      |
@@ -181,6 +182,7 @@ The workflow layer has **no fallback** for `gh` failures — they raise errors.
 |------------------|---------------------------------------------------------------------|
 | `docs`           | "Write docs", "Design doc", "API docs", "Draw diagram", "ERD", "Sync docs" — `/sync-docs` v2 auto-detects Starlight wiki and GitNexus code index for code-level doc sync |
 | `data-pipeline`  | "Design data pipeline", "ETL architecture"                          |
+| `codebase`       | "what breaks if I change X", "who calls Y", "blast radius", "이 함수 바꾸면 뭐 깨져?" — `/codebase-ask`, GitNexus required |
 | `career`         | "자소서 써줘", "Cover letter", "경력기술서"                          |
 | `dl`             | PyTorch DL standards; manual invocation of DL agents                |
 | `presentation`   | "PPT format", "Slide conversion", "format-presentation"             |
@@ -237,11 +239,13 @@ Re-index after major changes: `gitnexus analyze`. Stale index (>24h) triggers a 
 
 ```
 claude-useful-instructions/
-├── skills/           # Auto-triggered skills (diataxis, diagram, data-pipeline, collab-workflow,
-│                     #   html-presentation, career-docs, ppt-generation, google-style-refactor)
+├── skills/           # Auto-triggered skills (diataxis, diagram, data-pipeline, codebase-qa,
+│                     #   collab-workflow, html-presentation, career-docs, ppt-generation,
+│                     #   google-style-refactor)
 ├── agents/           # Subagents (doc writers, diagram writer, debug-guide, token analyzers,
-│                     #   pr-reviewer, ci-audit-agent, dl-*, career-docs-*, ppt-*, google-style-*)
-├── commands/         # Slash commands (/work-*, /write-doc, /init-docs, /sync-docs,
+│                     #   codebase-researcher, pr-reviewer, ci-audit-agent, dl-*, career-docs-*,
+│                     #   ppt-*, google-style-*)
+├── commands/         # Slash commands (/work-*, /write-doc, /init-docs, /sync-docs, /codebase-ask,
 │                     #   /smart-git-commit-push, /optimize-tokens, /debug-guide, /what-to-do,
 │                     #   /create-presentation, /format-presentation, /export-pdf, /generate-ppt,
 │                     #   /refactor-google-style)
