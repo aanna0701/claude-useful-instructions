@@ -58,12 +58,43 @@ Read the PR diff + contract, submit a GitHub review with inline MUST-fix comment
      gh label create "reviewed:passed:$SHORT" --color "0E8A16" --description "work-review passed at $SHORT" 2>/dev/null || true
      gh pr edit $PR_NUMBER --add-label "reviewed:passed:$SHORT"
      ```
-6. **Output** — review URL + decision + count of MUST-fix / SHOULD + (on approve) gate label `reviewed:passed:{short_sha}`.
+6. **Auto-merge (on APPROVE only)** — per `rules/review-merge-policy.md`. Skip and report reason if any precondition fails:
+   1. Acquire lock: `source lib/merge-lock.sh && acquire_merge_lock || { echo "skip: merge lock busy"; exit 0; }`
+   2. Refetch state (CI + mergeability can flip during review):
+      ```bash
+      gh pr view $PR_NUMBER --json mergeable,mergeStateStatus,headRefName,baseRefName,reviewDecision \
+        -q '{mergeable, mergeStateStatus, head: .headRefName, base: .baseRefName, decision: .reviewDecision}'
+      ```
+   3. Preconditions (all must hold — else `release_merge_lock` and skip with reason):
+      - `mergeable == "MERGEABLE"`
+      - `mergeStateStatus ∈ {CLEAN, HAS_HOOKS, UNSTABLE}` (UNSTABLE allowed only if non-required checks are the ones not green — otherwise block)
+      - CI rollup green: `gh pr checks $PR_NUMBER` — all required checks `pass`
+      - Parent fresh: `git fetch origin $BASE && git merge-base --is-ancestor origin/$BASE $HEAD_SHA`
+      - Unresolved threads = 0:
+        ```bash
+        gh api graphql -f query='query($n:Int!,$o:String!,$r:String!){repository(owner:$o,name:$r){pullRequest(number:$n){reviewThreads(first:100){nodes{isResolved}}}}}' \
+          -F n=$PR_NUMBER -f o=$OWNER -f r=$REPO \
+          --jq '[.data.repository.pullRequest.reviewThreads.nodes[]|select(.isResolved==false)]|length'
+        ```
+   4. Merge (squash, **without** `--delete-branch` — deletion is a separate, verified step):
+      ```bash
+      gh pr merge $PR_NUMBER --squash --subject "$(gh pr view $PR_NUMBER --json title --jq .title) (#$PR_NUMBER)"
+      ```
+   5. Verify: `gh pr view $PR_NUMBER --json state --jq .state` must be `MERGED`. If not, `release_merge_lock` and raise — **do not delete branch**.
+   6. Delete remote branch only after verified merge:
+      ```bash
+      gh api --method DELETE "repos/$OWNER/$REPO/git/refs/heads/$HEAD_BRANCH" || \
+        git push origin --delete "$HEAD_BRANCH"
+      ```
+   7. `release_merge_lock`.
+   8. `git pull` on the main worktree is handled automatically by the `git-auto-pull` PostToolUse hook (`hooks/git-auto-pull/post_merge_pull.py`). Worktree cleanup is handled by the `worktree-cleanup` hook. No manual step required.
+7. **Output** — review URL + decision + count of MUST-fix / SHOULD + (on approve) gate label `reviewed:passed:{short_sha}` + auto-merge result (`merged` | `skipped: <reason>`).
 
 ## After review
 
 - `CHANGES_REQUESTED` → user runs `/work-impl {ID}` or `/work-refactor {ID}` again. A new push changes HEAD sha, which invalidates the previous `reviewed:passed:*` label — `/work-review` must re-run before merge.
-- `APPROVED` + CI green + `reviewed:passed:{HEAD_short}` label → user runs `gh pr merge {N} --squash --delete-branch`. The `guard-merge` hook checks for this label/sha match and blocks the merge otherwise (covering `gh pr merge`, `gh api .../pulls/N/merge`, and MCP merge tools).
+- `APPROVED` + preconditions met → `/work-review` auto-merges (squash) and deletes the remote branch. The `git-auto-pull` hook fast-forwards the main worktree; `worktree-cleanup` removes the feature worktree. User takes no further action.
+- `APPROVED` + auto-merge skipped (CI not green, threads unresolved, mergeable != `MERGEABLE`, parent stale, or lock busy) → `reviewed:passed:{HEAD_short}` is already applied. User resolves the skip reason, then runs `gh pr merge {N} --squash` manually. The `guard-merge` hook validates label/sha + CI before allowing the merge.
 
 ## Errors
 
