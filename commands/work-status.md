@@ -22,18 +22,7 @@ mergedAt,statusCheckRollup,updatedAt,title,url,commits,author
    git worktree list --porcelain
    ```
 3. **Join** on `headRefName ↔ worktree branch`.
-4. **Derive status** for each row:
-
-   | Observable | Status |
-   |---|---|
-   | `pr.state = MERGED` | merged |
-   | `pr.state = CLOSED` (unmerged) | abandoned |
-   | `isDraft && checks = SUCCESS` | ready (promote needed) |
-   | `isDraft` | implementing |
-   | `!isDraft && reviewDecision = CHANGES_REQUESTED` | revising |
-   | `!isDraft && reviewDecision = APPROVED && checks = SUCCESS` | ready-to-merge |
-   | `!isDraft` | reviewing |
-
+4. **Derive status** for each row — observable → status mapping per `rules/collab-workflow.md` §State derivation (authoritative SSOT).
 5. **Flag stale worktrees** — merged PR but worktree still present → print cleanup hint.
 
 ## Mode A: all items

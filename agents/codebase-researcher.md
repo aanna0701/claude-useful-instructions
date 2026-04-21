@@ -29,18 +29,9 @@ You receive:
 
 ## Step 2: Classify the question
 
-Map `QUESTION` to one or more intents. A single question may combine intents.
+Map `QUESTION` to one or more intents (symbol-lookup / impact / flow-trace / semantic-search / structure / change-impact / api-surface / rename-safety). A single question may combine intents.
 
-| Intent | Signals | Primary tools |
-|---|---|---|
-| **symbol-lookup** | "what does X do?", "signature of Y", "where is Z defined?" | `context`, `shape_check` |
-| **impact / blast-radius** | "what breaks if...", "who depends on...", "safe to remove?" | `impact`, `api_impact`, `context` (callers/callees) |
-| **flow-trace** | "how does request flow from...", "call path from A to B", "sequence of..." | `route_map`, `context`, `cypher` (path queries) |
-| **semantic-search** | "find code that does X conceptually", "places that handle Y" | `query` (hybrid BM25+semantic), `group_query` |
-| **structure / architecture** | "what are the modules?", "cluster overview", "which services..." | `group_list`, `group_contracts`, `cypher` |
-| **change-impact** | "what does this diff affect?", "scope of these commits" | `detect_changes`, `impact` per symbol |
-| **api-surface** | "list endpoints", "HTTP routes", "tool catalog" | `route_map`, `tool_map`, `api_impact` |
-| **naming / rename safety** | "can I rename X?", "usages of Y" | `rename` (dry-run), `context` |
+Intent → tool mapping: `skills/codebase-qa/references/gitnexus-tools.md` §Intent → 도구 조합 빠른 참조. Read it if the mapping is not fresh in context.
 
 Record the intent(s) before querying. State them explicitly in the final report.
 

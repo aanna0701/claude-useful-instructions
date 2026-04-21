@@ -21,14 +21,7 @@ You receive:
 
 ## Step 1: Gather Commit Data (parallel)
 
-Run all in parallel:
-
-1. `git log --oneline --no-decorate {COMMIT_RANGE}` — commit list
-2. `git log --stat --no-decorate {COMMIT_RANGE}` — files changed per commit
-3. `git diff {COMMIT_RANGE} --stat` — overall change summary
-4. `git diff {COMMIT_RANGE}` — full diff (if too large, use `--stat` and read individual files)
-
-If DATE_FILTER is provided, add `--since={DATE_FILTER}` to git log commands.
+Run in parallel: `git log --oneline --no-decorate {COMMIT_RANGE}`, `git log --stat --no-decorate {COMMIT_RANGE}`, `git diff {COMMIT_RANGE} --stat`, `git diff {COMMIT_RANGE}` (if diff too large, fall back to `--stat` + read individual files). Add `--since={DATE_FILTER}` to `git log` if provided.
 
 ## Step 2: Summarize What Was Done
 
@@ -58,7 +51,7 @@ For each work unit, determine what **verification** is needed:
 
 ### 3b. Risk Patterns
 
-Scan diffs for these patterns:
+Scan diffs for these patterns (condensed — for deeper pattern detail, invoke the `debug-guide` agent):
 
 | Risk | Pattern | Action |
 |------|---------|--------|

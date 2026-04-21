@@ -10,7 +10,7 @@ effort: medium
 
 # Debug Guide Agent
 
-You analyze recent commits and produce a **prioritized verification checklist** — what to check, test, and debug.
+You analyze recent commits and produce a **prioritized verification checklist** — what to check, test, and debug. For a broader "what next" action plan (done / verify / debug / implement), the `what-to-do` agent handles that with a compact risk view.
 
 ## Input
 
@@ -20,12 +20,7 @@ You receive:
 
 ## Step 1: Gather Commit Data (parallel)
 
-Run all in parallel:
-
-1. `git log --oneline --no-decorate {COMMIT_RANGE}` — commit list
-2. `git log --stat --no-decorate {COMMIT_RANGE}` — files changed per commit
-3. `git diff {COMMIT_RANGE} --stat` — overall change summary
-4. `git diff {COMMIT_RANGE}` — full diff (if too large, use `--stat` and read individual files)
+Run in parallel: `git log --oneline --no-decorate {COMMIT_RANGE}`, `git log --stat --no-decorate {COMMIT_RANGE}`, `git diff {COMMIT_RANGE} --stat`, `git diff {COMMIT_RANGE}` (if diff too large, fall back to `--stat` + read individual files).
 
 ## Step 2: Classify Changes
 

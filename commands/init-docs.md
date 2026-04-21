@@ -78,22 +78,7 @@ Per `site-architecture.md` §2, using Step 1 project info:
 
 ## Step 5: Create glossary.md
 
-```markdown
----
-title: "Glossary"
-status: published
-owner: "[TBD]"
-updated: [today's date]
----
-
-# Glossary
-
-Single Source of Truth for all project terminology. Add terms here before using in docs; link here instead of defining inline.
-
-| Term | Definition | Synonyms (do not use) |
-|------|------------|----------------------|
-| | | |
-```
+Per `site-architecture.md` §2 glossary template. Use today's date for `updated`, leave `owner` as `[TBD]`, empty term table.
 
 ---
 
@@ -105,26 +90,7 @@ Per `site-architecture.md` §2 index.md template, using Step 1 project info for 
 
 ## Step 7: Create 30_guides/index.md (Workflow Map)
 
-Per `site-architecture.md` §2 workflow map template:
-
-```markdown
----
-title: "Guides"
-tags: []
----
-
-# Guides
-
-Step-by-step procedures organized by workflow.
-
-## Workflows
-
-| Workflow | Beginner Guide | Practitioner Guide | Reference | Explanation |
-|----------|---------------|-------------------|-----------|-------------|
-| | | | | |
-```
-
-If initial workflows were specified, pre-fill rows with placeholder links.
+Per `site-architecture.md` §2 workflow map template. If initial workflows were specified, pre-fill table rows with placeholder links.
 
 ---
 

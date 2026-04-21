@@ -8,10 +8,7 @@ effort: medium
 
 # Infrastructure Specialist
 
-## Prerequisites
-
-Read before modifying code:
-1. `CLAUDE.md` — project rules
+**Read first**: `CLAUDE.md` (project rules).
 
 ## Scope
 

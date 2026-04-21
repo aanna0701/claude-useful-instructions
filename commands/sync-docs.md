@@ -232,12 +232,22 @@ Update policy per type:
 
 ## Step 5: Apply Updates (parallel agents)
 
-Launch multiple agents in parallel based on update targets.
+Launch the following agents in parallel based on update targets:
 
-### 5a: Project metadata `[Sonnet agent]`
+| Sub-step | Model | Condition | Purpose |
+|---|---|---|---|
+| 5a | sonnet | always | Project metadata (README, CLAUDE.md, AGENTS.md, CODEMAPS, work/) |
+| 5b | sonnet | always | Standard docs (plan, module, operational) |
+| 5c | opus | HAS_STARLIGHT | Wiki page rewrite (Reference/Guide/Explanation per-type policy) |
+| 5d | sonnet | HAS_STARLIGHT | Dashboard data (public/data/*.json) |
+| 5e | — | HAS_STARLIGHT | Sidebar discrepancy report (main session, no edits) |
+| 5f | opus | HAS_GITNEXUS | Architecture diagrams (mermaid from process/cluster data) |
 
-Launch Agent(model: sonnet):
-> Update project metadata files with values from State Snapshot.
+Each sub-step below is the body-prompt passed to the agent (or the main-session action for 5e).
+
+### 5a: Project metadata
+
+Update project metadata files with values from State Snapshot.
 
 **README.md, CLAUDE.md, AGENTS.md**:
 - Replace only `<!-- AUTO-GENERATED -->` sections; preserve hand-written prose
@@ -252,10 +262,9 @@ Launch Agent(model: sonnet):
 - Flag orphaned contracts whose branch/PR no longer exists
 - Verify source links and ID references
 
-### 5b: Standard docs `[Sonnet agent]`
+### 5b: Standard docs
 
-Launch Agent(model: sonnet):
-> Update docs/**/*.md files conservatively.
+Update `docs/**/*.md` files conservatively.
 
 **Plan/architecture docs**:
 - Mark completed phases/tasks as done (evidence from git log)
@@ -273,12 +282,9 @@ Rules:
 - Edit changed portions only — no full rewrites
 - Preserve hand-written prose
 
-### 5c: Wiki page rewriting `[Opus agent]` — only if HAS_STARLIGHT
+### 5c: Wiki page rewriting
 
-Launch Agent(model: opus):
-> Rewrite wiki pages based on actual code understanding.
-> You have the Code Change Report (if GitNexus available) or File Change List (baseline).
-> Your job: make the documentation accurately describe what the code actually does.
+Rewrite wiki pages based on actual code understanding (Code Change Report if GitNexus available, otherwise File Change List). Make the documentation accurately describe what the code actually does.
 
 **Reference pages** (aggressive rewrite):
 - If HAS_GITNEXUS: use symbol context to extract actual function signatures, parameter types, default values, return types directly from code
@@ -296,17 +302,16 @@ Launch Agent(model: opus):
 - Report: "Architecture has changed — [specific change]. This page may need revision."
 - Add `<!-- STALE: [reason] — [date] -->` comment at top if discrepancy found
 
-### 5d: Dashboard & metrics `[Sonnet agent]` — only if HAS_STARLIGHT
+### 5d: Dashboard & metrics
 
-Launch Agent(model: sonnet):
-> Update dashboard data files with current metrics.
+Update dashboard data files with current metrics.
 
 **public/data/*.json**:
 - Update test counts, module status, dependency counts from State Snapshot
 - Preserve JSON structure — only change values
 - If keys are missing for new modules, add them following existing naming patterns
 
-### 5e: Sidebar discrepancy report `[main session]` — only if HAS_STARLIGHT
+### 5e: Sidebar discrepancy report
 
 Do NOT edit `astro.config.mjs` or `content.config.ts`. Instead, print a report:
 
@@ -324,10 +329,9 @@ Suggested sidebar addition:
 ─────────────────────────────────────────
 ```
 
-### 5f: Architecture diagrams `[Opus agent]` — only if HAS_GITNEXUS
+### 5f: Architecture diagrams
 
-Launch Agent(model: opus):
-> Regenerate architecture diagrams from GitNexus process and cluster data.
+Regenerate architecture diagrams from GitNexus process and cluster data.
 
 - Use GitNexus cluster data to generate mermaid dependency graphs
 - Use GitNexus process data to generate mermaid sequence/flow diagrams

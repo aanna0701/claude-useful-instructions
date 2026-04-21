@@ -129,21 +129,6 @@ FOCUS: {있으면 지정}
 
 ---
 
-## GitNexus 도구 치트시트
+## GitNexus 도구
 
-> 상세: `references/gitnexus-tools.md`
-
-| 도구 | 언제 |
-|---|---|
-| `list_repos` | 항상 첫 호출, indexed repo 확인 |
-| `context(symbol=...)` | 심볼 360도 뷰 (signature, callers, callees, process) |
-| `impact(symbol=...)` | blast radius — 바꾸면 영향 받는 심볼/모듈 |
-| `api_impact(...)` | HTTP/RPC API 수준 영향 |
-| `query(q=...)` | hybrid BM25+semantic 검색 |
-| `detect_changes(...)` | git diff → 영향 받는 process/cluster 맵핑 |
-| `route_map(...)` | HTTP 라우트 카탈로그 / 특정 경로 flow |
-| `tool_map(...)` | MCP/agent tool 카탈로그 |
-| `cypher(q=...)` | 원본 Cypher 쿼리 (그래프 패턴 매칭) |
-| `shape_check(...)` | 함수 시그니처 검증 |
-| `rename(...)` | rename dry-run으로 usages 확인 |
-| `group_*` | cluster/process 그룹 연산 |
+도구별 상세 + intent → 병렬 호출 매핑: `references/gitnexus-tools.md` (SKILL.md와 `codebase-researcher` 에이전트가 공유).

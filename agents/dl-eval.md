@@ -8,11 +8,7 @@ effort: medium
 
 # Evaluation Specialist
 
-## Prerequisites
-
-Read before modifying code:
-1. `CLAUDE.md` — project rules
-2. `.claude/rules/pytorch-dl-standards.md` — code standards
+**Read first**: `CLAUDE.md` (project rules), `.claude/rules/pytorch-dl-standards.md` (code standards).
 
 ## Scope
 
