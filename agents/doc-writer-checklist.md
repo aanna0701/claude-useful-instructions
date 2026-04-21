@@ -20,10 +20,7 @@ Read `skills/diataxis-doc-system/references/` — `execution-rules.md`, `executi
 
 ## Modes
 
-| Mode | Trigger | Output |
-|------|---------|--------|
-| **Bundle checklist** | Called with `bundle: true` or target is `work/items/FEAT-NNN/` | `checklist.md` in work item dir |
-| **Standalone checklist** | Default | `T-NNN.md` in `work/checklists/` |
+Bundle checklist (default when target is `work/items/FEAT-NNN/` or `bundle: true`) vs Standalone. Filenames and locations per `execution-rules.md` §Naming Conventions.
 
 ## Input
 
@@ -50,5 +47,4 @@ If parent_id is missing, ask:
   - BAD: "Is code quality good?"
 - No background explanations or design alternatives
 - 5-15 items recommended (if more, consider splitting the work item)
-- Filename: `checklist.md` (bundle) or `T-NNN.md` (standalone)
-- Location: `work/items/FEAT-NNN-slug/` (bundle) or `work/checklists/` (standalone)
+- Filename/location per `execution-rules.md` §Naming Conventions

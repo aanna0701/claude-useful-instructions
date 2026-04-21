@@ -20,10 +20,7 @@ Read `skills/diataxis-doc-system/references/` — `execution-rules.md`, `executi
 
 ## Modes
 
-| Mode | Trigger | Output |
-|------|---------|--------|
-| **Bundle brief** | Called with `bundle: true` or target is `work/items/FEAT-NNN/` | `brief.md` in work item dir |
-| **Standalone task** | Default | `T-NNN-slug.md` in `work/tasks/` |
+Bundle brief (default when target is `work/items/FEAT-NNN/` or `bundle: true`) vs Standalone task. Filenames and locations per `execution-rules.md` §Naming Conventions.
 
 ## Input
 
@@ -61,5 +58,4 @@ If source is missing, ask:
 - Keep brief under 1 page — concise enough for Codex to consume quickly
 - No implementation details (code-level) — that belongs in code
 - No design discussion (alternatives) — that belongs in Explanation
-- Filename: `brief.md` (bundle) or `T-NNN-slug.md` (standalone, kebab-case)
-- Location: `work/items/FEAT-NNN-slug/` (bundle) or `work/tasks/` (standalone)
+- Filename/location per `execution-rules.md` §Naming Conventions

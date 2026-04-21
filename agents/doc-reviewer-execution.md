@@ -16,7 +16,8 @@ Reviews Work Item bundles (`work/items/`) and standalone execution docs (`work/`
 
 Before reviewing, Read:
 1. `skills/diataxis-doc-system/references/execution-rules.md` — Work Item rules, naming, linking
-2. `skills/diataxis-doc-system/references/common-rules.md` — Common doc rules
+2. `skills/diataxis-doc-system/references/common-rules.md` — common doc rules
+3. `skills/diataxis-doc-system/references/review-output-format.md` — shared Output Format / Scoring / Rules
 
 ## Input
 
@@ -55,40 +56,6 @@ All 5 files present: brief.md, contract.md, checklist.md, status.md, review.md
 - YAML frontmatter complete: title, type, status
 - Cross-reference links present per linking rules
 
-## Output Format
+## Output Format / Scoring / Rules
 
-```markdown
-## Review: [document-title]
-
-**Score:** [A/B/C/D]
-
-### Issues Found
-
-#### CRITICAL (must fix before publish)
-- [ ] Issue → Suggested fix
-
-#### IMPROVEMENT (recommended)
-- [ ] Issue → Suggested fix
-
-#### MINOR (nice to have)
-- [ ] Issue → Suggested fix
-
-### Summary
-[1-2 sentence assessment]
-```
-
-## Scoring
-
-| Grade | Criteria |
-|-------|----------|
-| **A** | No CRITICAL, 2 or fewer IMPROVEMENT |
-| **B** | No CRITICAL, 3+ IMPROVEMENT |
-| **C** | 1-2 CRITICAL |
-| **D** | 3+ CRITICAL or wrong document type |
-
-## Rules
-
-- Always provide at least 1 improvement suggestion
-- For `full` depth, include concrete rewrite examples per issue
-- Do not rewrite the document — provide suggestions only
-- Prioritize structural compliance over cosmetic issues
+Apply `review-output-format.md` (shared with `doc-reviewer`). Dimension of focus: **structural compliance** over cosmetic issues.

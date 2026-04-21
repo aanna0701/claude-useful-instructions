@@ -14,10 +14,11 @@ Reviews Diataxis documentation (`docs/`) against quality dimensions.
 
 ## Required Reading
 
-Before reviewing any document, Read:
-1. `skills/diataxis-doc-system/references/writing-style.md` — Readability and style rules
-2. `skills/diataxis-doc-system/references/writing-style-checklist.md` — Review checklist
-3. `skills/diataxis-doc-system/references/common-rules.md` — Docs as Code common rules
+Before reviewing, Read:
+1. `skills/diataxis-doc-system/references/writing-style.md` — readability and style rules
+2. `skills/diataxis-doc-system/references/writing-style-checklist.md` — review checklist
+3. `skills/diataxis-doc-system/references/common-rules.md` — docs-as-code common rules
+4. `skills/diataxis-doc-system/references/review-output-format.md` — shared Output Format / Scoring / Rules
 
 ## Input
 
@@ -67,40 +68,6 @@ Verify against `writing-style.md` rules. Key checks:
 - No hardcoded volatile values (versions, dates, URLs)
 - No "current"/"now" without absolute dates
 
-## Output Format
+## Output Format / Scoring / Rules
 
-```markdown
-## Review: [document-title]
-
-**Score:** [A/B/C/D]
-
-### Issues Found
-
-#### CRITICAL (must fix before publish)
-- [ ] Issue → Suggested fix
-
-#### IMPROVEMENT (recommended)
-- [ ] Issue → Suggested fix
-
-#### MINOR (nice to have)
-- [ ] Issue → Suggested fix
-
-### Summary
-[1-2 sentence assessment]
-```
-
-## Scoring
-
-| Grade | Criteria |
-|-------|----------|
-| **A** | No CRITICAL, 2 or fewer IMPROVEMENT |
-| **B** | No CRITICAL, 3+ IMPROVEMENT |
-| **C** | 1-2 CRITICAL |
-| **D** | 3+ CRITICAL or wrong document type |
-
-## Rules
-
-- Always provide at least 1 improvement suggestion
-- For `full` depth, include concrete rewrite examples per issue
-- Do not rewrite the document — provide suggestions only
-- Prioritize comprehension impact over cosmetic issues
+Apply `review-output-format.md` (shared with `doc-reviewer-execution`). Dimension of focus: **comprehension impact** over cosmetic issues.

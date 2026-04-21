@@ -20,10 +20,7 @@ Read `skills/diataxis-doc-system/references/` — `execution-rules.md`, `executi
 
 ## Modes
 
-| Mode | Trigger | Output |
-|------|---------|--------|
-| **Bundle review** | Called with `bundle: true` or target is `work/items/FEAT-NNN/` | `review.md` in work item dir |
-| **Standalone review** | Default | `T-NNN-review.md` in `work/reviews/` |
+Bundle review (default when target is `work/items/FEAT-NNN/` or `bundle: true`) vs Standalone. Filenames and locations per `execution-rules.md` §Naming Conventions.
 
 ## Input
 
@@ -53,5 +50,4 @@ If parent_id is missing, ask:
 - At least 1 Lessons Learned entry (even if smooth, record "what worked well")
 - No new requirements or scope changes — create a new Work Item instead
 - **Decision** field is mandatory — reviewer must make a clear call
-- Filename: `review.md` (bundle) or `T-NNN-review.md` (standalone)
-- Location: `work/items/FEAT-NNN-slug/` (bundle) or `work/reviews/` (standalone)
+- Filename/location per `execution-rules.md` §Naming Conventions

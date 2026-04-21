@@ -21,10 +21,7 @@ Read `skills/diataxis-doc-system/references/` — `execution-rules.md`, `executi
 
 ## Modes
 
-| Mode | Trigger | Output |
-|------|---------|--------|
-| **Bundle contract** | Called with `bundle: true` or target is `work/items/FEAT-NNN/` | `contract.md` in work item dir |
-| **Standalone contract** | Default | `{domain}-contract.md` in `work/contracts/` |
+Bundle (default when target is `work/items/FEAT-NNN/` or `bundle: true`) vs Standalone. Filenames and locations per `execution-rules.md` §Naming Conventions.
 
 ## Input
 
@@ -68,5 +65,4 @@ grep -rn "env\.\|config\.\|settings\." src/
 - At least 1 invariant required
 - Bundle mode: Boundaries section (allowed/forbidden) is mandatory
 - No opinions or recommendations — state facts and commitments only
-- Filename: `contract.md` (bundle) or `{domain}-contract.md` (standalone, kebab-case)
-- Location: `work/items/FEAT-NNN-slug/` (bundle) or `work/contracts/` (standalone)
+- Filename/location per `execution-rules.md` §Naming Conventions
