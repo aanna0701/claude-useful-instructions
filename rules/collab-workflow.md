@@ -4,9 +4,8 @@ State of every work item is derived from GitHub PR + git. No md file stores stat
 
 ## Roles
 
-- **Claude Code (session AI)**: drives `/work-plan`, `/work-review`, `/work-status`. Can also run `/work-impl` and `/work-refactor` (tries Codex first, falls back in-session).
-- **Cursor (interactive implementer)**: opens the worktree, runs `/work-impl {ID}` or `/work-refactor {ID}` from `.cursor/commands/`. Preferred for coordinated multi-file edits within a single work item (Composer's strength).
-- **Codex (unattended)**: `bash codex-run.sh {ID}` — same contract, runs without supervision. Preferred for running many independent work items in parallel.
+- **Claude Code (session AI)**: drives `/work-plan`, `/work-review`, `/work-status`. Fallback implementer for `/work-impl` and `/work-refactor` when Cursor is not being used.
+- **Cursor (preferred implementer)**: opens the worktree, runs `/work-impl {ID}` or `/work-refactor {ID}` from `.cursor/commands/`. Composer handles coordinated multi-file edits.
 
 Each executor reads the same inputs (contract + unresolved review threads + diff) and produces the same outputs (commits + push + resolved threads).
 
@@ -15,8 +14,7 @@ Each executor reads the same inputs (contract + unresolved review threads + diff
 ```
 plan (Claude) ──▶ impl | refactor ──(push → CI)──▶ review (Claude) ──▶ merge
                      │                                    │
-                     ├─ Cursor  (interactive)             │
-                     ├─ Codex   (unattended)              │
+                     ├─ Cursor  (preferred)               │
                      └─ Claude  (session fallback)        │
                           ▲                               │
                           └──────── CHANGES_REQUESTED ────┘
@@ -151,7 +149,7 @@ Branch protection (set by `install.sh`):
 ## CHANGES_REQUESTED re-entry
 
 1. Run `/work-impl {ID}` or `/work-refactor {ID}` again (same command).
-2. Session AI / codex-run.sh assembles prompt with:
+2. Session AI (Cursor or Claude) assembles prompt with:
    - `contract.md`
    - unresolved review threads (GraphQL `reviewThreads { isResolved path line comments }`)
    - `git diff origin/{base}...HEAD`

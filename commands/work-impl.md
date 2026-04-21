@@ -2,7 +2,7 @@
 
 For `FEAT / FIX / PERF / CHORE / TEST`.
 
-**Default flow:** try **Codex first** (unattended via `codex-run.sh`), then fall back to the current session (Claude/Cursor) if Codex fails, stalls, or leaves the contract unmet. Set `WORK_IMPL_SKIP_CODEX=1` to skip the Codex pass and implement directly in-session.
+**Executor:** preferred path is **Cursor** (`.cursor/commands/work-impl.md`, run from the worktree with Composer/Agent). If Cursor is not in use, implement directly in the current Claude session using the steps below. Codex is no longer part of this flow.
 
 ## Input
 
@@ -11,20 +11,6 @@ For `FEAT / FIX / PERF / CHORE / TEST`.
 ```
 
 ## Steps
-
-0. **Codex-first pass** (skip if `WORK_IMPL_SKIP_CODEX=1` or `codex` CLI not installed):
-   ```bash
-   if [ -z "${WORK_IMPL_SKIP_CODEX:-}" ] && command -v codex >/dev/null 2>&1; then
-     bash "$(git rev-parse --show-toplevel)/codex-run.sh" {ID} || CODEX_FAILED=1
-   else
-     CODEX_FAILED=1
-   fi
-   ```
-   `codex-run.sh` **only edits files** — it never commits/pushes. After it returns:
-   - Resolve `$WT_PATH` (step 1) and `cd` into it.
-   - If `git status --porcelain` is non-empty → run step 5 (commit + push) with a `{type}({ID}):` message summarizing the codex diff. Then re-check PR state.
-   - If PR is green and acceptance met → skip to step 7/8.
-   - If codex produced nothing, stalled, or CI fails → continue from step 1 to finish in-session.
 
 1. **Resolve worktree** by branch convention:
    ```bash

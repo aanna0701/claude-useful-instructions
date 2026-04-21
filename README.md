@@ -155,11 +155,10 @@ PR + git are the single source of truth. No markdown file stores state.
 
 ### `/work-impl` execution model
 
-Three interchangeable executors, each reading the same inputs (contract + unresolved review threads + diff):
+Two interchangeable executors, each reading the same inputs (contract + unresolved review threads + diff):
 
-1. **Claude session** (`/work-impl` from `.claude/commands/`) — tries Codex first via `codex-run.sh` (unattended file edits only), then commits + pushes + handles PR state. Falls back to finishing in-session if Codex stalls.
-2. **Cursor session** (`/work-impl` from `.cursor/commands/`) — open the worktree in Cursor, run the command; Composer/Agent performs coordinated multi-file edits and commits. Best for single-item interactive work.
-3. **Unattended Codex** (`bash codex-run.sh {ID}`) — headless, ideal for running many independent items in parallel.
+1. **Cursor session** (preferred — `/work-impl` from `.cursor/commands/`) — open the worktree in Cursor, run the command; Composer/Agent performs coordinated multi-file edits and commits.
+2. **Claude session** (fallback — `/work-impl` from `.claude/commands/`) — implements in-session when Cursor is not being used. Commits + pushes + handles PR state directly.
 
 Single-responsibility across the board: the executor generates/edits; commit/push/PR state is the implementer's own `git` flow.
 

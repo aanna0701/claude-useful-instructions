@@ -12,9 +12,8 @@ See [Migration v1 → v2](MIGRATION-v2.md) if you're coming from v1.
 
 | Agent (Command) | Role |
 |-----------------|------|
-| **Claude** (`/work-plan`, `/work-review`, `/work-status`) | spec owner, reviewer, integrator. Can also run `/work-impl`/`/work-refactor` (tries Codex first, falls back in-session). |
-| **Cursor** (`/work-impl`, `/work-refactor` from `.cursor/commands/`) | interactive implementer — opens the worktree in Composer for coordinated multi-file edits |
-| **Codex** (`codex-run.sh`, invoked by Claude `/work-impl` / `/work-refactor`) | unattended implementer — best for running many items in parallel |
+| **Claude** (`/work-plan`, `/work-review`, `/work-status`) | spec owner, reviewer, integrator. Also the fallback implementer for `/work-impl`/`/work-refactor` when Cursor is not being used. |
+| **Cursor** (`/work-impl`, `/work-refactor` from `.cursor/commands/`) | preferred implementer — opens the worktree in Composer for coordinated multi-file edits |
 | **CI** (`.github/workflows/pr-checks.yml`) | verifier (ruff + mypy + pytest for Python; adapt per stack) |
 
 Per work item, exactly **one** file is written: `work/items/{ID}-{slug}/contract.md`. Everything else (status, verification, review decisions) lives on the PR itself.
@@ -29,11 +28,10 @@ Per work item, exactly **one** file is written: `work/items/{ID}-{slug}/contract
 [Claude] /work-plan "Add JWT middleware"
   → creates contract.md, branch feature-feat-{slug}, worktree, draft PR
 
-[Codex / Claude / Cursor] /work-impl FEAT-001
-  → Claude session: tries `codex-run.sh FEAT-001` first; falls back in-session if Codex stalls
-  → Cursor session: opens the worktree, runs /work-impl from .cursor/commands/ (Composer multi-file edit)
-  → Unattended: bash codex-run.sh FEAT-001 directly
-  → All three read the same inputs (contract + unresolved threads + diff)
+[Cursor or Claude] /work-impl FEAT-001
+  → Cursor session (preferred): opens the worktree, runs /work-impl from .cursor/commands/ (Composer multi-file edit)
+  → Claude session (fallback): implements in-session from .claude/commands/
+  → Both read the same inputs (contract + unresolved threads + diff)
   → small commits, -s for DCO, push
   → promotes draft → ready when checks green
 

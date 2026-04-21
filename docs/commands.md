@@ -67,18 +67,16 @@ Review a completed work item against its contract. Decides merge/revise/reject.
 
 Implement a work item (`FEAT`/`FIX`/`PERF`/`CHORE`/`TEST`) in its worktree.
 
-Three executors, each reading the same inputs (contract + unresolved review threads + diff):
+Two executors, each reading the same inputs (contract + unresolved review threads + diff):
 
 | Executor | Entry point | When |
 |---|---|---|
-| **Claude session** | `/work-impl FEAT-001` (from `.claude/commands/`) | Tries Codex first via `codex-run.sh`, falls back in-session. Set `WORK_IMPL_SKIP_CODEX=1` to skip Codex. |
-| **Cursor session** | `/work-impl FEAT-001` (from `.cursor/commands/`) | Interactive multi-file edit via Composer. Open the worktree in Cursor first. |
-| **Unattended Codex** | `bash codex-run.sh FEAT-001` | Headless batch runs, good for parallel items. |
+| **Cursor session** (preferred) | `/work-impl FEAT-001` (from `.cursor/commands/`) | Interactive multi-file edit via Composer. Open the worktree in Cursor first. |
+| **Claude session** (fallback) | `/work-impl FEAT-001` (from `.claude/commands/`) | Implements in-session when Cursor is not being used. |
 
 **Usage**:
 ```
-/work-impl FEAT-001       # By work item ID (Claude or Cursor)
-bash codex-run.sh FEAT-001  # Unattended
+/work-impl FEAT-001       # Cursor if open on the worktree, otherwise Claude
 ```
 
 ---
@@ -89,8 +87,7 @@ Refactor a work item (`REFAC` only). Same pipeline and executor matrix as `/work
 
 **Usage**:
 ```
-/work-refactor REFAC-007       # Claude or Cursor
-bash codex-run.sh REFAC-007    # Unattended
+/work-refactor REFAC-007       # Cursor or Claude
 ```
 
 ---
