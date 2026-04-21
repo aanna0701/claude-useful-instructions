@@ -4,15 +4,22 @@ State of every work item is derived from GitHub PR + git. No md file stores stat
 
 ## Roles
 
-- **Session AI** (Claude Code or Cursor): drives `/work-plan`, `/work-impl`, `/work-refactor`, `/work-review`, `/work-status`.
-- **Codex (unattended)**: `bash codex-run.sh {ID}` — same contract as session AI, runs without supervision.
+- **Claude Code (session AI)**: drives `/work-plan`, `/work-review`, `/work-status`. Can also run `/work-impl` and `/work-refactor` (tries Codex first, falls back in-session).
+- **Cursor (interactive implementer)**: opens the worktree, runs `/work-impl {ID}` or `/work-refactor {ID}` from `.cursor/commands/`. Preferred for coordinated multi-file edits within a single work item (Composer's strength).
+- **Codex (unattended)**: `bash codex-run.sh {ID}` — same contract, runs without supervision. Preferred for running many independent work items in parallel.
+
+Each executor reads the same inputs (contract + unresolved review threads + diff) and produces the same outputs (commits + push + resolved threads).
 
 ## Pipeline
 
 ```
-plan (Claude) ──▶ impl | refactor (session AI) ──(push → CI)──▶ review (Claude) ──▶ merge
-                          ▲                                           │
-                          └─────────── CHANGES_REQUESTED ─────────────┘
+plan (Claude) ──▶ impl | refactor ──(push → CI)──▶ review (Claude) ──▶ merge
+                     │                                    │
+                     ├─ Cursor  (interactive)             │
+                     ├─ Codex   (unattended)              │
+                     └─ Claude  (session fallback)        │
+                          ▲                               │
+                          └──────── CHANGES_REQUESTED ────┘
 ```
 
 - `impl` handles FEAT / FIX / PERF / CHORE / TEST.

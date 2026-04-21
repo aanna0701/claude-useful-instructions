@@ -122,6 +122,8 @@ BUNDLE_WORKFLOW=(
   "commands:work-refactor.md"
   "commands:work-review.md"
   "commands:work-status.md"
+  "cursor-command:work-impl.md"
+  "cursor-command:work-refactor.md"
   "skills:collab-workflow"
   "agents:ci-audit-agent.md"
   "agents:pr-reviewer.md"
