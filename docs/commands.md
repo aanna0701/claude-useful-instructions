@@ -65,24 +65,32 @@ Review a completed work item against its contract. Decides merge/revise/reject.
 
 ## /work-impl
 
-Implement a work item (`FEAT`/`FIX`/`PERF`/`CHORE`/`TEST`) in its worktree. Tries Codex first via `codex-run.sh`, then falls back to the current session.
+Implement a work item (`FEAT`/`FIX`/`PERF`/`CHORE`/`TEST`) in its worktree.
+
+Three executors, each reading the same inputs (contract + unresolved review threads + diff):
+
+| Executor | Entry point | When |
+|---|---|---|
+| **Claude session** | `/work-impl FEAT-001` (from `.claude/commands/`) | Tries Codex first via `codex-run.sh`, falls back in-session. Set `WORK_IMPL_SKIP_CODEX=1` to skip Codex. |
+| **Cursor session** | `/work-impl FEAT-001` (from `.cursor/commands/`) | Interactive multi-file edit via Composer. Open the worktree in Cursor first. |
+| **Unattended Codex** | `bash codex-run.sh FEAT-001` | Headless batch runs, good for parallel items. |
 
 **Usage**:
 ```
-/work-impl FEAT-001       # By work item ID
+/work-impl FEAT-001       # By work item ID (Claude or Cursor)
+bash codex-run.sh FEAT-001  # Unattended
 ```
-
-Set `WORK_IMPL_SKIP_CODEX=1` to skip the Codex pass and implement directly in-session.
 
 ---
 
 ## /work-refactor
 
-Refactor a work item (`REFAC` only). Same pipeline as `/work-impl` but honors `Boundaries.Preserve` — no new public symbols, existing tests stay green.
+Refactor a work item (`REFAC` only). Same pipeline and executor matrix as `/work-impl`, but honors `Boundaries.Preserve` — no new public symbols, existing tests stay green.
 
 **Usage**:
 ```
-/work-refactor REFAC-007
+/work-refactor REFAC-007       # Claude or Cursor
+bash codex-run.sh REFAC-007    # Unattended
 ```
 
 ---
