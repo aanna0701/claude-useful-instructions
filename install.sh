@@ -444,10 +444,16 @@ detect_project_profile() {
   [ -f "$PROJECT_ROOT/package.json" ] && tags+=("node")
 
   # ML/DL — GPU docker-compose or torch/jax/etc. in deps
-  if grep -rqE '(^|[^A-Za-z])(nvidia|cuda|gpu)' "$PROJECT_ROOT"/docker*/docker-compose*.yml 2>/dev/null; then
+  #
+  # Docker compose files commonly live under docker/<subdir>/ (e.g.
+  # docker/gpu/, docker/data/), so a simple shell glob is not enough —
+  # use find. Python deps match "lib" with optional version spec suffix
+  # ("torch>=2.10", "torch[extras]", etc.).
+  if find "$PROJECT_ROOT" -maxdepth 4 -name 'docker-compose*.yml' -print 2>/dev/null \
+    | xargs -r grep -lE '(^|[^A-Za-z])(nvidia|cuda|gpu)' 2>/dev/null | grep -q .; then
     tags+=("ml-gpu")
   fi
-  if [ -f "$PROJECT_ROOT/pyproject.toml" ] && grep -Eq '"(torch|tensorflow|jax|transformers|accelerate|unsloth)"' "$PROJECT_ROOT/pyproject.toml"; then
+  if [ -f "$PROJECT_ROOT/pyproject.toml" ] && grep -Eq '"(torch|tensorflow|jax|transformers|accelerate|unsloth)[^"]*"' "$PROJECT_ROOT/pyproject.toml"; then
     tags+=("ml-gpu")
   fi
 
