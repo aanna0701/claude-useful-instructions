@@ -353,6 +353,28 @@ install_file() {
   chmod 644 "$dst"
 }
 
+# Apply the target project's own formatter/linter to a freshly installed
+# CUI script so it doesn't fail the project's lint CI on first commit.
+#
+# Only runs for .py files, and only when the project declares [tool.ruff]
+# in pyproject.toml. Silent failure is intentional — if uv/ruff isn't
+# set up yet, we don't want to block the install.
+_apply_project_formatter() {
+  local path="$1"
+  case "$path" in
+    *.py) ;;
+    *) return 0 ;;
+  esac
+  [ -f "$PROJECT_ROOT/pyproject.toml" ] || return 0
+  grep -Eq '^\[tool\.ruff(\.|])' "$PROJECT_ROOT/pyproject.toml" || return 0
+
+  if command -v uv &>/dev/null; then
+    (cd "$PROJECT_ROOT" && uv run --quiet ruff format "$path" >/dev/null 2>&1) || true
+    (cd "$PROJECT_ROOT" && uv run --quiet ruff check --fix "$path" >/dev/null 2>&1) || true
+    echo "  ↳ applied project ruff format/fix to $path"
+  fi
+}
+
 # Pick the pre-commit variant that best matches the target project.
 # Outputs: "local-uv" | "external-mirrors"
 #
@@ -1026,6 +1048,7 @@ for entry in "${INSTALL_LIST[@]}"; do
     script)
       install_file "$REPO_DIR/$path" "$PROJECT_ROOT/$path"
       chmod +x "$PROJECT_ROOT/$path"
+      _apply_project_formatter "$path"
       ;;
     hook)
       install_hook "$path"
