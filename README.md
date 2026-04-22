@@ -49,18 +49,20 @@ cui-install --base --workflow /path/to/project
 
 ## Bundle Matrix
 
-| Layer    | Bundle            | Contents                                                                                     |
-|----------|-------------------|----------------------------------------------------------------------------------------------|
-| base     | `base`            | `git-auto-pull`, `branch-naming`, `guard-branch`, `guard-merge`, `auto-pr-commit`, `auto-pr`, `worktree-cleanup` hooks; `smart-git-commit-push`, `optimize-tokens`, `debug-guide`, `what-to-do` commands & agents; token analyzers; `pre-commit` template |
-| workflow | `workflow`        | Claude-Codex-Cursor work items (`/work-plan`, `/work-impl`, `/work-refactor`, `/work-review`, `/work-status`), `collab-workflow` skill, `pr-reviewer` / `ci-audit-agent`, CI (`pr-checks.yml`, `branch-auto-sync.yml`, `safe-branch-cleanup.yml`), `codex-run.sh`, `AGENTS.md`, `CLAUDE.md` |
-| domain   | `docs`            | `diataxis-doc-system`, `diagram-architect` skills + doc/diagram agents + `/write-doc`, `/init-docs`, `/sync-docs` (v2: GitNexus + Starlight), `/polish-doc` |
-| domain   | `data-pipeline`   | `data-pipeline-architect` skill                                                              |
-| domain   | `codebase`        | `codebase-qa` skill + `codebase-researcher` agent + `/codebase-ask` (GitNexus-backed)        |
-| domain   | `career`          | `career-docs` skill + writer/reviewer/reviser agents                                         |
-| domain   | `dl`              | `pytorch-dl-standards` rules + DL agents (`capture`, `data`, `model`, `train`, `eval`, `infra`) |
-| domain   | `presentation`    | `html-presentation` skill + slide commands + PDF export                                      |
-| domain   | `ppt-generation`  | PPT template-based generation (`/generate-ppt`, density/format agents)                       |
-| domain   | `google-style`    | Google C++/Python Style Guide rules + skill + `/refactor-google-style` + agents + `.clang-format` |
+| Layer    | Bundle            | Profile requires       | Contents                                                                                     |
+|----------|-------------------|------------------------|----------------------------------------------------------------------------------------------|
+| base     | `base`            | _(any)_                | `git-auto-pull`, `branch-naming`, `guard-branch`, `guard-merge`, `auto-pr-commit`, `auto-pr`, `worktree-cleanup` hooks; `smart-git-commit-push`, `optimize-tokens`, `debug-guide`, `what-to-do` commands & agents; token analyzers; `.pre-commit-config.yaml` (variant auto-picked: `local-uv` for uv projects, `external-mirrors` otherwise) |
+| workflow | `workflow`        | _(any)_                | Claude-Codex-Cursor work items (`/work-plan`, `/work-impl`, `/work-refactor`, `/work-review`, `/work-status`), `collab-workflow` skill, `pr-reviewer` / `ci-audit-agent`, CI (`pr-checks.yml`, `branch-auto-sync.yml`, `safe-branch-cleanup.yml`), `codex-run.sh`, `AGENTS.md`, `CLAUDE.md` |
+| domain   | `docs`            | _(any)_                | `diataxis-doc-system`, `diagram-architect` skills + doc/diagram agents + `/write-doc`, `/init-docs`, `/sync-docs` (v2: GitNexus + Starlight), `/polish-doc` |
+| domain   | `data-pipeline`   | `python` + `ml-gpu`    | `data-pipeline-architect` skill                                                              |
+| domain   | `codebase`        | _(any)_                | `codebase-qa` skill + `codebase-researcher` agent + `/codebase-ask` (GitNexus-backed)        |
+| domain   | `career`          | _(any)_                | `career-docs` skill + writer/reviewer/reviser agents                                         |
+| domain   | `dl`              | `python` + `ml-gpu`    | `pytorch-dl-standards` rules + DL agents (`capture`, `data`, `model`, `train`, `eval`, `infra`) |
+| domain   | `presentation`    | `presentation`         | `html-presentation` skill + slide commands + `scripts/html_to_pdf.py` PDF export             |
+| domain   | `ppt-generation`  | `presentation`         | PPT template-based generation (`/generate-ppt`, density/format agents)                       |
+| domain   | `google-style`    | `python` or `cpp`      | Google C++/Python Style Guide rules + skill + `/refactor-google-style` + agents + `.clang-format` |
+
+`detect_project_profile` tags the target from actual files (`pyproject.toml`, `uv.lock`, `astro.config.mjs`, `package.json`, CUDA in `docker-compose*.yml`, `CMakeLists.txt`, `Cargo.toml`, `go.mod`, HTML/PDF references). Bundles whose requirements don't intersect the profile are auto-skipped from `--all` and default installs. To install anyway, pass the explicit `--<bundle>` flag — explicit naming always wins.
 
 ## Install Options
 
@@ -126,13 +128,26 @@ PR merged (local or remote)
 | `auto-pr`         | Stop                           | Fallback PR creation if `auto-pr-commit` missed              |
 | `git-auto-pull`   | PreToolUse (Edit/Write) + PostToolUse (Bash/MCP merge) | Session-start pull + post-merge fast-forward        |
 
-### Pre-commit template
+### Pre-commit template (two variants, auto-picked)
+
+Shipped as part of `base`. cui-install picks a variant based on the target project and installs it unconditionally at `.pre-commit-config.yaml`:
+
+| Variant           | Condition                                                              | Python hooks source                                      |
+|-------------------|------------------------------------------------------------------------|----------------------------------------------------------|
+| `local-uv`        | `uv.lock` present, or `pyproject.toml` has `[tool.uv]` / `[dependency-groups]` | `repo: local` + `entry: uv run ...` — `uv.lock` is SSOT |
+| `external-mirrors`| otherwise                                                              | pinned `rev:` on `ruff-pre-commit` / `mirrors-mypy` / `pyright-python` |
+
+Both variants share C++ and general hooks (clang-format, trailing-whitespace, end-of-file-fixer, check-yaml, check-added-large-files).
 
 | Language | Format      | Lint | Type          |
 |----------|-------------|------|---------------|
 | Python   | ruff-format | ruff | pyright, mypy |
 | C++      | clang-format| —    | —             |
 | General  | end-of-file-fixer, trailing-whitespace | check-yaml, check-added-large-files (≤1000 kB) | — |
+
+Variants live under `templates/pre-commit/variants/`. Adding a new variant (e.g. for Poetry, Hatch, or pip-tools projects) means dropping a `.yaml` file there and teaching `_select_pre_commit_variant` to pick it — not forking this repo per-project.
+
+cui-install **overwrites** `.pre-commit-config.yaml` on every run. Per-project divergence is not supported as a design decision: if a project shape needs a different variant, contribute the variant upstream rather than diverge locally. This also applies to `script:*` installs: each `.py` script is rewritten on every run and post-processed by the target project's own `ruff format`/`ruff check --fix` if `pyproject.toml` declares `[tool.ruff]`, so the installed version conforms to the target's lint rules even when CUI's own ruff settings differ.
 
 ---
 
