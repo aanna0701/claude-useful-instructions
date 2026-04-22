@@ -205,6 +205,127 @@ BUNDLE_DESCRIPTIONS=(
   "[domain] Google C++/Python Style Guide refactor (rules, skill, command, agents, .clang-format)"
 )
 
+# ── Install functions ───────────────────────────────────────────────────────
+install_file() {
+  local src="$1" dst="$2"
+  mkdir -p "$(dirname "$dst")"
+  cp -v "$src" "$dst"
+  chmod 644 "$dst"
+}
+
+# Detect project types so cui-install can prune bundles that don't apply.
+# Emits space-separated tags on stdout. Tags are additive — one project
+# may be tagged python + python-uv + ml-gpu + cpp at once.
+#
+# Detection is deliberately signal-based (files in the tree) rather than
+# ask-the-user, so re-running cui-install on the same project gives stable
+# results without prompting.
+detect_project_profile() {
+  local tags=()
+
+  # Python
+  if [ -f "$PROJECT_ROOT/pyproject.toml" ] || [ -f "$PROJECT_ROOT/setup.py" ] || [ -f "$PROJECT_ROOT/setup.cfg" ]; then
+    tags+=("python")
+  fi
+  # uv-managed Python
+  if [ -f "$PROJECT_ROOT/uv.lock" ] || (
+    [ -f "$PROJECT_ROOT/pyproject.toml" ] &&
+    grep -Eq '^\[tool\.uv(\.|])|^\[dependency-groups\]' "$PROJECT_ROOT/pyproject.toml"
+  ); then
+    tags+=("python-uv")
+  fi
+
+  # Astro (Starlight docs site)
+  { [ -f "$PROJECT_ROOT/astro.config.mjs" ] || [ -f "$PROJECT_ROOT/astro.config.ts" ]; } && tags+=("astro")
+
+  # Node / JS project
+  [ -f "$PROJECT_ROOT/package.json" ] && tags+=("node")
+
+  # ML/DL — GPU docker-compose or torch/jax/etc. in deps
+  #
+  # Docker compose files commonly live under docker/<subdir>/ (e.g.
+  # docker/gpu/, docker/data/), so a simple shell glob is not enough —
+  # use find. Python deps match "lib" with optional version spec suffix
+  # ("torch>=2.10", "torch[extras]", etc.).
+  if find "$PROJECT_ROOT" -maxdepth 4 -name 'docker-compose*.yml' -print 2>/dev/null \
+    | xargs -r grep -lE '(^|[^A-Za-z])(nvidia|cuda|gpu)' 2>/dev/null | grep -q .; then
+    tags+=("ml-gpu")
+  fi
+  if [ -f "$PROJECT_ROOT/pyproject.toml" ] && grep -Eq '"(torch|tensorflow|jax|transformers|accelerate|unsloth)[^"]*"' "$PROJECT_ROOT/pyproject.toml"; then
+    tags+=("ml-gpu")
+  fi
+
+  # C++
+  { [ -f "$PROJECT_ROOT/CMakeLists.txt" ] || [ -f "$PROJECT_ROOT/.clang-format" ]; } && tags+=("cpp")
+
+  # Rust
+  [ -f "$PROJECT_ROOT/Cargo.toml" ] && tags+=("rust")
+
+  # Go
+  [ -f "$PROJECT_ROOT/go.mod" ] && tags+=("go")
+
+  # Presentation / HTML-deck workflow
+  if grep -rqlE 'html_to_pdf|playwright.*chromium|@remotion/|html-presentation' "$PROJECT_ROOT"/*.md "$PROJECT_ROOT"/*.json "$PROJECT_ROOT"/*.toml 2>/dev/null; then
+    tags+=("presentation")
+  fi
+
+  printf '%s\n' "${tags[@]}" | awk '!seen[$0]++' | tr '\n' ' '
+}
+
+# Return 0 if any of $2..$n appears in the space-separated tag list $1.
+_profile_matches() {
+  local profile="$1"; shift
+  local req
+  for req in "$@"; do
+    case " $profile " in
+      *" $req "*) return 0 ;;
+    esac
+  done
+  return 1
+}
+
+# Apply the target project's own formatter/linter to a freshly installed
+# CUI script so it doesn't fail the project's lint CI on first commit.
+#
+# Only runs for .py files, and only when the project declares [tool.ruff]
+# in pyproject.toml. Silent failure is intentional — if uv/ruff isn't
+# set up yet, we don't want to block the install.
+_apply_project_formatter() {
+  local path="$1"
+  case "$path" in
+    *.py) ;;
+    *) return 0 ;;
+  esac
+  [ -f "$PROJECT_ROOT/pyproject.toml" ] || return 0
+  grep -Eq '^\[tool\.ruff(\.|])' "$PROJECT_ROOT/pyproject.toml" || return 0
+
+  if command -v uv &>/dev/null; then
+    (cd "$PROJECT_ROOT" && uv run --quiet ruff format "$path" >/dev/null 2>&1) || true
+    (cd "$PROJECT_ROOT" && uv run --quiet ruff check --fix "$path" >/dev/null 2>&1) || true
+    echo "  ↳ applied project ruff format/fix to $path"
+  fi
+}
+
+# Pick the pre-commit variant that best matches the target project.
+# Outputs: "local-uv" | "external-mirrors"
+#
+# local-uv wins when ANY of these hold (all indicate a uv-managed project):
+#   - uv.lock exists at the project root
+#   - pyproject.toml declares [tool.uv] / [tool.uv.sources] / [tool.uv.workspace]
+#   - pyproject.toml has a [dependency-groups] table (uv convention)
+# Otherwise external-mirrors is the safer default (no uv assumed).
+_select_pre_commit_variant() {
+  if [ -f "$PROJECT_ROOT/uv.lock" ]; then
+    echo "local-uv"; return
+  fi
+  if [ -f "$PROJECT_ROOT/pyproject.toml" ]; then
+    if grep -Eq '^\[tool\.uv(\.|])|^\[dependency-groups\]' "$PROJECT_ROOT/pyproject.toml"; then
+      echo "local-uv"; return
+    fi
+  fi
+  echo "external-mirrors"
+}
+
 # ── Parse arguments ─────────────────────────────────────────────────────────
 # EXPLICIT_BUNDLES tracks bundles the user named directly (e.g. --presentation).
 # Explicit bundles bypass profile-based auto-exclusion so "I want this bundle
@@ -243,6 +364,22 @@ while [[ $# -gt 0 ]]; do
     *)               TARGET_DIR="$1"; shift ;;
   esac
 done
+# ── Resolve target directory (REQUIRED) ─────────────────────────────────────
+# All bundles install into a project directory. Global (~/) install is not supported.
+if [ -z "$TARGET_DIR" ]; then
+  echo "ERROR: project directory is required." >&2
+  echo "" >&2
+  echo "  All bundles install into a project's .claude/ directory." >&2
+  echo "" >&2
+  echo "  Usage:" >&2
+  echo "    ./install.sh /path/to/project                  # install all bundles" >&2
+  echo "    ./install.sh --base --workflow /path/to/project   # specific bundles" >&2
+  exit 1
+fi
+
+PROJECT_ROOT="$(cd "$TARGET_DIR" 2>/dev/null && pwd || echo "$TARGET_DIR")"
+
+CLAUDE_DIR="$PROJECT_ROOT/.claude"
 
 # ── List mode ───────────────────────────────────────────────────────────────
 if $LIST_ONLY; then
@@ -365,22 +502,6 @@ if printf '%s\n' "${SELECTED_BUNDLES[@]}" | grep -qx "base"; then
   INSTALL_HAS_BASE=true
 fi
 
-# ── Resolve target directory (REQUIRED) ─────────────────────────────────────
-# All bundles install into a project directory. Global (~/) install is not supported.
-if [ -z "$TARGET_DIR" ]; then
-  echo "ERROR: project directory is required." >&2
-  echo "" >&2
-  echo "  All bundles install into a project's .claude/ directory." >&2
-  echo "" >&2
-  echo "  Usage:" >&2
-  echo "    ./install.sh /path/to/project                  # install all bundles" >&2
-  echo "    ./install.sh --base --workflow /path/to/project   # specific bundles" >&2
-  exit 1
-fi
-
-PROJECT_ROOT="$(cd "$TARGET_DIR" 2>/dev/null && pwd || echo "$TARGET_DIR")"
-
-CLAUDE_DIR="$PROJECT_ROOT/.claude"
 
 # ── Collect files to install ────────────────────────────────────────────────
 declare -a INSTALL_LIST=()
@@ -406,127 +527,6 @@ for bundle in "${SELECTED_BUNDLES[@]}"; do
     INSTALL_LIST+=("$item")
   done < <(get_bundle_items "$bundle")
 done
-
-# ── Install functions ───────────────────────────────────────────────────────
-install_file() {
-  local src="$1" dst="$2"
-  mkdir -p "$(dirname "$dst")"
-  cp -v "$src" "$dst"
-  chmod 644 "$dst"
-}
-
-# Detect project types so cui-install can prune bundles that don't apply.
-# Emits space-separated tags on stdout. Tags are additive — one project
-# may be tagged python + python-uv + ml-gpu + cpp at once.
-#
-# Detection is deliberately signal-based (files in the tree) rather than
-# ask-the-user, so re-running cui-install on the same project gives stable
-# results without prompting.
-detect_project_profile() {
-  local tags=()
-
-  # Python
-  if [ -f "$PROJECT_ROOT/pyproject.toml" ] || [ -f "$PROJECT_ROOT/setup.py" ] || [ -f "$PROJECT_ROOT/setup.cfg" ]; then
-    tags+=("python")
-  fi
-  # uv-managed Python
-  if [ -f "$PROJECT_ROOT/uv.lock" ] || (
-    [ -f "$PROJECT_ROOT/pyproject.toml" ] &&
-    grep -Eq '^\[tool\.uv(\.|])|^\[dependency-groups\]' "$PROJECT_ROOT/pyproject.toml"
-  ); then
-    tags+=("python-uv")
-  fi
-
-  # Astro (Starlight docs site)
-  { [ -f "$PROJECT_ROOT/astro.config.mjs" ] || [ -f "$PROJECT_ROOT/astro.config.ts" ]; } && tags+=("astro")
-
-  # Node / JS project
-  [ -f "$PROJECT_ROOT/package.json" ] && tags+=("node")
-
-  # ML/DL — GPU docker-compose or torch/jax/etc. in deps
-  #
-  # Docker compose files commonly live under docker/<subdir>/ (e.g.
-  # docker/gpu/, docker/data/), so a simple shell glob is not enough —
-  # use find. Python deps match "lib" with optional version spec suffix
-  # ("torch>=2.10", "torch[extras]", etc.).
-  if find "$PROJECT_ROOT" -maxdepth 4 -name 'docker-compose*.yml' -print 2>/dev/null \
-    | xargs -r grep -lE '(^|[^A-Za-z])(nvidia|cuda|gpu)' 2>/dev/null | grep -q .; then
-    tags+=("ml-gpu")
-  fi
-  if [ -f "$PROJECT_ROOT/pyproject.toml" ] && grep -Eq '"(torch|tensorflow|jax|transformers|accelerate|unsloth)[^"]*"' "$PROJECT_ROOT/pyproject.toml"; then
-    tags+=("ml-gpu")
-  fi
-
-  # C++
-  { [ -f "$PROJECT_ROOT/CMakeLists.txt" ] || [ -f "$PROJECT_ROOT/.clang-format" ]; } && tags+=("cpp")
-
-  # Rust
-  [ -f "$PROJECT_ROOT/Cargo.toml" ] && tags+=("rust")
-
-  # Go
-  [ -f "$PROJECT_ROOT/go.mod" ] && tags+=("go")
-
-  # Presentation / HTML-deck workflow
-  if grep -rqlE 'html_to_pdf|playwright.*chromium|@remotion/|html-presentation' "$PROJECT_ROOT"/*.md "$PROJECT_ROOT"/*.json "$PROJECT_ROOT"/*.toml 2>/dev/null; then
-    tags+=("presentation")
-  fi
-
-  printf '%s\n' "${tags[@]}" | awk '!seen[$0]++' | tr '\n' ' '
-}
-
-# Return 0 if any of $2..$n appears in the space-separated tag list $1.
-_profile_matches() {
-  local profile="$1"; shift
-  local req
-  for req in "$@"; do
-    case " $profile " in
-      *" $req "*) return 0 ;;
-    esac
-  done
-  return 1
-}
-
-# Apply the target project's own formatter/linter to a freshly installed
-# CUI script so it doesn't fail the project's lint CI on first commit.
-#
-# Only runs for .py files, and only when the project declares [tool.ruff]
-# in pyproject.toml. Silent failure is intentional — if uv/ruff isn't
-# set up yet, we don't want to block the install.
-_apply_project_formatter() {
-  local path="$1"
-  case "$path" in
-    *.py) ;;
-    *) return 0 ;;
-  esac
-  [ -f "$PROJECT_ROOT/pyproject.toml" ] || return 0
-  grep -Eq '^\[tool\.ruff(\.|])' "$PROJECT_ROOT/pyproject.toml" || return 0
-
-  if command -v uv &>/dev/null; then
-    (cd "$PROJECT_ROOT" && uv run --quiet ruff format "$path" >/dev/null 2>&1) || true
-    (cd "$PROJECT_ROOT" && uv run --quiet ruff check --fix "$path" >/dev/null 2>&1) || true
-    echo "  ↳ applied project ruff format/fix to $path"
-  fi
-}
-
-# Pick the pre-commit variant that best matches the target project.
-# Outputs: "local-uv" | "external-mirrors"
-#
-# local-uv wins when ANY of these hold (all indicate a uv-managed project):
-#   - uv.lock exists at the project root
-#   - pyproject.toml declares [tool.uv] / [tool.uv.sources] / [tool.uv.workspace]
-#   - pyproject.toml has a [dependency-groups] table (uv convention)
-# Otherwise external-mirrors is the safer default (no uv assumed).
-_select_pre_commit_variant() {
-  if [ -f "$PROJECT_ROOT/uv.lock" ]; then
-    echo "local-uv"; return
-  fi
-  if [ -f "$PROJECT_ROOT/pyproject.toml" ]; then
-    if grep -Eq '^\[tool\.uv(\.|])|^\[dependency-groups\]' "$PROJECT_ROOT/pyproject.toml"; then
-      echo "local-uv"; return
-    fi
-  fi
-  echo "external-mirrors"
-}
 
 # Assemble collab pipeline from templates/collab-pipeline-body.md (single source; no duplicate templates).
 install_collab_pipeline_project_artifacts() {
