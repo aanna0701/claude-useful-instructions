@@ -166,6 +166,27 @@ BUNDLE_GOOGLE_STYLE=(
   "template:google-style"
 )
 
+# Per-bundle profile requirements. When detect_project_profile yields zero
+# matching tags for a bundle, cui-install skips it UNLESS the user named it
+# explicitly via its own flag (--presentation, --dl, etc.). Explicit naming
+# always wins; the filter only constrains --all / default-all behavior.
+#
+# Tags emitted by detect_project_profile: python, python-uv, astro, node,
+# ml-gpu, cpp, rust, go, presentation. Empty requirement list = applies
+# to any project.
+declare -A BUNDLE_REQUIRES=(
+  [base]=""
+  [workflow]=""
+  [docs]=""
+  [data-pipeline]="python ml-gpu"
+  [codebase]=""
+  [career]=""
+  [dl]="python ml-gpu"
+  [presentation]="presentation"
+  [ppt-generation]="presentation"
+  [google-style]="python cpp"
+)
+
 # 3-layer structure:
 #   base      — git hooks, commit/push helpers, token/debug utilities (always install)
 #   workflow  — Claude-Codex collaboration layer on top of base
@@ -185,7 +206,12 @@ BUNDLE_DESCRIPTIONS=(
 )
 
 # ── Parse arguments ─────────────────────────────────────────────────────────
+# EXPLICIT_BUNDLES tracks bundles the user named directly (e.g. --presentation).
+# Explicit bundles bypass profile-based auto-exclusion so "I want this bundle
+# in this project" always wins. Implicit selections (from --all or the default
+# all-bundles fallback) go through the filter.
 SELECTED_BUNDLES=()
+EXPLICIT_BUNDLES=()
 EXCLUDED_BUNDLES=()
 TARGET_DIR=""
 INTERACTIVE=false
@@ -198,16 +224,16 @@ INSTALL_HAS_BASE=false
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --all)           SELECTED_BUNDLES=("${BUNDLE_NAMES[@]}"); shift ;;
-    --base)          SELECTED_BUNDLES+=("base"); shift ;;
-    --workflow)      SELECTED_BUNDLES+=("workflow"); shift ;;
-    --docs)          SELECTED_BUNDLES+=("docs"); shift ;;
-    --data-pipeline) SELECTED_BUNDLES+=("data-pipeline"); shift ;;
-    --codebase)      SELECTED_BUNDLES+=("codebase"); shift ;;
-    --career)        SELECTED_BUNDLES+=("career"); shift ;;
-    --dl)            SELECTED_BUNDLES+=("dl"); shift ;;
-    --presentation)  SELECTED_BUNDLES+=("presentation"); shift ;;
-    --ppt-generation) SELECTED_BUNDLES+=("ppt-generation"); shift ;;
-    --google-style)  SELECTED_BUNDLES+=("google-style"); shift ;;
+    --base)          SELECTED_BUNDLES+=("base");          EXPLICIT_BUNDLES+=("base"); shift ;;
+    --workflow)      SELECTED_BUNDLES+=("workflow");      EXPLICIT_BUNDLES+=("workflow"); shift ;;
+    --docs)          SELECTED_BUNDLES+=("docs");          EXPLICIT_BUNDLES+=("docs"); shift ;;
+    --data-pipeline) SELECTED_BUNDLES+=("data-pipeline"); EXPLICIT_BUNDLES+=("data-pipeline"); shift ;;
+    --codebase)      SELECTED_BUNDLES+=("codebase");      EXPLICIT_BUNDLES+=("codebase"); shift ;;
+    --career)        SELECTED_BUNDLES+=("career");        EXPLICIT_BUNDLES+=("career"); shift ;;
+    --dl)            SELECTED_BUNDLES+=("dl");            EXPLICIT_BUNDLES+=("dl"); shift ;;
+    --presentation)  SELECTED_BUNDLES+=("presentation"); EXPLICIT_BUNDLES+=("presentation"); shift ;;
+    --ppt-generation) SELECTED_BUNDLES+=("ppt-generation"); EXPLICIT_BUNDLES+=("ppt-generation"); shift ;;
+    --google-style)  SELECTED_BUNDLES+=("google-style"); EXPLICIT_BUNDLES+=("google-style"); shift ;;
     --exclude)       shift; EXCLUDED_BUNDLES+=("$1"); shift ;;
     --interactive)   INTERACTIVE=true; shift ;;
     --list)          LIST_ONLY=true; shift ;;
@@ -282,6 +308,42 @@ if [[ ${#SELECTED_BUNDLES[@]} -eq 0 ]]; then
   fi
 fi
 
+# ── Profile-based bundle filtering ─────────────────────────────────────────
+# Skip bundles whose BUNDLE_REQUIRES doesn't match the detected project
+# profile. Bundles the user named explicitly on the CLI (e.g. --presentation)
+# always pass regardless of profile.
+if ! $UNINSTALL; then
+  _detected_profile="$(detect_project_profile)"
+  if [ -n "$_detected_profile" ]; then
+    echo "  Detected project profile: ${_detected_profile% }"
+    _profile_filtered=()
+    for _bundle in "${SELECTED_BUNDLES[@]}"; do
+      # Explicit: bypass filter
+      _explicit=false
+      for _e in "${EXPLICIT_BUNDLES[@]}"; do
+        [ "$_e" = "$_bundle" ] && _explicit=true
+      done
+      if $_explicit; then
+        _profile_filtered+=("$_bundle")
+        continue
+      fi
+      _req="${BUNDLE_REQUIRES[$_bundle]:-}"
+      if [ -z "$_req" ]; then
+        _profile_filtered+=("$_bundle")
+        continue
+      fi
+      # shellcheck disable=SC2086
+      if _profile_matches "$_detected_profile" $_req; then
+        _profile_filtered+=("$_bundle")
+      else
+        echo "  Skipping bundle '$_bundle' (requires: $_req) — no match in profile. Use --$_bundle to install anyway."
+      fi
+    done
+    SELECTED_BUNDLES=("${_profile_filtered[@]}")
+    unset _profile_filtered _bundle _req _explicit _e _detected_profile
+  fi
+fi
+
 # ── Apply exclusions ───────────────────────────────────────────────────────
 if [[ ${#EXCLUDED_BUNDLES[@]} -gt 0 ]]; then
   FILTERED=()
@@ -351,6 +413,71 @@ install_file() {
   mkdir -p "$(dirname "$dst")"
   cp -v "$src" "$dst"
   chmod 644 "$dst"
+}
+
+# Detect project types so cui-install can prune bundles that don't apply.
+# Emits space-separated tags on stdout. Tags are additive — one project
+# may be tagged python + python-uv + ml-gpu + cpp at once.
+#
+# Detection is deliberately signal-based (files in the tree) rather than
+# ask-the-user, so re-running cui-install on the same project gives stable
+# results without prompting.
+detect_project_profile() {
+  local tags=()
+
+  # Python
+  if [ -f "$PROJECT_ROOT/pyproject.toml" ] || [ -f "$PROJECT_ROOT/setup.py" ] || [ -f "$PROJECT_ROOT/setup.cfg" ]; then
+    tags+=("python")
+  fi
+  # uv-managed Python
+  if [ -f "$PROJECT_ROOT/uv.lock" ] || (
+    [ -f "$PROJECT_ROOT/pyproject.toml" ] &&
+    grep -Eq '^\[tool\.uv(\.|])|^\[dependency-groups\]' "$PROJECT_ROOT/pyproject.toml"
+  ); then
+    tags+=("python-uv")
+  fi
+
+  # Astro (Starlight docs site)
+  { [ -f "$PROJECT_ROOT/astro.config.mjs" ] || [ -f "$PROJECT_ROOT/astro.config.ts" ]; } && tags+=("astro")
+
+  # Node / JS project
+  [ -f "$PROJECT_ROOT/package.json" ] && tags+=("node")
+
+  # ML/DL — GPU docker-compose or torch/jax/etc. in deps
+  if grep -rqE '(^|[^A-Za-z])(nvidia|cuda|gpu)' "$PROJECT_ROOT"/docker*/docker-compose*.yml 2>/dev/null; then
+    tags+=("ml-gpu")
+  fi
+  if [ -f "$PROJECT_ROOT/pyproject.toml" ] && grep -Eq '"(torch|tensorflow|jax|transformers|accelerate|unsloth)"' "$PROJECT_ROOT/pyproject.toml"; then
+    tags+=("ml-gpu")
+  fi
+
+  # C++
+  { [ -f "$PROJECT_ROOT/CMakeLists.txt" ] || [ -f "$PROJECT_ROOT/.clang-format" ]; } && tags+=("cpp")
+
+  # Rust
+  [ -f "$PROJECT_ROOT/Cargo.toml" ] && tags+=("rust")
+
+  # Go
+  [ -f "$PROJECT_ROOT/go.mod" ] && tags+=("go")
+
+  # Presentation / HTML-deck workflow
+  if grep -rqlE 'html_to_pdf|playwright.*chromium|@remotion/|html-presentation' "$PROJECT_ROOT"/*.md "$PROJECT_ROOT"/*.json "$PROJECT_ROOT"/*.toml 2>/dev/null; then
+    tags+=("presentation")
+  fi
+
+  printf '%s\n' "${tags[@]}" | awk '!seen[$0]++' | tr '\n' ' '
+}
+
+# Return 0 if any of $2..$n appears in the space-separated tag list $1.
+_profile_matches() {
+  local profile="$1"; shift
+  local req
+  for req in "$@"; do
+    case " $profile " in
+      *" $req "*) return 0 ;;
+    esac
+  done
+  return 1
 }
 
 # Apply the target project's own formatter/linter to a freshly installed
