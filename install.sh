@@ -353,6 +353,26 @@ install_file() {
   chmod 644 "$dst"
 }
 
+# Pick the pre-commit variant that best matches the target project.
+# Outputs: "local-uv" | "external-mirrors"
+#
+# local-uv wins when ANY of these hold (all indicate a uv-managed project):
+#   - uv.lock exists at the project root
+#   - pyproject.toml declares [tool.uv] / [tool.uv.sources] / [tool.uv.workspace]
+#   - pyproject.toml has a [dependency-groups] table (uv convention)
+# Otherwise external-mirrors is the safer default (no uv assumed).
+_select_pre_commit_variant() {
+  if [ -f "$PROJECT_ROOT/uv.lock" ]; then
+    echo "local-uv"; return
+  fi
+  if [ -f "$PROJECT_ROOT/pyproject.toml" ]; then
+    if grep -Eq '^\[tool\.uv(\.|])|^\[dependency-groups\]' "$PROJECT_ROOT/pyproject.toml"; then
+      echo "local-uv"; return
+    fi
+  fi
+  echo "external-mirrors"
+}
+
 # Assemble collab pipeline from templates/collab-pipeline-body.md (single source; no duplicate templates).
 install_collab_pipeline_project_artifacts() {
   local body="$REPO_DIR/templates/collab-pipeline-body.md"
@@ -1032,19 +1052,33 @@ for entry in "${INSTALL_LIST[@]}"; do
       install_claude_hook "$path"
       ;;
     template)
-      # Copy template files to project root (e.g., .pre-commit-config.yaml)
+      # Copy template files to project root.
+      #
+      # Special case: templates/pre-commit ships multiple variants under
+      # variants/. _select_pre_commit_variant chooses the right one for the
+      # target project (local-uv for uv-managed, external-mirrors otherwise)
+      # and installs unconditionally — cui-install is the source of truth
+      # for lint config, so per-project drift gets flattened each run.
       _tmpl_dir="$REPO_DIR/templates/$path"
-      if [ -d "$_tmpl_dir" ]; then
+      if [ "$path" = "pre-commit" ] && [ -d "$_tmpl_dir/variants" ]; then
+        _variant="$(_select_pre_commit_variant)"
+        _variant_file="$_tmpl_dir/variants/${_variant}.yaml"
+        _dst_path="$PROJECT_ROOT/.pre-commit-config.yaml"
+        if [ ! -f "$_variant_file" ]; then
+          echo "WARNING: pre-commit variant '$_variant' not found at $_variant_file" >&2
+        else
+          install_file "$_variant_file" "$_dst_path"
+          echo "  Installed .pre-commit-config.yaml (variant: $_variant)"
+        fi
+      elif [ -d "$_tmpl_dir" ]; then
+        # cui-install is the source of truth; overwrite always so local
+        # drift gets flattened each run. Variant selection (if any) is
+        # handled in the specific-path branches above.
         for _tmpl_file in "$_tmpl_dir"/.*  "$_tmpl_dir"/*; do
           [ -f "$_tmpl_file" ] || continue
           _fname="$(basename "$_tmpl_file")"
           [[ "$_fname" == "." || "$_fname" == ".." ]] && continue
-          _dst_path="$PROJECT_ROOT/$_fname"
-          if [ -f "$_dst_path" ]; then
-            echo "  $_fname already exists — skipping"
-          else
-            install_file "$_tmpl_file" "$_dst_path"
-          fi
+          install_file "$_tmpl_file" "$PROJECT_ROOT/$_fname"
         done
       else
         echo "WARNING: Template dir not found: $_tmpl_dir" >&2
