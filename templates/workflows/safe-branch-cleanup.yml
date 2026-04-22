@@ -80,9 +80,7 @@ jobs:
             echo "Branch will NOT be deleted. Close or retarget dependent PRs first."
 
             # Comment on the merged PR to inform
-            COMMENT="**Branch \`${BRANCH}\` was NOT deleted** — it is the base branch for ${OPEN_CHILDREN} open PR(s).
-
-Retarget or close dependent PRs before deleting this branch."
+            COMMENT=$'**Branch `'"${BRANCH}"$'` was NOT deleted** — it is the base branch for '"${OPEN_CHILDREN}"$' open PR(s).\n\nRetarget or close dependent PRs before deleting this branch.'
             gh pr comment "${{ github.event.pull_request.number }}" \
               --repo "$REPO" \
               --body "$COMMENT"
