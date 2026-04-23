@@ -8,6 +8,17 @@
 - 모든 질의는 indexed repo에 대해서만 동작. `list_repos`로 먼저 확인.
 - 인덱스는 시간 경과에 따라 stale 될 수 있다 — 중요한 결정 전에 `group_status` 또는 파일 직접 확인.
 
+### Preflight freshness (skill Phase 1에서 실행)
+
+`list_repos` + `group_status` + `git rev-parse HEAD && git log -1 --format=%ct HEAD`를 **한 메시지에서 병렬**로 호출하여 `미인덱싱 / stale / fresh`를 한 턴에 판정한다.
+
+**Stale 정의 (하나라도 참이면 stale):**
+- last analyzed 시각 < HEAD commit 시각
+- last analyzed가 24h 이상 경과
+- `group_status`에 stale 그룹 존재
+
+stale / 미인덱싱인 경우 skill은 사용자 확인을 받고 `gitnexus analyze`를 실행한다 (자동 실행 금지, 항상 confirm).
+
 ---
 
 ## 도구별 가이드
