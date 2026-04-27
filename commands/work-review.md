@@ -72,11 +72,11 @@ Read the local diff + contract, write a review file, and on APPROVE merge locall
       ```bash
       git -C "$REPO_ROOT" push 2>/dev/null || true
       ```
-   5. **Archive the contract directory** — this is the "PR close" step. The directory is *moved* (not deleted) so a follow-up implementation can crib from the previous spec/review. The `worktree-cleanup` hook purges archives older than `WORK_ARCHIVE_TTL_DAYS` (default 7) on every fire:
+   5. **Archive the contract directory** — this is the "PR close" step. The directory is *moved* (not deleted), with the archive epoch encoded in the destination name so no sidecar file is needed. A follow-up implementation can crib from the previous spec/review until the `worktree-cleanup` hook purges archives older than `WORK_ARCHIVE_TTL_DAYS` (default 7):
       ```bash
       mkdir -p "$REPO_ROOT/.work/archive"
-      mv "$REPO_ROOT/.work/contracts/{ID}-{slug}" "$REPO_ROOT/.work/archive/{ID}-{slug}"
-      date +%s > "$REPO_ROOT/.work/archive/{ID}-{slug}/.archived-at"
+      TS=$(date +%s)
+      mv "$REPO_ROOT/.work/contracts/{ID}-{slug}" "$REPO_ROOT/.work/archive/{ID}-{slug}.archived-${TS}"
       ```
    6. Worktree + branch + remote-branch cleanup (and a fallback archive sweep) is handled automatically by the `worktree-cleanup` PostToolUse hook (it fires on `git merge`). No manual step required.
    7. `release_merge_lock`.

@@ -85,12 +85,16 @@ def _archive_ttl_seconds() -> int:
     return max(0, days) * 86400
 
 
-def _archive_contract_dir(main_root: Path, branch: str) -> None:
-    """Move .work/contracts/*-{slug}/ to .work/archive/ with an .archived-at marker.
+_ARCHIVE_SUFFIX_RE = re.compile(r"\.archived-(\d+)$")
 
-    Archived contracts stay around for WORK_ARCHIVE_TTL_DAYS (default 7) so a
-    follow-up implementation can crib from the previous spec/review. They are
-    purged by `_purge_expired_archives` on every hook fire.
+
+def _archive_contract_dir(main_root: Path, branch: str) -> None:
+    """Move .work/contracts/*-{slug}/ to .work/archive/{name}.archived-{epoch}/.
+
+    The archive timestamp is encoded in the directory name itself, so no
+    sidecar file is needed inside the archived contract. Archived contracts
+    stay around for WORK_ARCHIVE_TTL_DAYS (default 7) before `_purge_expired_archives`
+    deletes them.
     """
     m = _FEATURE_RE.match(branch)
     if not m:
@@ -104,13 +108,10 @@ def _archive_contract_dir(main_root: Path, branch: str) -> None:
     for child in contracts.iterdir():
         if not (child.is_dir() and child.name.endswith(f"-{slug}")):
             continue
-        dest = archive_root / child.name
-        # If a same-named archive already exists, suffix with epoch seconds.
-        if dest.exists():
-            dest = archive_root / f"{child.name}.{int(time.time())}"
+        ts = int(time.time())
+        dest = archive_root / f"{child.name}.archived-{ts}"
         try:
             shutil.move(str(child), str(dest))
-            (dest / ".archived-at").write_text(f"{int(time.time())}\n")
             print(
                 f"[worktree-cleanup] Archived contract: {dest.relative_to(main_root)} "
                 f"(purged after WORK_ARCHIVE_TTL_DAYS={_archive_ttl_seconds() // 86400}d)",
@@ -121,7 +122,12 @@ def _archive_contract_dir(main_root: Path, branch: str) -> None:
 
 
 def _purge_expired_archives(main_root: Path) -> None:
-    """Delete archived contracts older than WORK_ARCHIVE_TTL_DAYS."""
+    """Delete archived contracts older than WORK_ARCHIVE_TTL_DAYS.
+
+    The archive timestamp is read from the directory-name suffix
+    (`.archived-{epoch}`); entries without a parseable suffix fall back to
+    the directory's mtime.
+    """
     archive_root = main_root / ".work" / "archive"
     if not archive_root.is_dir():
         return
@@ -132,11 +138,14 @@ def _purge_expired_archives(main_root: Path) -> None:
     for child in archive_root.iterdir():
         if not child.is_dir():
             continue
-        marker = child / ".archived-at"
-        try:
-            ts = int(marker.read_text().strip()) if marker.exists() else int(child.stat().st_mtime)
-        except (OSError, ValueError):
-            ts = int(child.stat().st_mtime)
+        m = _ARCHIVE_SUFFIX_RE.search(child.name)
+        if m:
+            ts = int(m.group(1))
+        else:
+            try:
+                ts = int(child.stat().st_mtime)
+            except OSError:
+                continue
         if ts < cutoff:
             try:
                 shutil.rmtree(child)
