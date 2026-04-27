@@ -9,9 +9,9 @@ Portable Claude Code configuration. One `./install.sh` to apply everywhere.
 │  domain-*     docs · dl · career · google-style · presen-    │
 │               tation · ppt-generation · data-pipeline        │
 ├──────────────────────────────────────────────────────────────┤
-│  workflow     Claude-Codex collaboration                     │
-│               (work items, AGENTS.md/CLAUDE.md, codex-run,   │
-│                CI workflows, review/merge policy)            │
+│  workflow     Local work-item flow (no PR, no CI)            │
+│               (work items, CLAUDE.md, .work/contracts/,      │
+│                local review + squash-merge policy)           │
 ├──────────────────────────────────────────────────────────────┤
 │  base         git hooks + commit/push helpers                │
 │               + token/debug utilities + pre-commit template  │
@@ -51,8 +51,8 @@ cui-install --base --workflow /path/to/project
 
 | Layer    | Bundle            | Profile requires       | Contents                                                                                     |
 |----------|-------------------|------------------------|----------------------------------------------------------------------------------------------|
-| base     | `base`            | _(any)_                | `git-auto-pull`, `branch-naming`, `guard-branch`, `guard-merge`, `auto-pr-commit`, `auto-pr`, `worktree-cleanup` hooks; `smart-git-commit-push`, `optimize-tokens`, `debug-guide`, `what-to-do` commands & agents; token analyzers; `.pre-commit-config.yaml` (variant auto-picked: `local-uv` for uv projects, `external-mirrors` otherwise) |
-| workflow | `workflow`        | _(any)_                | Claude-Codex-Cursor work items (`/work-plan`, `/work-impl`, `/work-refactor`, `/work-review`, `/work-status`), `collab-workflow` skill, `pr-reviewer` / `ci-audit-agent`, CI (`pr-checks.yml`, `branch-auto-sync.yml`, `safe-branch-cleanup.yml`), `codex-run.sh`, `AGENTS.md`, `CLAUDE.md` |
+| base     | `base`            | _(any)_                | `branch-naming`, `guard-branch`, `worktree-cleanup` hooks; `smart-git-commit-push`, `optimize-tokens`, `debug-guide`, `what-to-do` commands & agents; token analyzers; `.pre-commit-config.yaml` (variant auto-picked: `local-uv` for uv projects, `external-mirrors` otherwise) |
+| workflow | `workflow`        | _(any)_                | Local work-item flow (`/work-plan`, `/work-impl`, `/work-refactor`, `/work-review`, `/work-status`), `collab-workflow` skill, `templates/work-item/contract.md`, `CLAUDE.md`. **No GitHub PRs, no Actions** — `.work/contracts/{ID}-{slug}/` replaces the PR. |
 | domain   | `docs`            | _(any)_                | `diataxis-doc-system`, `diagram-architect` skills + doc/diagram agents + `/write-doc`, `/init-docs`, `/sync-docs` (v2: GitNexus + Starlight), `/polish-doc` |
 | domain   | `data-pipeline`   | `python` + `ml-gpu`    | `data-pipeline-architect` skill                                                              |
 | domain   | `codebase`        | _(any)_                | `codebase-qa` skill + `codebase-researcher` agent + `/codebase-ask` (GitNexus-backed)        |
@@ -91,13 +91,13 @@ Code edit on main repo
   → creates worktree (feature-adhoc-{MMDD-HHMM})
   → redirects edit to worktree
 
-First commit in worktree
-  → auto-pr-commit pushes branch + creates draft PR
-    (body injected from templates/collab-pipeline-body.md)
+Commit in worktree
+  → standard `git commit` (no PR, no push triggered automatically)
 
-PR merged (local or remote)
-  → git-auto-pull fast-forwards the main worktree
-  → worktree-cleanup deletes merged worktree + local + remote branch
+Local merge into parent
+  → `git merge --squash` from the main worktree
+  → worktree-cleanup deletes merged worktree + local branch
+    (and remote branch if `origin` exists)
 ```
 
 ### Branch convention
@@ -121,12 +121,8 @@ PR merged (local or remote)
 | Hook              | Event                          | What it does                                                 |
 |-------------------|--------------------------------|--------------------------------------------------------------|
 | `branch-naming`   | PreToolUse (Bash)              | Blocks non-`feature-*` branch names                          |
-| `guard-branch`    | PreToolUse (Edit/Write)        | Redirects code edits to worktree + creates Issue             |
-| `guard-merge`     | PreToolUse (Bash/MCP merge)    | Blocks automated merges into protected branches              |
-| `auto-pr-commit`  | PostToolUse (Bash)             | Draft PR on first `git commit`                               |
-| `worktree-cleanup`| PostToolUse (Bash) + Stop      | Deletes merged worktrees + remote branches                   |
-| `auto-pr`         | Stop                           | Fallback PR creation if `auto-pr-commit` missed              |
-| `git-auto-pull`   | PreToolUse (Edit/Write) + PostToolUse (Bash/MCP merge) | Session-start pull + post-merge fast-forward        |
+| `guard-branch`    | PreToolUse (Edit/Write)        | Redirects code edits to a feature worktree (no PR)           |
+| `worktree-cleanup`| PostToolUse (Bash) + Stop      | After `git merge`: deletes merged worktrees, local + remote branches, and `.work/contracts/{ID}-{slug}/` |
 
 ### Pre-commit template (two variants, auto-picked)
 
@@ -151,44 +147,24 @@ cui-install **overwrites** `.pre-commit-config.yaml` on every run. Per-project d
 
 ---
 
-## workflow layer — Claude-Codex collaboration
+## workflow layer — local work-item workflow (no PR)
 
-PR + git are the single source of truth. No markdown file stores state.
+`.work/contracts/` + git are the single source of truth. **No GitHub PRs, no Actions, no `gh` calls.**
 
 ```
-/work-plan (Claude) ──▶ /work-impl | /work-refactor (session AI) ──(push → CI)──▶ /work-review (Claude) ──▶ merge
-                        ▲                                                                  │
-                        └─────────────────────── CHANGES_REQUESTED ────────────────────────┘
+/work-plan ──▶ /work-impl | /work-refactor ──▶ /work-review ──▶ (APPROVE → squash-merge + rm contract)
+                       ▲                              │
+                       └────── CHANGES_REQUESTED ─────┘
 ```
 
 - **5 commands, 0 flags**: `/work-plan`, `/work-impl`, `/work-refactor`, `/work-review`, `/work-status`
-- **1 file per work item**: `work/items/{ID}-{slug}/contract.md` (immutable after plan)
-- **State is derived** from `gh pr list` + `git worktree list`
-- **CI required**: `pr-checks.yml` (ruff + mypy + pytest) bundled and installed automatically
-- **Squash merge only**. MUST-fix = inline review comments, resolved via GraphQL `resolveReviewThread`
-- **Two verification layers**: pre-commit (local, fast) + CI (remote, full) — intentional overlap
+- **1 directory per work item**: `.work/contracts/{ID}-{slug}/` — `contract.md` (spec), `.ready` (sentinel), `review-{sha}.md` (one per review pass). The whole `.work/` tree is gitignored.
+- **State is derived** from `.work/contracts/` + `git worktree list` + branch ancestry
+- **No CI**: pre-commit is the only automated gate. The user opted out of GitHub Actions to control cost.
+- **Squash merge only**, performed locally by `/work-review` on APPROVE. APPROVE = squash-merge + `rm -rf .work/contracts/{ID}-{slug}/` (= "PR close").
+- Optional `git push` keeps a remote mirror, but no PR is opened.
 
-### `/work-impl` execution model
-
-Two interchangeable executors, each reading the same inputs (contract + unresolved review threads + diff):
-
-1. **Cursor session** (preferred — `/work-impl` from `.cursor/commands/`) — open the worktree in Cursor, run the command; Composer/Agent performs coordinated multi-file edits and commits.
-2. **Claude session** (fallback — `/work-impl` from `.claude/commands/`) — implements in-session when Cursor is not being used. Commits + pushes + handles PR state directly.
-
-Single-responsibility across the board: the executor generates/edits; commit/push/PR state is the implementer's own `git` flow.
-
-Migrating from v1? See [docs/MIGRATION-v2.md](docs/MIGRATION-v2.md). Rollback tag: `v1-final`.
-
-### GitHub CLI (required)
-
-```bash
-# Ubuntu/Debian: sudo apt install gh
-# macOS:        brew install gh
-# Conda:        conda install gh --channel conda-forge
-gh auth login
-```
-
-The workflow layer has **no fallback** for `gh` failures — they raise errors.
+Executor is always Claude Code in-session. Cursor and Codex paths were removed.
 
 ---
 
@@ -249,7 +225,6 @@ Re-index after major changes: `gitnexus analyze`. Stale index (>24h) triggers a 
 | Agents              | [docs/agents.md](docs/agents.md)                                                        |
 | Commands            | [docs/commands.md](docs/commands.md)                                                    |
 | Workflow architecture | [docs/collab-workflow.md](docs/collab-workflow.md)                                    |
-| v1 → v2 migration   | [docs/MIGRATION-v2.md](docs/MIGRATION-v2.md)                                            |
 
 ## Project structure
 
@@ -259,7 +234,7 @@ claude-useful-instructions/
 │                     #   collab-workflow, html-presentation, career-docs, ppt-generation,
 │                     #   google-style-refactor)
 ├── agents/           # Subagents (doc writers, diagram writer, debug-guide, token analyzers,
-│                     #   codebase-researcher, pr-reviewer, ci-audit-agent, dl-*, career-docs-*,
+│                     #   codebase-researcher, dl-*, career-docs-*,
 │                     #   ppt-*, google-style-*)
 ├── commands/         # Slash commands (/work-*, /write-doc, /init-docs, /sync-docs, /codebase-ask,
 │                     #   /smart-git-commit-push, /optimize-tokens, /debug-guide, /what-to-do,
@@ -267,14 +242,12 @@ claude-useful-instructions/
 │                     #   /refactor-google-style)
 ├── rules/            # Code standards (collab-workflow.md, review-merge-policy.md,
 │                     #   pytorch-dl-standards.md, google-style-*.md)
-├── hooks/            # Claude Code hooks — base layer (git-auto-pull, branch-naming,
-│                     #   guard-branch, guard-merge, auto-pr-commit, auto-pr, worktree-cleanup)
-├── templates/        # Installable templates (pre-commit, work-item, workflows, codex/claude/)
+├── hooks/            # Claude Code hooks (branch-naming, guard-branch, worktree-cleanup)
+├── templates/        # Installable templates (pre-commit, work-item, claude/)
 ├── scripts/          # Utility scripts (html_to_pdf.py, patch-hook-settings.py)
 ├── lib/              # Shared helpers (merge-lock.sh)
 ├── docs/             # Reference guides
-├── install.sh        # Bundle-based installer (+ --uninstall)
-└── codex-run.sh      # Unattended Codex runner (edits only; Claude owns git/PR)
+└── install.sh        # Bundle-based installer (+ --uninstall)
 ```
 
 ## Adding new configuration

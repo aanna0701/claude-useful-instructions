@@ -7,12 +7,12 @@
 # Options:
 #   3-layer structure:
 #     [base]     git hooks, commit/push helpers, token/debug utilities
-#     [workflow] Claude-Codex collaboration (work items, AGENTS.md/CLAUDE.md, codex-run)
+#     [workflow] Local work-item flow (no PR, no Actions)
 #     [domain-*] task-specific bundles
 #
 #   --all           Install all bundles (default if no bundle flags given)
 #   --base          [base] git hooks + commit/push helpers + token/debug utilities
-#   --workflow      [workflow] Claude-Codex collaboration (work items, AGENTS.md/CLAUDE.md, codex-run)
+#   --workflow      [workflow] Local work-item flow (.work/contracts/, no PR)
 #   --docs          [domain] Documentation & diagrams
 #   --data-pipeline [domain] Data pipeline architect
 #   --codebase      [domain] Codebase Q&A (GitNexus-backed)
@@ -42,9 +42,6 @@ REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
 # ── Bundle definitions ──────────────────────────────────────────────────────
 # Each bundle lists its files relative to REPO_DIR.
 # Format: "type:relative_path" where type is rules|commands|agents|skills|templates|...
-#   cursor-command:basename.md → templates/cursor-commands/<basename> → .cursor/commands/<basename>
-#   collab-pipeline:project → assemble templates/collab-pipeline-body.md into
-#     .cursor/rules/collab-pipeline.mdc and .agent/workflows/collab-pipeline.md (single source)
 
 BUNDLE_BASE=(
   "commands:smart-git-commit-push.md"
@@ -57,13 +54,9 @@ BUNDLE_BASE=(
   "agents:token-load-measurer.md"
   "agents:token-mcp-analyzer.md"
   "agents:token-split-detector.md"
-  "claude-hook:git-auto-pull"
   "claude-hook:branch-naming"
   "claude-hook:guard-branch"
-  "claude-hook:guard-merge"
-  "claude-hook:auto-pr-commit"
   "claude-hook:worktree-cleanup"
-  "claude-hook:auto-pr"
   "template:pre-commit"
 )
 
@@ -122,19 +115,9 @@ BUNDLE_WORKFLOW=(
   "commands:work-refactor.md"
   "commands:work-review.md"
   "commands:work-status.md"
-  "cursor-command:work-impl.md"
-  "cursor-command:work-refactor.md"
   "skills:collab-workflow"
-  "agents:ci-audit-agent.md"
-  "agents:pr-reviewer.md"
   "templates:work-item"
-  "collab-pipeline:project"
-  "workflow:branch-auto-sync.yml"
-  "workflow:safe-branch-cleanup.yml"
-  "workflow:pr-checks.yml"
-  "root-file:AGENTS.md"
   "root-file:CLAUDE.md"
-  "script:codex-run.sh"
   "script:lib/merge-lock.sh"
 )
 
@@ -161,8 +144,6 @@ BUNDLE_GOOGLE_STYLE=(
   "commands:refactor-google-style.md"
   "agents:google-style-refactor-cpp.md"
   "agents:google-style-refactor-python.md"
-  "cursor-rule:google-style-cpp.mdc"
-  "cursor-rule:google-style-python.mdc"
   "template:google-style"
 )
 
@@ -189,12 +170,12 @@ declare -A BUNDLE_REQUIRES=(
 
 # 3-layer structure:
 #   base      — git hooks, commit/push helpers, token/debug utilities (always install)
-#   workflow  — Claude-Codex collaboration layer on top of base
+#   workflow  — Local work-item flow on top of base (no PR, no Actions)
 #   domain-*  — task-specific bundles (install per project need)
 BUNDLE_NAMES=("base" "workflow" "docs" "data-pipeline" "codebase" "career" "dl" "presentation" "ppt-generation" "google-style")
 BUNDLE_DESCRIPTIONS=(
   "[base] git hooks + commit/push helpers + token/debug utilities"
-  "[workflow] Claude-Codex collaboration: work items, AGENTS.md/CLAUDE.md, codex-run, PR workflows"
+  "[workflow] Local work-item flow: contracts in .work/, no PR, no Actions"
   "[domain] Documentation & diagrams (diataxis framework, doc agents, diagram-architect)"
   "[domain] Data pipeline architect skill"
   "[domain] Codebase Q&A (GitNexus-backed skill/agent/command for code questions)"
@@ -528,60 +509,11 @@ for bundle in "${SELECTED_BUNDLES[@]}"; do
   done < <(get_bundle_items "$bundle")
 done
 
-# Assemble collab pipeline from templates/collab-pipeline-body.md (single source; no duplicate templates).
-install_collab_pipeline_project_artifacts() {
-  local body="$REPO_DIR/templates/collab-pipeline-body.md"
-  local tmp_cursor tmp_agent
-  if [ ! -f "$body" ]; then
-    echo "ERROR: missing collab pipeline body template: $body" >&2
-    exit 1
-  fi
-  tmp_cursor="$(mktemp)"
-  tmp_agent="$(mktemp)"
-  {
-    printf '%s\n' '---'
-    printf '%s\n' 'description: "collab pipeline — /collab-workflow {instruction} orchestrates Claude→You→Codex→You→Claude via terminal"'
-    printf '%s\n' 'globs: ["work/**", "AGENTS.md", "CLAUDE.md"]'
-    printf '%s\n' 'alwaysApply: false'
-    printf '%s\n' '---'
-    printf '%s\n' ''
-    cat "$body"
-  } >"$tmp_cursor"
-  {
-    printf '%s\n' '---'
-    printf '%s\n' 'description: "collab pipeline — /collab-workflow {instruction} orchestrates Claude→You→Codex→You→Claude via terminal"'
-    printf '%s\n' '---'
-    printf '%s\n' ''
-    cat "$body"
-  } >"$tmp_agent"
-  install_file "$tmp_cursor" "$PROJECT_ROOT/.cursor/rules/collab-pipeline.mdc"
-  install_file "$tmp_agent" "$PROJECT_ROOT/.agent/workflows/collab-pipeline.md"
-  rm -f "$tmp_cursor" "$tmp_agent"
-}
-
 install_command() {
   local path="$1"
   local src="$REPO_DIR/commands/$path"
   local dst="$CLAUDE_DIR/commands/$path"
-  
   install_file "$src" "$dst"
-
-  if [ -n "$PROJECT_ROOT" ] && [ "$PROJECT_ROOT" != "$HOME" ]; then
-    local dst_ag="$PROJECT_ROOT/.agent/workflows/$path"
-    mkdir -p "$(dirname "$dst_ag")"
-    
-    local first_line
-    first_line=$(head -n 1 "$src" 2>/dev/null || true)
-    local desc="Execute command"
-    
-    if [[ "$first_line" == *"—"* ]]; then
-      desc=$(echo "$first_line" | awk -F'—' '{print $2}' | xargs)
-    elif [[ "$first_line" == *"-"* ]]; then
-      desc=$(echo "$first_line" | awk -F'-' '{print $2}' | xargs)
-    fi
-    
-    echo -e "---\ndescription: $desc\n---\n$(cat "$src")" > "$dst_ag"
-  fi
 }
 
 install_skill_dir() {
@@ -623,15 +555,10 @@ install_template_dir() {
 
 install_root_file() {
   local filename="$1"
-  local src=""
+  local src="$REPO_DIR/templates/claude/$filename"
   local dst="$PROJECT_ROOT/$filename"
 
-  # Resolve source: check templates/codex/ then templates/claude/
-  if [ -f "$REPO_DIR/templates/codex/$filename" ]; then
-    src="$REPO_DIR/templates/codex/$filename"
-  elif [ -f "$REPO_DIR/templates/claude/$filename" ]; then
-    src="$REPO_DIR/templates/claude/$filename"
-  else
+  if [ ! -f "$src" ]; then
     echo "WARNING: Template not found for root-file: $filename" >&2
     return 0
   fi
@@ -761,9 +688,6 @@ remove_file() {
 remove_command() {
   local path="$1"
   remove_file "$CLAUDE_DIR/commands/$path"
-  if [ -n "$PROJECT_ROOT" ] && [ "$PROJECT_ROOT" != "$HOME" ]; then
-    remove_file "$PROJECT_ROOT/.agent/workflows/$path"
-  fi
 }
 
 remove_dir_if_empty() {
@@ -774,16 +698,6 @@ remove_dir_if_empty() {
 remove_skill_dir() {
   local skill_name="$1"
   local dst="$CLAUDE_DIR/skills/$skill_name"
-  if [ -n "$PROJECT_ROOT" ] && [ "$PROJECT_ROOT" != "$HOME" ]; then
-    local dst_ag="$PROJECT_ROOT/.agent/skills/$skill_name"
-    local dst_cu="$PROJECT_ROOT/.cursor/skills/$skill_name"
-    if [ -e "$dst_ag" ] || [ -L "$dst_ag" ]; then
-      rm -rv "$dst_ag"
-    fi
-    if [ -e "$dst_cu" ] || [ -L "$dst_cu" ]; then
-      rm -rv "$dst_cu"
-    fi
-  fi
   if [ -d "$dst" ] || [ -L "$dst" ]; then
     rm -rv "$dst"
   fi
@@ -936,125 +850,42 @@ PYEOF
 }
 
 remove_work_dir() {
-  # Remove work/ from the target project only (no sibling worktrees)
-  local work_dir="$PROJECT_ROOT/work"
-  if [ -L "$work_dir" ]; then
-    rm -v "$work_dir"
-    echo "  Removed work/ symlink"
-  elif [ -d "$work_dir" ]; then
-    if $FORCE_YES; then
-      rm -rv "$work_dir"
-    elif [ -t 0 ]; then
-      read -rp "  Remove work/ directory (contains work items)? [y/N] " confirm
-      if [[ "$confirm" =~ ^[Yy]$ ]]; then
+  # Remove .work/ (local-only contracts) and legacy work/ from the target project.
+  for work_dir in "$PROJECT_ROOT/.work" "$PROJECT_ROOT/work"; do
+    if [ -L "$work_dir" ]; then
+      rm -v "$work_dir"
+    elif [ -d "$work_dir" ]; then
+      if $FORCE_YES; then
         rm -rv "$work_dir"
+      elif [ -t 0 ]; then
+        read -rp "  Remove $(basename "$work_dir")/ directory (contains work items)? [y/N] " confirm
+        if [[ "$confirm" =~ ^[Yy]$ ]]; then
+          rm -rv "$work_dir"
+        else
+          echo "  Skipped $(basename "$work_dir")/ directory (use -y to force)"
+        fi
       else
-        echo "  Skipped work/ directory (use -y to force)"
+        echo "  Skipped $(basename "$work_dir")/ directory (run interactively or use -y to force)"
       fi
-    else
-      echo "  Skipped work/ directory (run interactively or use -y to force)"
     fi
-  fi
+  done
 }
 
 ensure_collab_scaffold() {
-  mkdir -p "$PROJECT_ROOT/work/items"
-}
-
-ensure_branch_protection() {
-  # Configure GitHub branch protection + squash-only repo settings.
-  # Requires `gh` auth with admin:repo on the target repository.
-  if ! command -v gh &>/dev/null; then
-    echo "  NOTE: gh CLI not found — skipping branch protection setup"
-    return
-  fi
-
-  local repo
-  repo=$(git -C "$PROJECT_ROOT" remote get-url origin 2>/dev/null | sed -E 's#.*github\.com[:/]##; s/\.git$//')
-  if [[ -z "$repo" ]]; then
-    echo "  NOTE: No GitHub remote detected — skipping branch protection setup"
-    return
-  fi
-
-  # Resolve default branch
-  local default_branch
-  default_branch=$(gh api "repos/$repo" --jq .default_branch 2>/dev/null || true)
-  if [[ -z "$default_branch" || "$default_branch" == "null" ]]; then
-    echo "  NOTE: Could not resolve default branch — skipping branch protection setup"
-    return
-  fi
-
-  echo "  Configuring branch protection on $repo@$default_branch..."
-
-  # Backup current protection (if any)
-  local backup_file="$PROJECT_ROOT/.branch-protection-backup.json"
-  if gh api "repos/$repo/branches/$default_branch/protection" >"$backup_file" 2>/dev/null; then
-    echo "    ✓ Existing protection backed up to .branch-protection-backup.json"
+  mkdir -p "$PROJECT_ROOT/.work/contracts" "$PROJECT_ROOT/.work/locks"
+  # Add .work/ to .gitignore if not already present.
+  local gi="$PROJECT_ROOT/.gitignore"
+  if [ -f "$gi" ]; then
+    if ! grep -qx "\.work/" "$gi" 2>/dev/null; then
+      printf '\n# Local work-item contracts (claude-useful-instructions workflow bundle)\n.work/\n' >> "$gi"
+      echo "  Added .work/ to .gitignore"
+    fi
   else
-    rm -f "$backup_file"
-  fi
-
-  # Apply v2 protection
-  local protection_json
-  protection_json=$(cat <<'JSON'
-{
-  "required_status_checks": {
-    "strict": true,
-    "contexts": ["check"]
-  },
-  "enforce_admins": false,
-  "required_pull_request_reviews": {
-    "required_approving_review_count": 1,
-    "dismiss_stale_reviews": true
-  },
-  "required_conversation_resolution": true,
-  "restrictions": null,
-  "allow_force_pushes": false,
-  "allow_deletions": false
-}
-JSON
-)
-  if echo "$protection_json" | gh api -X PUT "repos/$repo/branches/$default_branch/protection" --input - >/dev/null 2>&1; then
-    echo "    ✓ Branch protection applied"
-  else
-    echo "    WARN: Branch protection failed (needs admin:repo token). Configure manually:"
-    echo "      Settings → Branches → Add rule on $default_branch"
-  fi
-
-  # Repo-level merge settings: squash only, auto-delete branches
-  if gh api -X PATCH "repos/$repo" \
-      -F allow_squash_merge=true \
-      -F allow_merge_commit=false \
-      -F allow_rebase_merge=false \
-      -F delete_branch_on_merge=true \
-      -F squash_merge_commit_title=PR_TITLE \
-      -F squash_merge_commit_message=PR_BODY \
-      >/dev/null 2>&1; then
-    echo "    ✓ Squash-only merge + auto-delete branches enabled"
-  else
-    echo "    WARN: Repo settings update failed (needs admin:repo token)"
+    printf '# Local work-item contracts (claude-useful-instructions workflow bundle)\n.work/\n' > "$gi"
+    echo "  Created .gitignore with .work/ entry"
   fi
 }
 
-ensure_cursor_mcp() {
-  local mcp_file="$PROJECT_ROOT/.cursor/mcp.json"
-  if [[ -f "$mcp_file" ]]; then
-    echo "  .cursor/mcp.json already exists — skipping"
-    return
-  fi
-  mkdir -p "$PROJECT_ROOT/.cursor"
-  cat > "$mcp_file" <<'MCPEOF'
-{
-  "mcpServers": {
-    "github": {
-      "command": "bash",
-      "args": ["-lc", "token=$(gh auth token 2>/dev/null || true); if [ -n \"$token\" ]; then export GITHUB_PERSONAL_ACCESS_TOKEN=\"$token\"; fi; exec npx -y @modelcontextprotocol/server-github"]
-    }
-  }
-}
-MCPEOF
-  echo "  Created .cursor/mcp.json (uses gh auth token automatically)"
-}
 
 # ── Execute uninstall ─────────────────────────────────────────────────────
 if $UNINSTALL; then
@@ -1072,20 +903,7 @@ if $UNINSTALL; then
       agents)    remove_file "$CLAUDE_DIR/agents/$path" ;;
       skills)    remove_skill_dir "$path" ;;
       templates) remove_template_dir "$path" ;;
-      workflow)
-        remove_file "$PROJECT_ROOT/.github/workflows/$path"
-        # Remove legacy scripts/ directory (parse-branch-map.py no longer used)
-        remove_file "$PROJECT_ROOT/.github/workflows/scripts/parse-branch-map.py"
-        remove_dir_if_empty "$PROJECT_ROOT/.github/workflows/scripts"
-        ;;
       root-file)   remove_root_file "$path" ;;
-      cursor-rule) remove_file "$PROJECT_ROOT/.cursor/rules/$path" ;;
-      cursor-command) remove_file "$PROJECT_ROOT/.cursor/commands/$path" ;;
-      agent-rule)  remove_file "$PROJECT_ROOT/.agent/workflows/$path" ;;
-      collab-pipeline)
-        remove_file "$PROJECT_ROOT/.cursor/rules/collab-pipeline.mdc"
-        remove_file "$PROJECT_ROOT/.agent/workflows/collab-pipeline.md"
-        ;;
       script)      remove_file "$PROJECT_ROOT/$path" ;;
       hook)        remove_hook "$path" ;;
       claude-hook) remove_claude_hook "$path" ;;
@@ -1098,10 +916,9 @@ if $UNINSTALL; then
     HAS_WORKFLOW=true
   fi
 
-  # Remove work/ dir and cursor MCP if workflow bundle is being uninstalled
+  # Remove .work/ dir if workflow bundle is being uninstalled
   if $HAS_WORKFLOW; then
     remove_work_dir
-    remove_file "$PROJECT_ROOT/.cursor/mcp.json"
   fi
 
   # Remove worktree guard marker if base or workflow uninstalled
@@ -1117,15 +934,16 @@ if $UNINSTALL; then
   done
   remove_dir_if_empty "$CLAUDE_DIR"
 
-  # Clean up empty Antigravity / Cursor directories (.agent/, .cursor/)
+  # Clean up empty legacy Cursor / Antigravity directories left behind by
+  # earlier installer versions. Safe even if they don't exist.
   if [ -n "$PROJECT_ROOT" ] && [ "$PROJECT_ROOT" != "$HOME" ]; then
     for subdir in workflows skills; do
       remove_dir_if_empty "$PROJECT_ROOT/.agent/$subdir"
     done
     remove_dir_if_empty "$PROJECT_ROOT/.agent"
-    remove_dir_if_empty "$PROJECT_ROOT/.cursor/skills"
-    remove_dir_if_empty "$PROJECT_ROOT/.cursor/commands"
-    remove_dir_if_empty "$PROJECT_ROOT/.cursor/rules"
+    for subdir in skills commands rules; do
+      remove_dir_if_empty "$PROJECT_ROOT/.cursor/$subdir"
+    done
     remove_dir_if_empty "$PROJECT_ROOT/.cursor"
   fi
 
@@ -1162,22 +980,6 @@ for entry in "${INSTALL_LIST[@]}"; do
     root-file)
       install_root_file "$path"
       ;;
-    cursor-rule)
-      mkdir -p "$PROJECT_ROOT/.cursor/rules"
-      install_file "$REPO_DIR/templates/cursor/$path" "$PROJECT_ROOT/.cursor/rules/$path"
-      ;;
-    collab-pipeline)
-      mkdir -p "$PROJECT_ROOT/.cursor/rules" "$PROJECT_ROOT/.agent/workflows"
-      install_collab_pipeline_project_artifacts
-      ;;
-    cursor-command)
-      mkdir -p "$PROJECT_ROOT/.cursor/commands"
-      install_file "$REPO_DIR/templates/cursor-commands/$path" "$PROJECT_ROOT/.cursor/commands/$path"
-      ;;
-    agent-rule)
-      mkdir -p "$PROJECT_ROOT/.agent/workflows"
-      install_file "$REPO_DIR/templates/agent-rules/$path" "$PROJECT_ROOT/.agent/workflows/$path"
-      ;;
     script)
       install_file "$REPO_DIR/$path" "$PROJECT_ROOT/$path"
       chmod +x "$PROJECT_ROOT/$path"
@@ -1185,24 +987,6 @@ for entry in "${INSTALL_LIST[@]}"; do
       ;;
     hook)
       install_hook "$path"
-      ;;
-    workflow)
-      _wf_src="$REPO_DIR/templates/workflows/$path"
-      _wf_dst="$PROJECT_ROOT/.github/workflows/$path"
-      if [ -f "$_wf_src" ]; then
-        mkdir -p "$(dirname "$_wf_dst")"
-        install_file "$_wf_src" "$_wf_dst"
-        _scripts_dir="$REPO_DIR/templates/workflows/scripts"
-        if [ -d "$_scripts_dir" ]; then
-          mkdir -p "$PROJECT_ROOT/.github/workflows/scripts"
-          for s in "$_scripts_dir"/*.py; do
-            [ -f "$s" ] || continue
-            install_file "$s" "$PROJECT_ROOT/.github/workflows/scripts/$(basename "$s")"
-          done
-        fi
-      else
-        echo "WARNING: Workflow template not found: $_wf_src" >&2
-      fi
       ;;
     claude-hook)
       install_claude_hook "$path"
@@ -1248,8 +1032,6 @@ done
 
 if $INSTALL_HAS_WORKFLOW; then
   ensure_collab_scaffold
-  ensure_cursor_mcp
-  ensure_branch_protection
 fi
 
 # ── Enable worktree guard for projects that install core or collab ─────────

@@ -1,10 +1,10 @@
-# Claude-Codex Collaboration Workflow (v2)
+# Local Work-Item Workflow (v3, no-PR)
 
-> **Doc type**: Explanation + Tutorial | **Audience**: Developers setting up multi-agent workflows
+> **Doc type**: Explanation + Tutorial | **Audience**: Developers using Claude Code locally
 
-The `collab` bundle enables structured handoff between **Claude** (design/review) and **Codex** (implementation). v2 is **PR-native**: state is derived from the GitHub PR + git, never stored in per-item md files.
+The `workflow` bundle gives Claude Code a structured, **fully local** way to handle work items. v3 drops GitHub PRs and Actions entirely — the contract is a local directory under `.work/contracts/`, and "closing the PR" means `rm -rf` on that directory.
 
-See [Migration v1 → v2](MIGRATION-v2.md) if you're coming from v1.
+This change is intentional: avoid GitHub Actions cost. Branches still go on the remote (free) when `origin` exists, but no PR is opened and no CI runs.
 
 ---
 
@@ -12,129 +12,84 @@ See [Migration v1 → v2](MIGRATION-v2.md) if you're coming from v1.
 
 | Agent (Command) | Role |
 |-----------------|------|
-| **Claude** (`/work-plan`, `/work-review`, `/work-status`) | spec owner, reviewer, integrator. Also the fallback implementer for `/work-impl`/`/work-refactor` when Cursor is not being used. |
-| **Cursor** (`/work-impl`, `/work-refactor` from `.cursor/commands/`) | preferred implementer — opens the worktree in Composer for coordinated multi-file edits |
-| **CI** (`.github/workflows/pr-checks.yml`) | verifier (ruff + mypy + pytest for Python; adapt per stack) |
+| **Claude** (all `/work-*` commands) | spec owner, implementer, reviewer, merger |
 
-Per work item, exactly **one** file is written: `work/items/{ID}-{slug}/contract.md`. Everything else (status, verification, review decisions) lives on the PR itself.
+Per work item, the contract directory holds everything:
+
+```
+.work/contracts/{ID}-{slug}/
+  contract.md            # human-authored spec
+  .ready                 # touched when ready for review
+  review-{shortSHA}.md   # one per review pass
+```
+
+`.work/` is gitignored. Contracts never reach the remote.
 
 ## Pipeline (4 stages)
 
 ```
-/work-plan → /work-impl | /work-refactor → /work-review → merge
+/work-plan → /work-impl | /work-refactor → /work-review → (APPROVE → squash-merge + rm contract)
 ```
 
 ```
 [Claude] /work-plan "Add JWT middleware"
-  → creates contract.md, branch feature-feat-{slug}, worktree, draft PR
-
-[Cursor or Claude] /work-impl FEAT-001
-  → Cursor session (preferred): opens the worktree, runs /work-impl from .cursor/commands/ (Composer multi-file edit)
-  → Claude session (fallback): implements in-session from .claude/commands/
-  → Both read the same inputs (contract + unresolved threads + diff)
-  → small commits, -s for DCO, push
-  → promotes draft → ready when checks green
-
-[Claude] /work-review FEAT-001
-  → MERGE: squash merge + branch/worktree cleanup
-  → CHANGES_REQUESTED: unresolved threads are MUST-fix on re-entry
+  → creates .work/contracts/FEAT-042-jwt-middleware/contract.md,
+    branch feature-feat-jwt-middleware, worktree at ../{project}-feature-feat-jwt-middleware
+[Claude] /work-impl FEAT-042
+  → commits in worktree, touches .ready
+[Claude] /work-review FEAT-042
+  → writes review-{sha}.md
+  → on APPROVE: squash-merge into parent, deletes contract dir,
+    worktree-cleanup hook removes worktree + branch
+[Claude] /work-status
+  → derives state from .work/contracts/ + git worktree list + branch ancestry
 ```
 
-### Re-entry (revise)
+## State derivation
 
-No separate `/work-revise` command. If `reviewDecision=CHANGES_REQUESTED`, re-run `/work-impl {ID}` (or `/work-refactor`). The command fetches unresolved review threads via GraphQL and injects each as a MUST-fix. After fixing, call `resolveReviewThread` to close each thread.
+State is read from local signals only — no `gh` calls.
 
-## State (derived, never stored)
+| Signal in contract dir                                       | Status            |
+|--------------------------------------------------------------|-------------------|
+| no commits beyond parent                                     | `planned`         |
+| commits exist, no `.ready` and no `review-*.md`              | `in-progress`    |
+| `.ready` exists, no `review-*.md` for current SHA            | `awaiting-review` |
+| latest `review-*.md` says `CHANGES_REQUESTED`                | `revising`        |
+| latest `review-*.md` says `APPROVED`, branch not yet merged  | `ready-to-merge`  |
+| branch merged into parent, contract dir gone                 | `done` (hidden)   |
 
-State is computed from PR fields on each `/work-status` call:
+## Branch + worktree convention
 
-| Computed state | Derivation |
-|----------------|------------|
-| `planned` | Draft PR exists, no commits beyond seed |
-| `implementing` | Draft PR, commits being pushed |
-| `ready-for-review` | PR marked Ready, checks green |
-| `changes-requested` | `reviewDecision=CHANGES_REQUESTED` |
-| `merged` | PR merged (squash) |
+- Branch: `feature-{TYPE}-{slug}` — `TYPE ∈ {feat, fix, perf, chore, test, refac}`.
+- Worktree: `$(dirname $REPO_ROOT)/${PROJECT}-${BRANCH}` (sibling of repo).
+- Enforced by the `branch-naming` and `guard-branch` hooks.
 
-No `status.md`, no labels, no relay files.
+## Hooks
 
-## Branch + Worktree Model
+| Hook | Role |
+|---|---|
+| `branch-naming` | Enforce `feature-{TYPE}-{slug}` |
+| `guard-branch` | Block code edits on the main worktree; auto-create a feature worktree (no PR) |
+| `worktree-cleanup` | After local `git merge`: remove worktree, local branch, remote branch (if any), contract dir |
 
-`/work-plan` creates a branch `feature-{type}-{slug}` and a worktree under `<repo>-{ID}-{slug}/`. Each item lives in its own worktree for the duration of the PR. On merge, `/work-review` removes the worktree and deletes the branch.
+## Verification
 
-- Branch naming: `feature-{type}-{slug}` only (legacy `feature-{slug}` rejected).
-- Merge strategy: **squash only**.
-- Control plane (main repo / trunk) vs data plane (worktree) — don't mix.
+| Layer | When | On fail |
+|---|---|---|
+| `pre-commit` | before local commit | block commit |
+| `/work-review` rerun of pre-commit on diff range | before APPROVE | block APPROVE |
 
-## Worktree PID isolation
+There is no CI. Pre-commit is the only automated gate.
 
-Worktree directory names include a ppid suffix so concurrent `/work-plan` sessions don't collide on the same slug. See `work/items/{ID}-{slug}/contract.md` — the `Worktree` field is the authoritative path.
+## CHANGES_REQUESTED re-entry
 
-## Parallel Planning
+1. Re-run `/work-impl {ID}` or `/work-refactor {ID}`.
+2. Claude reads `contract.md` + the latest `review-*.md` + `git diff $PARENT...HEAD` and resolves every MUST-fix item.
+3. New commits land on the same branch; touch `.ready` again.
+4. Re-run `/work-review`.
 
-`/work-plan` accepts multiple topics and generates contracts in parallel, then runs a boundary check on `Touch` globs. Items with overlapping globs are grouped for sequential execution; disjoint items can run in parallel via separate `/work-impl {ID}` invocations.
+## Why this changed
 
-## Locks
-
-Serialize operations that mutate shared state:
-
-- `work/locks/planning.lock` — only one `/work-plan` at a time
-- `work/locks/merge.lock` — only one merge at a time
-
-Parallel-safe:
-
-- Multiple `/work-impl` invocations on disjoint items
-- Review analysis across items
-
-## Safety Checklist
-
-Before `/work-plan`:
-- Trunk is clean or only has deliberate planning changes
-- No existing planning lock
-
-Before `/work-impl` / `/work-refactor`:
-- Worktree exists (created by `/work-plan`)
-- Draft PR exists for the branch
-- If the project uses `uv`, `uv sync --frozen` succeeds
-
-Before merge (inside `/work-review`):
-- CI green
-- `reviewDecision != CHANGES_REQUESTED`
-- No merge lock held
-
-## Setup
-
-```bash
-./install.sh /path/to/project
-```
-
-Installs `.claude/` artifacts, `AGENTS.md`, `CLAUDE.md`, `codex-run.sh`, `lib/codex-run-*.sh`, pre-commit hooks, and `.github/workflows/pr-checks.yml`. Creates `work/items/` and `work/locks/`.
-
-### Installed Layout
-
-```
-project/
-├── AGENTS.md                          # Codex reads this
-├── CLAUDE.md                          # Claude reads this
-├── codex-run.sh                       # Unattended Codex runner (stall detection)
-├── lib/codex-run-*.sh                 # Runner helpers
-├── work/
-│   ├── items/                         # Per-item: contract.md only
-│   └── locks/                         # planning.lock, merge.lock
-├── .github/workflows/pr-checks.yml    # CI (required)
-├── .claude/
-│   ├── rules/{collab-workflow,review-merge-policy}.md
-│   ├── commands/work-{plan,impl,refactor,review,status}.md
-│   ├── agents/pr-reviewer.md
-│   ├── skills/collab-workflow/SKILL.md
-│   └── templates/work-item/contract.md
-└── .cursor/
-    ├── commands/work-{impl,refactor}.md   # Cursor-side implementer commands
-    └── rules/collab-pipeline.mdc          # shared pipeline overview
-```
-
-## See Also
-
-- [Commands Reference](commands.md) — full command list
-- [Migration v1 → v2](MIGRATION-v2.md) — what changed and how to upgrade
-- `rules/collab-workflow.md` — compact command table loaded into every session
+- v1 stored state in many md files → drift.
+- v2 stored state on the GitHub PR + git → required Actions and `gh` for every operation.
+- v3 stores state in a local `.work/contracts/` dir + git → fully offline-friendly, zero recurring cost, and "closing a PR" is just `rm -rf`.

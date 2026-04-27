@@ -1,34 +1,35 @@
-# Review and Merge Policy
+# Review and Merge Policy (Local-Only)
 
-PRs are created during planning as drafts. Review operates on existing PRs.
+Reviews are local markdown files inside `.work/contracts/{ID}-{slug}/`. Merge is a local `git merge --squash` performed by `/work-review` on APPROVE.
 
 ## Merge Gating
 
 Before any merge:
 1. **Acquire lock**: `source lib/merge-lock.sh && acquire_merge_lock` — prevents concurrent merge races.
-2. **Fetch**: `git fetch origin {merge_target}` — ensure local ref is current.
-3. Read contract Branch Map for declared merge target.
-4. Confirm parent freshness: `git merge-base --is-ancestor origin/{merge_target} {branch}` must pass. If not, sync first.
-5. **Check mergeability**: `gh pr view {pr} --json mergeable -q .mergeable` — must be `MERGEABLE`.
-6. Confirm CI green (if `require_green_ci` set).
-7. Confirm no unresolved MUST-fix items in review.md.
-8. Use declared `merge_target`, never hardcoded.
+2. **Worktree clean**: `git -C $WT_PATH diff --quiet && git -C $WT_PATH diff --cached --quiet`.
+3. **Parent fresh** on the main worktree: `git rev-parse $PARENT` must succeed; if a remote exists, `git fetch origin $PARENT` first.
+4. **Pre-commit clean** on the diff range: `pre-commit run --from-ref $PARENT --to-ref HEAD`.
+5. **No unresolved MUST-fix** in any prior `review-*.md` for the current HEAD SHA.
 
 ## Merge Execution
 
-1. `gh pr merge {pr} --squash` (never `--delete-branch` — delete separately after verification).
-2. Verify: `gh pr view {pr} --json state -q .state` must be `MERGED`.
-3. **Only after verified merge**: delete remote branch, cleanup worktree.
+1. Switch the **main worktree** to the parent branch.
+2. `git merge --squash $BRANCH`
+3. `git commit -s -m "<subject> ({ID})"`
+4. Optional `git push` (only when `origin` exists and the user keeps a remote mirror).
+5. **Delete the contract directory** — `rm -rf .work/contracts/{ID}-{slug}/`. This is the "PR close" step and the canonical signal that the work item is done.
 
-**On failure**: preserve branch + worktree, report error, release lock. Never delete branch on merge failure.
+The `worktree-cleanup` PostToolUse hook fires on `git merge`, removes the worktree, the local branch, and the remote branch (if any), and double-checks the contract directory deletion.
+
+**On failure**: preserve branch + worktree + contract dir, report error, release lock. Never delete the contract directory on merge failure.
 
 ## After Merge
 
-- Remove worktree (`git worktree remove --force`), prune stale refs.
-- Auto doc sync: pull working parent → read "Doc Changes Needed" → `/sync-docs` → commit.
+- Worktree removal + branch deletion handled by `worktree-cleanup` hook.
+- Auto doc sync (optional): on the parent branch, run `/sync-docs` and commit.
 
 ## Review Failure
 
-- Write explicit MUST-fix items to review.md.
-- Preserve branch metadata for next iteration.
-- On REVISE, inject review.md into re-dispatch prompt.
+- Write the new `review-{shortSHA}.md` with `Status: CHANGES_REQUESTED` and the MUST-fix list.
+- Preserve branch + worktree + contract dir for the next iteration.
+- On re-entry, `/work-impl` and `/work-refactor` read the latest `review-*.md` as their punch list.

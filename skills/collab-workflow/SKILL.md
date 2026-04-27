@@ -1,15 +1,17 @@
 ---
 name: collab-workflow
 description: >
-  PR-native Claude-Codex collaboration workflow for structured plan-implement-review cycles.
+  Local-only work-item workflow for structured plan-implement-review cycles.
+  No GitHub PRs, no Actions — contracts live in .work/contracts/.
   Triggers on: "work item", "FEAT-", "FIX-", "REFAC-", "collab-workflow",
-  "/work-plan", "/work-impl", "/work-refactor", "/work-review", "/work-status",
-  "branch map", "branch init", "codex-run".
+  "/work-plan", "/work-impl", "/work-refactor", "/work-review", "/work-status".
 ---
 
-# Claude-Codex Collaboration Workflow (v2)
+# Local Work-Item Workflow (v3, no-PR)
 
-State is derived from the GitHub PR + git. No per-item status / brief / checklist / review md files — only `work/items/{ID}-{slug}/contract.md`.
+State is derived from `.work/contracts/` + `git worktree list` + branch ancestry. **No GitHub state** — `gh` is never called by these commands.
+
+The contract directory at `.work/contracts/{ID}-{slug}/` is the work item. Creating it is "open PR"; deleting it (on `/work-review` APPROVE) is "close PR".
 
 ## Routing
 
@@ -18,19 +20,12 @@ State is derived from the GitHub PR + git. No per-item status / brief / checklis
 | Plan a work item | `/work-plan` |
 | Implement (FEAT / FIX / PERF / CHORE / TEST) | `/work-impl` |
 | Refactor (REFAC only) | `/work-refactor` |
-| Review + merge | `/work-review` |
+| Review + (on APPROVE) local merge | `/work-review` |
 | Status | `/work-status` |
-| Unattended Codex run | `bash codex-run.sh {ID}` |
-| CI audit | `/gha-branch-sync` |
 
-`/work-impl` runs `codex-run.sh` first by default and falls back to the current session if Codex stalls or leaves the contract unmet. Set `WORK_IMPL_SKIP_CODEX=1` to skip the Codex pass.
-
-Re-entry (`reviewDecision=CHANGES_REQUESTED`) is handled inline: `/work-impl` and `/work-refactor` fetch unresolved review threads via GraphQL and treat each as a MUST-fix.
+Re-entry (`CHANGES_REQUESTED`) is handled inline: `/work-impl` and `/work-refactor` read the latest `review-*.md` and treat each MUST-fix item as the punch list.
 
 ## References
 
 - Rules: `collab-workflow.md`, `review-merge-policy.md`
-- Config: `.claude/branch-map.yaml`
-- Scripts: `codex-run.sh`, `lib/codex-run-*.sh`
-- Templates: `.claude/templates/work-item/contract.md`
-- Agents: `pr-reviewer`, `ci-audit-agent`
+- Template: `templates/work-item/contract.md`

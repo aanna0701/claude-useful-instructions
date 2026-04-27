@@ -4,31 +4,6 @@ Commands are user-invocable slash commands (`.md` files) under `.claude/commands
 
 ---
 
-## /gha-branch-sync
-
-Audit GitHub Actions workflows against the project's branch map configuration.
-
-**Usage**:
-```
-/gha-branch-sync              # Audit only (report issues)
-/gha-branch-sync --fix        # Audit + apply fixes after confirmation
-/gha-branch-sync --generate   # Generate missing workflows from branch-map roles
-```
-
-### Checks
-
-| Check | What It Detects |
-|-------|----------------|
-| Hardcoded targets | Merge/deploy targeting a fixed branch instead of branch-map |
-| Missing freshness | No parent branch comparison before merge gates |
-| Missing path filters | All-path triggers causing unnecessary CI runs |
-| Drift detection | Docs/contract changes not notifying affected PRs |
-| Stale references | Branch names that no longer exist in trunk chain |
-
-Delegates analysis to the `ci-audit-agent` subagent.
-
----
-
 ## /work-plan
 
 Create a work item for delegation (Codex or branch-based). Generates brief, contract, checklist, and optionally a GitHub Issue.

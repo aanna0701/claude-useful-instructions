@@ -305,7 +305,6 @@ PR-native collaboration workflow for structured plan → implement → review cy
 | Refactor (REFAC) | `/work-refactor` |
 | Review + merge | `/work-review` |
 | Check status | `/work-status` |
-| Audit CI workflows | `/gha-branch-sync` |
 
 ### Pipeline
 

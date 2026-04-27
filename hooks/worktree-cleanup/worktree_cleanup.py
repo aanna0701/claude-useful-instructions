@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-"""Claude Code PostToolUse hook — cleanup merged worktrees and remote branches.
+"""Claude Code PostToolUse hook — cleanup merged worktrees (local-only flow).
 
-Fires after Bash tool calls. If the command contained 'gh pr merge' or
-'git merge' and succeeded, cleans up:
+Fires after Bash tool calls. If the command contained 'git merge' or
+'git worktree remove' and a feature branch was merged into its parent,
+cleans up:
   1. The worktree directory
   2. The local branch
-  3. The remote branch
+  3. The remote branch (if origin exists)
+  4. The local .work/contracts/{ID}-{slug}/ directory if present
 
 Also runs on session Stop to catch any merged branches left behind.
 
@@ -14,29 +16,30 @@ Exit code 0 always (never block).
 from __future__ import annotations
 
 import json
+import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
 
 _HOOK_DIR = Path(__file__).resolve().parent
-# Support both dev layout (hooks/{name}/) and installed layout (~/.claude/hooks/)
 _LIB_DIR = _HOOK_DIR / "lib" if (_HOOK_DIR / "lib").is_dir() else _HOOK_DIR.parent / "lib"
 if str(_LIB_DIR) not in sys.path:
     sys.path.insert(0, str(_LIB_DIR))
 
-from gh_utils import get_current_branch, get_repo_root, resolve_owner_repo  # noqa: E402
+from git_utils import (  # noqa: E402
+    get_current_branch,
+    get_repo_root,
+    has_remote,
+)
 from worktree_state import WorktreeState  # noqa: E402
 
 
+_FEATURE_RE = re.compile(r"^feature-[a-z]+-(.+)$")
+
 
 def _main_worktree_branch(main_root: Path) -> str | None:
-    """Return the branch checked out in the primary worktree (the repo root).
-
-    This is the developer's current integration context — whatever branch was
-    active when secondary worktrees were spawned. Deleting it would yank the
-    ground under every in-flight PR based on it, so we treat it as protected
-    automatically (no hard-coded name).
-    """
+    """Return the branch checked out in the primary worktree."""
     result = subprocess.run(
         ["git", "worktree", "list", "--porcelain"],
         capture_output=True, text=True, cwd=str(main_root),
@@ -55,14 +58,7 @@ def _main_worktree_branch(main_root: Path) -> str | None:
 
 
 def _is_protected_branch(branch: str, main_root: Path) -> bool:
-    """True when *branch* must never be auto-deleted.
-
-    Sources (all auto-detected, no hard-coded project branches):
-      1. The primary-worktree branch — the current integration hub.
-      2. Long-lived release branches by convention
-         (main / master / develop / research / staging).
-      3. Anything the user pins via GIT_CLEANUP_PROTECTED_BRANCHES.
-    """
+    """True when *branch* must never be auto-deleted."""
     import os as _os
     release_defaults = {"main", "master", "develop", "research", "staging"}
     extra = _os.environ.get("GIT_CLEANUP_PROTECTED_BRANCHES", "")
@@ -72,37 +68,36 @@ def _is_protected_branch(branch: str, main_root: Path) -> bool:
     return branch in protected
 
 
-def _is_base_of_open_pr(repo: str | None, branch: str) -> bool:
-    """True if any open PR targets *branch* as its base."""
-    if not repo:
-        return False
-    check = subprocess.run(
-        ["gh", "pr", "list", "--repo", repo, "--base", branch,
-         "--state", "open", "--json", "number", "-q", "length"],
-        capture_output=True, text=True, timeout=15,
-    )
-    try:
-        return int((check.stdout or "0").strip()) > 0
-    except ValueError:
-        return False
+def _delete_contract_dir(main_root: Path, branch: str) -> None:
+    """If branch matches feature-{type}-{slug}, delete .work/contracts/*-{slug}/."""
+    m = _FEATURE_RE.match(branch)
+    if not m:
+        return
+    slug = m.group(1)
+    contracts = main_root / ".work" / "contracts"
+    if not contracts.is_dir():
+        return
+    for child in contracts.iterdir():
+        if child.is_dir() and child.name.endswith(f"-{slug}"):
+            try:
+                shutil.rmtree(child)
+                print(
+                    f"[worktree-cleanup] Removed contract: {child.relative_to(main_root)}",
+                    file=sys.stderr,
+                )
+            except OSError:
+                pass
 
 
 def _cleanup_worktree(main_root: Path, wt_path: Path, branch: str) -> None:
-    """Remove worktree, local branch, and remote branch.
-
-    Defense-in-depth: refuses to delete protected hub branches or branches
-    that are the base of any open PR. Upstream callers should filter first,
-    but a buggy caller shouldn't be able to nuke the integration branch.
-    """
+    """Remove worktree, local branch, remote branch, and contract dir."""
     wt_str = str(wt_path)
-    repo = resolve_owner_repo(main_root)
 
     if _is_protected_branch(branch, main_root):
         print(
             f"[worktree-cleanup] Refuse to delete protected branch: {branch}",
             file=sys.stderr,
         )
-        # Still remove the worktree directory — branch is the protected part.
         if wt_path.exists() and wt_path != main_root:
             subprocess.run(
                 ["git", "worktree", "remove", wt_str, "--force"],
@@ -110,19 +105,6 @@ def _cleanup_worktree(main_root: Path, wt_path: Path, branch: str) -> None:
             )
         return
 
-    if _is_base_of_open_pr(repo, branch):
-        print(
-            f"[worktree-cleanup] Refuse to delete {branch}: base of open PR(s)",
-            file=sys.stderr,
-        )
-        if wt_path.exists() and wt_path != main_root:
-            subprocess.run(
-                ["git", "worktree", "remove", wt_str, "--force"],
-                capture_output=True, text=True, cwd=str(main_root),
-            )
-        return
-
-    # Remove git worktree
     if wt_path.exists():
         subprocess.run(
             ["git", "worktree", "remove", wt_str, "--force"],
@@ -130,14 +112,12 @@ def _cleanup_worktree(main_root: Path, wt_path: Path, branch: str) -> None:
         )
         print(f"[worktree-cleanup] Removed worktree: {wt_str}", file=sys.stderr)
 
-    # Delete local branch
     subprocess.run(
         ["git", "branch", "-D", branch],
         capture_output=True, text=True, cwd=str(main_root),
     )
 
-    # Delete remote branch
-    if repo:
+    if has_remote(main_root):
         subprocess.run(
             ["git", "push", "origin", "--delete", branch],
             capture_output=True, text=True, cwd=str(main_root),
@@ -145,21 +125,11 @@ def _cleanup_worktree(main_root: Path, wt_path: Path, branch: str) -> None:
         )
         print(f"[worktree-cleanup] Deleted remote branch: {branch}", file=sys.stderr)
 
-
-def _is_pr_done(main_root: Path, branch: str) -> bool:
-    """Check if the branch's PR is merged or closed on GitHub."""
-    repo = resolve_owner_repo(main_root)
-    if not repo:
-        return False
-    check = subprocess.run(
-        ["gh", "pr", "view", branch, "--repo", repo, "--json", "state", "-q", ".state"],
-        capture_output=True, text=True, timeout=15,
-    )
-    return check.returncode == 0 and check.stdout.strip() in ("MERGED", "CLOSED")
+    _delete_contract_dir(main_root, branch)
 
 
 def _find_merged_worktrees(main_root: Path) -> list[tuple[Path, str]]:
-    """Find worktrees whose branches have been merged or whose PRs are done."""
+    """Find worktrees whose branches have been merged into the current main branch."""
     result = subprocess.run(
         ["git", "worktree", "list", "--porcelain"],
         capture_output=True, text=True, cwd=str(main_root),
@@ -176,50 +146,20 @@ def _find_merged_worktrees(main_root: Path) -> list[tuple[Path, str]]:
         if line.startswith("worktree "):
             current_wt = Path(line.split(" ", 1)[1])
         elif line.startswith("branch "):
-            ref = line.split(" ", 1)[1]
-            current_branch = ref.replace("refs/heads/", "")
+            current_branch = line.split(" ", 1)[1].replace("refs/heads/", "")
         elif line == "" and current_wt and current_branch:
-            # Skip the main worktree
             if current_wt == main_root:
                 current_wt = None
                 current_branch = None
                 continue
 
-            should_clean = False
-
-            # Safety: never clean a branch with an OPEN PR. Auto-sync workflows
-            # or local ancestry quirks can otherwise make a live work-item's
-            # worktree vanish mid-session.
-            repo = resolve_owner_repo(main_root)
-            if repo:
-                pr_check = subprocess.run(
-                    ["gh", "pr", "view", current_branch, "--repo", repo,
-                     "--json", "state", "-q", ".state"],
-                    capture_output=True, text=True, timeout=15,
-                )
-                if pr_check.returncode == 0 and pr_check.stdout.strip() == "OPEN":
-                    current_wt = None
-                    current_branch = None
-                    continue
-
-            # Check 1: branch is ancestor of main (locally merged)
             if main_branch and main_branch != "HEAD":
                 check = subprocess.run(
                     ["git", "merge-base", "--is-ancestor", current_branch, main_branch],
                     capture_output=True, text=True, cwd=str(main_root),
                 )
                 if check.returncode == 0:
-                    should_clean = True
-
-            # Check 2: PR is merged or closed on GitHub
-            if not should_clean:
-                try:
-                    should_clean = _is_pr_done(main_root, current_branch)
-                except (subprocess.TimeoutExpired, OSError):
-                    pass
-
-            if should_clean:
-                merged.append((current_wt, current_branch))
+                    merged.append((current_wt, current_branch))
 
             current_wt = None
             current_branch = None
@@ -227,16 +167,12 @@ def _find_merged_worktrees(main_root: Path) -> list[tuple[Path, str]]:
     return merged
 
 
-def _cleanup_orphan_branches(main_root: Path, repo: str | None) -> None:
-    """Delete local (and remote) branches that are merged into main but have no worktree.
-
-    Targets feature-* and tmp/guard-* branches only — never touches main/master/develop.
-    """
+def _cleanup_orphan_branches(main_root: Path) -> None:
+    """Delete local (and remote) feature-* / tmp/guard-* branches merged into main but with no worktree."""
     main_branch = get_current_branch(main_root)
     if not main_branch or main_branch == "HEAD":
         return
 
-    # Collect branches that are active worktrees (skip those)
     wt_result = subprocess.run(
         ["git", "worktree", "list", "--porcelain"],
         capture_output=True, text=True, cwd=str(main_root),
@@ -246,7 +182,6 @@ def _cleanup_orphan_branches(main_root: Path, repo: str | None) -> None:
         if line.startswith("branch "):
             wt_branches.add(line.split(" ", 1)[1].replace("refs/heads/", ""))
 
-    # List local branches merged into main
     result = subprocess.run(
         ["git", "branch", "--merged", main_branch, "--format=%(refname:short)"],
         capture_output=True, text=True, cwd=str(main_root),
@@ -255,14 +190,12 @@ def _cleanup_orphan_branches(main_root: Path, repo: str | None) -> None:
         return
 
     safe_prefixes = ("feature-", "tmp/guard-")
+    remote = has_remote(main_root)
 
     for branch in result.stdout.strip().splitlines():
         branch = branch.strip()
         if not branch or branch == main_branch:
             continue
-        # Auto-detected protection: primary-worktree branch, release defaults,
-        # and the user's GIT_CLEANUP_PROTECTED_BRANCHES list. No hard-coded
-        # project names.
         if _is_protected_branch(branch, main_root):
             continue
         if branch in wt_branches:
@@ -270,43 +203,17 @@ def _cleanup_orphan_branches(main_root: Path, repo: str | None) -> None:
         if not any(branch.startswith(p) for p in safe_prefixes):
             continue
 
-        # Safety 1: never delete a branch with an OPEN PR as HEAD.
-        # ancestry-into-main can be true the instant a feature branch is created
-        # from main HEAD, before any merge happens. Without this check, creating
-        # a feature branch and pushing it would race the cleanup hook and the
-        # head_ref_deleted event would auto-close the brand-new PR.
-        if repo:
-            check = subprocess.run(
-                ["gh", "pr", "view", branch, "--repo", repo, "--json", "state",
-                 "-q", ".state"],
-                capture_output=True, text=True, timeout=15,
-            )
-            pr_state = check.stdout.strip() if check.returncode == 0 else ""
-            if pr_state == "OPEN":
-                continue
-
-            # Safety 2: never delete a branch that is the BASE of any open PR.
-            # Deleting it triggers base_ref_deleted on GitHub which auto-closes
-            # every child PR (observed case: hub branch for stacked PRs).
-            if _is_base_of_open_pr(repo, branch):
-                print(
-                    f"[worktree-cleanup] Skip {branch}: base of open PR(s)",
-                    file=sys.stderr,
-                )
-                continue
-
-        # Delete local branch
         subprocess.run(
             ["git", "branch", "-D", branch],
             capture_output=True, text=True, cwd=str(main_root),
         )
-        # Delete remote branch if it exists
-        if repo:
+        if remote:
             subprocess.run(
                 ["git", "push", "origin", "--delete", branch],
                 capture_output=True, text=True, cwd=str(main_root),
                 timeout=30,
             )
+        _delete_contract_dir(main_root, branch)
         print(f"[worktree-cleanup] Cleaned orphan branch: {branch}", file=sys.stderr)
 
 
@@ -321,13 +228,12 @@ def main() -> None:
         return
 
     tool_name = payload.get("tool_name", "")
-    tool_input = payload.get("tool_input", {})
+    tool_input = payload.get("tool_input", {}) or {}
     command = tool_input.get("command", "")
 
-    # Trigger on merge-related commands
     is_merge = False
     if tool_name == "Bash":
-        if any(kw in command for kw in ("gh pr merge", "git merge", "git worktree remove")):
+        if any(kw in command for kw in ("git merge", "git worktree remove")):
             is_merge = True
     elif tool_name == "":
         # Stop hook — always check for stale worktrees
@@ -340,37 +246,20 @@ def main() -> None:
     if not root:
         return
 
-    # Clean up session worktree if tracked
     state = WorktreeState.for_session()
     if state.exists():
         wt_path = state.worktree_path()
         branch = state.branch_name()
-        if wt_path and branch:
-            pr_num = state.pr_number()
-            if pr_num:
-                repo = state.repo_slug() or resolve_owner_repo(root)
-                if repo:
-                    check = subprocess.run(
-                        ["gh", "pr", "view", str(pr_num), "--repo", repo, "--json", "state", "-q", ".state"],
-                        capture_output=True, text=True,
-                    )
-                    pr_state = check.stdout.strip() if check.returncode == 0 else ""
-                    # Clean up on MERGED or CLOSED (failed/rejected PRs)
-                    if pr_state in ("MERGED", "CLOSED"):
-                        _cleanup_worktree(root, wt_path, branch)
-                        state.cleanup()
-                        return
+        if wt_path and branch and not wt_path.exists():
+            # Worktree already removed — clear state.
+            state.cleanup()
 
-    # Scan for any other merged worktrees
     merged = _find_merged_worktrees(root)
-    repo = resolve_owner_repo(root)
     for wt_path, branch in merged:
         _cleanup_worktree(root, wt_path, branch)
 
-    # Clean up merged local branches that have no worktree
-    _cleanup_orphan_branches(root, repo)
+    _cleanup_orphan_branches(root)
 
-    # Prune stale worktree refs
     subprocess.run(
         ["git", "worktree", "prune"],
         capture_output=True, text=True, cwd=str(root),
@@ -378,4 +267,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception:
+        pass  # Never block

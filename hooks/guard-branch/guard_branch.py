@@ -5,13 +5,10 @@ All code edits on the main repo are blocked and redirected to an
 auto-created worktree. The worktree branches off the current branch
 (no branch-map needed).
 
-When a worktree is created, a Draft PR is automatically created
-to lock the base branch at creation time.
-
 How it decides:
   - If cwd is already a worktree (.git is a file) → allow all edits
   - If cwd is the main repo → block code edits, redirect to worktree
-  - Orchestration files (work/, docs/, .claude/, etc.) are always allowed
+  - Orchestration files (.work/, docs/, .claude/, etc.) are always allowed
   - Only activates for projects with .claude-worktree-enabled marker
 
 One worktree per session (keyed on parent PID). Worktree is created on
@@ -24,8 +21,6 @@ Exit codes:
 from __future__ import annotations
 
 import json
-import os
-import re
 import subprocess
 import sys
 from datetime import datetime
@@ -38,19 +33,17 @@ _LIB_DIR = _HOOK_DIR / "lib" if (_HOOK_DIR / "lib").is_dir() else _HOOK_DIR.pare
 if str(_LIB_DIR) not in sys.path:
     sys.path.insert(0, str(_LIB_DIR))
 
-from gh_utils import (  # noqa: E402
-    create_draft_pr,
+from git_utils import (  # noqa: E402
     get_current_branch,
     get_repo_root,
     is_worktree,
-    push_branch,
-    resolve_owner_repo,
     write_worktree_meta,
 )
 from worktree_state import WorktreeState  # noqa: E402
 
 # Orchestration paths allowed directly on the main repo
 ALLOWED_PREFIXES = (
+    ".work/",
     "work/",
     "docs/",
     ".claude/",
@@ -137,31 +130,6 @@ def _ensure_worktree(main_root: Path, base_branch: str) -> tuple[Path, str, Work
     else:
         wt_gitignore.write_text(f"{meta_entry}\n")
 
-    repo_slug = resolve_owner_repo(main_root)
-    if repo_slug:
-        state.set_repo_slug(repo_slug)
-
-    # Early Draft PR — push empty branch and open draft PR immediately
-    pushed = push_branch(main_root, wt_branch)
-    if pushed:
-        pr_body = (
-            f"Auto-created by guard-branch hook at worktree creation.\n\n"
-            f"- **Base branch:** `{base_branch}`\n"
-            f"- **Worktree branch:** `{wt_branch}`\n"
-        )
-        pr_url = create_draft_pr(
-            git_dir=main_root,
-            base=base_branch,
-            head=wt_branch,
-            title=f"[WIP] {wt_branch}",
-            body=pr_body,
-        )
-        if pr_url:
-            pr_num_match = re.search(r"/(\d+)$", pr_url)
-            if pr_num_match:
-                state.set_pr_number(int(pr_num_match.group(1)))
-            state.set_pr_url(pr_url)
-
     return wt_dir, wt_branch, state
 
 
@@ -223,7 +191,7 @@ def main() -> None:
         f"  {wt_path}\n"
         f"Re-run your edit using the worktree path:\n"
         f"  {redirect_path}\n"
-        f"When done, commit — a PR will be created automatically."
+        f"When done, commit and merge locally (no PR)."
     )
     print(json.dumps({"error": msg}), file=sys.stderr)
     sys.exit(2)

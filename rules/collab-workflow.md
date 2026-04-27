@@ -1,73 +1,61 @@
-# Claude-Codex-Cursor Collaboration (v2)
+# Local Work-Item Workflow (v3, no-PR)
 
-State of every work item is derived from GitHub PR + git. No md file stores state.
+State of every work item is derived from `.work/contracts/` + `git worktree list` + branch ancestry. **No GitHub PRs, no Actions, no `gh` calls.**
+
+The contract directory acts as the "PR" — it is created on `/work-plan` and deleted on `/work-review` APPROVE. Reviews are local markdown files inside the contract directory.
 
 ## Roles
 
-- **Claude Code (session AI)**: drives `/work-plan`, `/work-review`, `/work-status`. Fallback implementer for `/work-impl` and `/work-refactor` when Cursor is not being used.
-- **Cursor (preferred implementer)**: opens the worktree, runs `/work-impl {ID}` or `/work-refactor {ID}` from `.cursor/commands/`. Composer handles coordinated multi-file edits.
-
-Each executor reads the same inputs (contract + unresolved review threads + diff) and produces the same outputs (commits + push + resolved threads).
+- **Claude Code (session AI)**: drives `/work-plan`, `/work-impl`, `/work-refactor`, `/work-review`, `/work-status`. There is no other executor.
 
 ## Pipeline
 
 ```
-plan (Claude) ──▶ impl | refactor ──(push → CI)──▶ review (Claude) ──▶ merge
-                     │                                    │
-                     ├─ Cursor  (preferred)               │
-                     └─ Claude  (session fallback)        │
-                          ▲                               │
-                          └──────── CHANGES_REQUESTED ────┘
+plan ──▶ impl | refactor ──▶ review ──▶ (APPROVE → squash-merge + rm contract)
+                                  │
+                                  └──── CHANGES_REQUESTED → re-run impl/refactor
 ```
 
 - `impl` handles FEAT / FIX / PERF / CHORE / TEST.
 - `refactor` handles REFAC.
-- `revise` is not a stage — on `CHANGES_REQUESTED`, re-run the same `/work-impl` or `/work-refactor`.
-- `verify` is not a stage — CI (`pr-checks.yml`) produces the check run.
+- On `CHANGES_REQUESTED`, re-run the same `/work-impl` or `/work-refactor`.
 
 ## Commands
 
 | Command | Subject |
 |---|---|
-| `/work-plan` | Create item (contract + branch + worktree + draft PR) |
+| `/work-plan` | Create item (contract + branch + worktree, optional push, **no PR**) |
 | `/work-impl {ID}` | Implement (FEAT/FIX/PERF/CHORE/TEST) |
 | `/work-refactor {ID}` | Refactor (REFAC) |
-| `/work-review {ID}` | `gh pr review` with inline MUST-fix comments |
-| `/work-status [ID]` | Read-only view derived from `gh` + `git` |
+| `/work-review {ID}` | Write review file; on APPROVE squash-merge locally + delete contract |
+| `/work-status [ID]` | Read-only view from `.work/contracts/` + `git` |
 
-No flags. Session context decides which AI runs.
-
-## Per-item files (authoritative, worktree-local)
+## Per-item files (authoritative, local-only)
 
 ```
-$WT_PATH/work/items/{ID}-{slug}/contract.md
+.work/contracts/{ID}-{slug}/
+  contract.md            # human-authored spec (created by /work-plan)
+  .ready                 # sentinel touched by /work-impl|/work-refactor when ready for review
+  review-{shortSHA}.md   # one per review pass (written by /work-review)
 ```
 
-One file per work item. Nothing else.
+- `.work/` is **gitignored**. Contracts never reach the remote.
+- `/work-plan` materializes `contract.md` into both the main repo and the worktree.
+- `/work-review` writes `review-*.md` into both locations.
+- `/work-review` APPROVE = `rm -rf .work/contracts/{ID}-{slug}/` (= "PR close").
 
 ## State derivation
 
-Sources (md never consulted):
+| Signal in contract dir                                       | Status            |
+|--------------------------------------------------------------|-------------------|
+| no commits beyond parent                                     | `planned`         |
+| commits exist, no `.ready` and no `review-*.md`              | `in-progress`    |
+| `.ready` exists, no `review-*.md` for current SHA            | `awaiting-review` |
+| latest `review-*.md` says `CHANGES_REQUESTED`                | `revising`        |
+| latest `review-*.md` says `APPROVED`, branch not yet merged  | `ready-to-merge`  |
+| branch ancestor of parent (merged), contract dir gone        | `done` (hidden)   |
 
-```bash
-gh pr list --state all --limit 100 --search "head:feature-" \
-  --json number,headRefName,isDraft,state,reviewDecision,statusCheckRollup,title,url,commits
-git worktree list --porcelain
-```
-
-Join on `headRefName ↔ worktree branch`. Derive:
-
-| Observable | Status |
-|---|---|
-| `pr.state = MERGED` | merged |
-| `pr.state = CLOSED` (unmerged) | abandoned |
-| `isDraft && checks = SUCCESS` | ready (promote needed) |
-| `isDraft` | implementing |
-| `!isDraft && reviewDecision = CHANGES_REQUESTED` | revising |
-| `!isDraft && reviewDecision = APPROVED && checks = SUCCESS` | ready-to-merge |
-| `!isDraft` | reviewing |
-
-`gh` or `git` failure → raise error. No fallback.
+`git` failure → raise error. No fallback.
 
 ## Branch convention
 
@@ -82,84 +70,73 @@ PROJECT="$(basename "$REPO_ROOT")"
 WT_PATH="$(dirname "$REPO_ROOT")/${PROJECT}-${BRANCH}"
 ```
 
-All output paths absolute. `/work-plan` creates branch + worktree. `hooks/worktree-cleanup` removes them after merge.
-
-## PR body (machine-readable)
-
-```
-<!-- work-item:{ID} -->
-<!-- work-type:{TYPE} -->
-
-## Contract
-See work/items/{ID}-{slug}/contract.md
-
-## Acceptance
-- [ ] ...
-```
-
-`hooks/auto-pr-commit` injects this on draft PR creation. Body below is user-editable.
+All output paths absolute. `/work-plan` creates branch + worktree. `hooks/worktree-cleanup` removes them after a local `git merge` (and also wipes the contract directory if it survived).
 
 ## Review
 
-- **MUST-fix → inline** (GraphQL `addPullRequestReviewThread` with path + line).
-- **SHOULD / NICE → top-level body** (`gh pr review --body`).
-- Decision via `gh pr review --approve` or `--request-changes`.
-- After fix commits, each resolved thread: GraphQL `resolveReviewThread`.
+A review file is plain markdown inside the contract directory:
+
+```markdown
+# Review {ID} @ {shortSHA}
+
+**Status**: APPROVED | CHANGES_REQUESTED
+**Reviewer**: claude-code
+**Reviewed at**: <ISO timestamp>
+
+## Summary
+<one paragraph>
+
+## MUST-fix
+- [ ] `path/to/file.py:42` — <comment>
+
+## SHOULD
+- <comment>
+
+## NICE
+- <comment>
+```
+
+- **MUST-fix** items block merge.
+- **SHOULD / NICE** are advisory.
+- On re-entry, `/work-impl` and `/work-refactor` read the latest `review-*.md` as their punch list.
 
 ## Merge
 
-- Squash merge only. Rebase / merge-commit disabled at repo level.
-- `gh pr merge {N} --squash --delete-branch` by the approver.
-- No auto-merge.
+- Squash merge into the parent branch performed locally by `/work-review` on APPROVE.
+- Optional `git push` after merge (only if `origin` exists).
+- `worktree-cleanup` hook fires on the `git merge` and removes the worktree, local branch, and remote branch (if any).
+- Contract directory deletion is part of the merge step itself.
 
-## CI (required)
-
-`templates/.github/workflows/pr-checks.yml` is bundled and installed by `install.sh`.
-
-- Python: `ruff check . && mypy . && pytest`
-- Triggers on `pull_request` (opened/synchronize/reopened/ready_for_review) and `push` to main.
-- Produces check run `check` on the PR.
-
-Branch protection (set by `install.sh`):
-- Require PR, approvals ≥ 1
-- Require check `check` passing, branch up-to-date
-- Require conversation resolution
-- No force push, no deletion on main
-
-## Verification layers (intentional overlap)
+## Verification
 
 | Layer | When | Scope | On fail |
 |---|---|---|---|
 | pre-commit | before local commit | staged files | block commit |
-| CI on PR | after push to PR branch | changed .py files + related test dirs | block merge |
-| CI on main push | after squash merge | whole repo | surface repo-wide regressions |
+| `/work-review` rerun of pre-commit on diff range | before APPROVE | parent..HEAD | block APPROVE |
+
+There is no CI. The user explicitly opted out of GitHub Actions to control cost.
 
 ## Hooks
 
 | Hook | Role |
 |---|---|
 | `branch-naming` | Enforce `feature-{TYPE}-{slug}` |
-| `guard-branch` | Block edits on main; create worktree |
-| `guard-merge` | Block direct merges into protected branches |
-| `auto-pr-commit` | On first commit in worktree: push + create draft PR with standard body |
-| `auto-pr` | Fallback draft PR creation on Stop |
-| `worktree-cleanup` | Remove worktree + local branch after merge |
-| `git-auto-pull` | Keep base branch current |
+| `guard-branch` | Block code edits on main; create worktree (no PR) |
+| `worktree-cleanup` | After `git merge`: remove worktree, local + remote branch, contract dir |
 
 ## CHANGES_REQUESTED re-entry
 
-1. Run `/work-impl {ID}` or `/work-refactor {ID}` again (same command).
-2. Session AI (Cursor or Claude) assembles prompt with:
+1. Run `/work-impl {ID}` or `/work-refactor {ID}` again.
+2. Claude reads:
    - `contract.md`
-   - unresolved review threads (GraphQL `reviewThreads { isResolved path line comments }`)
-   - `git diff origin/{base}...HEAD`
-3. Apply fixes → commit → push.
-4. Resolve each fixed thread via GraphQL `resolveReviewThread`.
-5. `/work-review` re-runs to approve.
+   - the latest `review-*.md` (treat MUST-fix as the punch list)
+   - `git diff $PARENT...HEAD`
+3. Apply fixes → commit → touch `.ready`.
+4. Re-run `/work-review`.
 
 ## Principles
 
-- PR + git = single source of truth. md files never store state.
+- `.work/contracts/` + `git` = single source of truth. No GitHub state.
 - Contract is the only human-authored spec per item.
-- Session context chooses the AI; commands take no flags.
-- `gh` / `git` failures raise errors; no degraded modes.
+- Reviews are local files; APPROVE = squash-merge + delete contract dir.
+- `git` failures raise errors; no degraded modes.

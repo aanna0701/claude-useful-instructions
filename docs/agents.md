@@ -85,13 +85,7 @@ Used by the `/optimize-tokens` command. Invoked inline (no standalone frontmatte
 
 ## Collaboration Agents
 
-Used by the `collab-workflow` skill and `/work-*` commands.
-
-| Agent | Model | Effort | Role |
-|-------|-------|--------|------|
-| `pr-reviewer` | **opus** | **max** | Review PRs against work item contracts |
-
-Revise loop is handled by re-running `/work-impl {ID}` or `/work-refactor`, which fetches unresolved PR review threads via GraphQL — no separate reviser agent. Cursor/Antigravity parity is maintained through per-bundle `.cursor/rules/*.mdc` files dropped at install time, not a runtime agent.
+The `collab-workflow` skill is fully driven by `/work-*` commands and the in-session reviewer — no dedicated agent is required. Reviews are written by Claude in `/work-review` directly.
 
 ---
 
@@ -147,18 +141,6 @@ Used by the `/refactor-google-style` command and `google-style-refactor` skill. 
 | `google-style-refactor-python` | `*.py` semantic rewrite (docstrings, type hints, naming, import groups) | sonnet | medium |
 
 Each agent reads `rules/google-style-{cpp,python}.md` before rewriting.
-
----
-
-## CI Audit Agent
-
-Used by the `/gha-branch-sync` command. Audits GitHub Actions workflows against the project's branch-map configuration.
-
-| Agent | Model | Effort | Description |
-|-------|-------|--------|-------------|
-| `ci-audit-agent` | **opus** | **max** | Scans `.github/workflows/` for hardcoded branch targets, missing freshness checks, missing path filters, and drift detection gaps. Reports issues and recommends minimal diffs. |
-
-Reads `.claude/branch-map.yaml` and `.claude/rules/review-merge-policy.md` before analysis.
 
 ---
 
@@ -223,6 +205,6 @@ Reasoning effort should match the agent's responsibility, and model should match
 | `medium` | sonnet | Standard code/doc generation, straightforward analysis, routine writing | `dl-*`, `debug-guide`, `what-to-do`, `diagram-writer`, `doc-polisher`, most `doc-writer-*`, `doc-reviewer-execution`, `ppt-density-checker`, `ppt-format-reviewer`, `google-style-refactor-cpp`, `google-style-refactor-python` |
 | `medium` | opus | Medium tasks that still benefit from Opus quality (e.g. Korean career documents with strong tone requirements) | `career-docs-writer`, `career-docs-reviser` |
 | `high` | sonnet | Senior sonnet judgment calls where opus isn't warranted (none currently) | — |
-| `max` | **opus only** | Deep-judgment tasks: quality scoring, cross-system audits, final review gates, architectural decisions | `pr-reviewer`, `doc-reviewer`, `ci-audit-agent`, `career-docs-reviewer`, `doc-writer-explain` |
+| `max` | **opus only** | Deep-judgment tasks: quality scoring, cross-system audits, final review gates, architectural decisions | `doc-reviewer`, `career-docs-reviewer`, `doc-writer-explain` |
 
 **Pipeline guideline**: early stages (scaffold / first-pass generation) use `medium` + sonnet; any deep-judgment / review-gate / audit stage uses `max` + opus. `high` without opus is reserved for the rare case where sonnet is preferred but the task still needs stretched reasoning.
