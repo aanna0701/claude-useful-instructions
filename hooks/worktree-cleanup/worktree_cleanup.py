@@ -7,20 +7,28 @@ cleans up:
   1. The worktree directory
   2. The local branch
   3. The remote branch (if origin exists)
-  4. The local .work/contracts/{ID}-{slug}/ directory if present
+  4. The .work/contracts/{ID}-{slug}/ directory — moved to .work/archive/
+     for WORK_ARCHIVE_TTL_DAYS days (default 7) before being purged.
 
-Also runs on session Stop to catch any merged branches left behind.
+Also runs on session Stop to catch any merged branches left behind, and
+sweeps .work/archive/ for entries older than the TTL on every fire.
 
 Exit code 0 always (never block).
 """
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
+
+# Days a closed contract stays in .work/archive/ before purge.
+# Override with WORK_ARCHIVE_TTL_DAYS in the environment.
+_DEFAULT_ARCHIVE_TTL_DAYS = 7
 
 _HOOK_DIR = Path(__file__).resolve().parent
 _LIB_DIR = _HOOK_DIR / "lib" if (_HOOK_DIR / "lib").is_dir() else _HOOK_DIR.parent / "lib"
@@ -68,8 +76,22 @@ def _is_protected_branch(branch: str, main_root: Path) -> bool:
     return branch in protected
 
 
-def _delete_contract_dir(main_root: Path, branch: str) -> None:
-    """If branch matches feature-{type}-{slug}, delete .work/contracts/*-{slug}/."""
+def _archive_ttl_seconds() -> int:
+    raw = os.environ.get("WORK_ARCHIVE_TTL_DAYS", "").strip()
+    try:
+        days = int(raw) if raw else _DEFAULT_ARCHIVE_TTL_DAYS
+    except ValueError:
+        days = _DEFAULT_ARCHIVE_TTL_DAYS
+    return max(0, days) * 86400
+
+
+def _archive_contract_dir(main_root: Path, branch: str) -> None:
+    """Move .work/contracts/*-{slug}/ to .work/archive/ with an .archived-at marker.
+
+    Archived contracts stay around for WORK_ARCHIVE_TTL_DAYS (default 7) so a
+    follow-up implementation can crib from the previous spec/review. They are
+    purged by `_purge_expired_archives` on every hook fire.
+    """
     m = _FEATURE_RE.match(branch)
     if not m:
         return
@@ -77,12 +99,49 @@ def _delete_contract_dir(main_root: Path, branch: str) -> None:
     contracts = main_root / ".work" / "contracts"
     if not contracts.is_dir():
         return
+    archive_root = main_root / ".work" / "archive"
+    archive_root.mkdir(parents=True, exist_ok=True)
     for child in contracts.iterdir():
-        if child.is_dir() and child.name.endswith(f"-{slug}"):
+        if not (child.is_dir() and child.name.endswith(f"-{slug}")):
+            continue
+        dest = archive_root / child.name
+        # If a same-named archive already exists, suffix with epoch seconds.
+        if dest.exists():
+            dest = archive_root / f"{child.name}.{int(time.time())}"
+        try:
+            shutil.move(str(child), str(dest))
+            (dest / ".archived-at").write_text(f"{int(time.time())}\n")
+            print(
+                f"[worktree-cleanup] Archived contract: {dest.relative_to(main_root)} "
+                f"(purged after WORK_ARCHIVE_TTL_DAYS={_archive_ttl_seconds() // 86400}d)",
+                file=sys.stderr,
+            )
+        except OSError:
+            pass
+
+
+def _purge_expired_archives(main_root: Path) -> None:
+    """Delete archived contracts older than WORK_ARCHIVE_TTL_DAYS."""
+    archive_root = main_root / ".work" / "archive"
+    if not archive_root.is_dir():
+        return
+    ttl = _archive_ttl_seconds()
+    if ttl == 0:
+        return
+    cutoff = time.time() - ttl
+    for child in archive_root.iterdir():
+        if not child.is_dir():
+            continue
+        marker = child / ".archived-at"
+        try:
+            ts = int(marker.read_text().strip()) if marker.exists() else int(child.stat().st_mtime)
+        except (OSError, ValueError):
+            ts = int(child.stat().st_mtime)
+        if ts < cutoff:
             try:
                 shutil.rmtree(child)
                 print(
-                    f"[worktree-cleanup] Removed contract: {child.relative_to(main_root)}",
+                    f"[worktree-cleanup] Purged expired archive: {child.relative_to(main_root)}",
                     file=sys.stderr,
                 )
             except OSError:
@@ -125,7 +184,7 @@ def _cleanup_worktree(main_root: Path, wt_path: Path, branch: str) -> None:
         )
         print(f"[worktree-cleanup] Deleted remote branch: {branch}", file=sys.stderr)
 
-    _delete_contract_dir(main_root, branch)
+    _archive_contract_dir(main_root, branch)
 
 
 def _find_merged_worktrees(main_root: Path) -> list[tuple[Path, str]]:
@@ -213,7 +272,7 @@ def _cleanup_orphan_branches(main_root: Path) -> None:
                 capture_output=True, text=True, cwd=str(main_root),
                 timeout=30,
             )
-        _delete_contract_dir(main_root, branch)
+        _archive_contract_dir(main_root, branch)
         print(f"[worktree-cleanup] Cleaned orphan branch: {branch}", file=sys.stderr)
 
 
@@ -264,6 +323,8 @@ def main() -> None:
         ["git", "worktree", "prune"],
         capture_output=True, text=True, cwd=str(root),
     )
+
+    _purge_expired_archives(root)
 
 
 if __name__ == "__main__":

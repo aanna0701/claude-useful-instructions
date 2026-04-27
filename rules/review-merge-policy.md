@@ -17,11 +17,11 @@ Before any merge:
 2. `git merge --squash $BRANCH`
 3. `git commit -s -m "<subject> ({ID})"`
 4. Optional `git push` (only when `origin` exists and the user keeps a remote mirror).
-5. **Delete the contract directory** — `rm -rf .work/contracts/{ID}-{slug}/`. This is the "PR close" step and the canonical signal that the work item is done.
+5. **Archive the contract directory** — `mv .work/contracts/{ID}-{slug}/ .work/archive/` and write `.archived-at` with the current epoch timestamp. This is the "PR close" step and the canonical signal that the work item is done. Archived contracts stay around for `WORK_ARCHIVE_TTL_DAYS` (default 7) so a follow-up implementation can reference the spec/review.
 
-The `worktree-cleanup` PostToolUse hook fires on `git merge`, removes the worktree, the local branch, and the remote branch (if any), and double-checks the contract directory deletion.
+The `worktree-cleanup` PostToolUse hook fires on `git merge`, removes the worktree, the local branch, and the remote branch (if any), double-checks the contract archival, and sweeps `.work/archive/` for entries older than the TTL.
 
-**On failure**: preserve branch + worktree + contract dir, report error, release lock. Never delete the contract directory on merge failure.
+**On failure**: preserve branch + worktree + contract dir, report error, release lock. Never archive the contract directory on merge failure.
 
 ## After Merge
 

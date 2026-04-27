@@ -42,7 +42,7 @@ plan ──▶ impl | refactor ──▶ review ──▶ (APPROVE → squash-me
 - `.work/` is **gitignored**. Contracts never reach the remote.
 - `/work-plan` materializes `contract.md` into both the main repo and the worktree.
 - `/work-review` writes `review-*.md` into both locations.
-- `/work-review` APPROVE = `rm -rf .work/contracts/{ID}-{slug}/` (= "PR close").
+- `/work-review` APPROVE = `mv .work/contracts/{ID}-{slug}/` → `.work/archive/` (= "PR close"). Archives are auto-purged after `WORK_ARCHIVE_TTL_DAYS` (default 7) by the `worktree-cleanup` hook.
 
 ## State derivation
 

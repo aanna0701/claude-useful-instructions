@@ -72,18 +72,20 @@ Read the local diff + contract, write a review file, and on APPROVE merge locall
       ```bash
       git -C "$REPO_ROOT" push 2>/dev/null || true
       ```
-   5. **Delete the contract directory** — this is the "PR close" step:
+   5. **Archive the contract directory** — this is the "PR close" step. The directory is *moved* (not deleted) so a follow-up implementation can crib from the previous spec/review. The `worktree-cleanup` hook purges archives older than `WORK_ARCHIVE_TTL_DAYS` (default 7) on every fire:
       ```bash
-      rm -rf "$REPO_ROOT/.work/contracts/{ID}-{slug}"
+      mkdir -p "$REPO_ROOT/.work/archive"
+      mv "$REPO_ROOT/.work/contracts/{ID}-{slug}" "$REPO_ROOT/.work/archive/{ID}-{slug}"
+      date +%s > "$REPO_ROOT/.work/archive/{ID}-{slug}/.archived-at"
       ```
-   6. Worktree + branch + remote-branch cleanup is handled automatically by the `worktree-cleanup` PostToolUse hook (it fires on `git merge`). No manual step required.
+   6. Worktree + branch + remote-branch cleanup (and a fallback archive sweep) is handled automatically by the `worktree-cleanup` PostToolUse hook (it fires on `git merge`). No manual step required.
    7. `release_merge_lock`.
 8. **Output** — review file path + decision + count of MUST-fix / SHOULD + (on APPROVE) merge commit SHA + cleanup result.
 
 ## After review
 
 - `CHANGES_REQUESTED` → user runs `/work-impl {ID}` or `/work-refactor {ID}` again. New commits land on the same branch; re-run `/work-review` (it writes a fresh `review-{newSHA}.md`).
-- `APPROVED` + preconditions met → `/work-review` squash-merges locally, deletes the contract directory, and the `worktree-cleanup` hook removes the feature worktree + branch.
+- `APPROVED` + preconditions met → `/work-review` squash-merges locally, archives the contract directory under `.work/archive/` (kept for `WORK_ARCHIVE_TTL_DAYS` days, default 7, then purged), and the `worktree-cleanup` hook removes the feature worktree + branch.
 - `APPROVED` + merge skipped (worktree dirty, MUST-fix outstanding, lock busy) → review file is written. User resolves the skip reason, then re-runs `/work-review`.
 
 ## Errors

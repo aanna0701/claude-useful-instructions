@@ -872,7 +872,7 @@ remove_work_dir() {
 }
 
 ensure_collab_scaffold() {
-  mkdir -p "$PROJECT_ROOT/.work/contracts" "$PROJECT_ROOT/.work/locks"
+  mkdir -p "$PROJECT_ROOT/.work/contracts" "$PROJECT_ROOT/.work/locks" "$PROJECT_ROOT/.work/archive"
   # Add .work/ to .gitignore if not already present.
   local gi="$PROJECT_ROOT/.gitignore"
   if [ -f "$gi" ]; then
