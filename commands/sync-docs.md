@@ -32,10 +32,22 @@ Detect available capabilities (no flags — all auto-detected):
 | **GitNexus** | MCP tool `list_repos` responds OR `.gitnexus/` directory exists | `HAS_GITNEXUS` |
 | **Multi-worktree** | `git worktree list` returns >1 entry | `HAS_MULTI_WT` |
 
-If `HAS_GITNEXUS` and index is stale (last analyze >24h), print warning:
-```
-GitNexus index may be stale. Run `gitnexus analyze` for best results.
-```
+If `HAS_GITNEXUS`, run the **freshness preflight** before any GitNexus-backed step (same gate as `codebase-qa` skill Phase 1):
+
+1. In a single message, call in parallel:
+   - `mcp__gitnexus__list_repos`
+   - `mcp__gitnexus__group_status` (ignore failures)
+   - `Bash`: `git rev-parse HEAD && git log -1 --format=%ct HEAD`
+2. Mark **stale** if any: last analyzed < HEAD commit time, last analyzed >24h ago, or `group_status` reports stale groups.
+3. If **stale** or **not-indexed**, ask the user:
+   ```
+   GitNexus index <stale | not-indexed> (last analyzed <ts>, HEAD <sha>).
+   Re-run `gitnexus analyze` before sync? (y/N)
+   ```
+   - **y** → `Bash`: `cd <repo> && gitnexus analyze` → re-check `list_repos` → proceed.
+   - **N / silent** → proceed with stale index; prefix the final summary with `⚠️ stale index used` and downgrade Step 2b confidence (HIGH → MEDIUM).
+
+Never auto-run `gitnexus analyze` without confirmation.
 
 ### 0c: Scan scope determination
 

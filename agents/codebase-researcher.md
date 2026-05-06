@@ -22,10 +22,37 @@ You receive:
 - `REPO` (optional): repo slug — if omitted, call `mcp__gitnexus__list_repos` first and pick the one matching cwd
 - `FOCUS` (optional): area hint (e.g., "auth", "training pipeline", "API layer")
 
-## Step 1: Preflight
+## Step 1: Preflight (index freshness — MUST run first)
 
-1. `mcp__gitnexus__list_repos` — confirm the target repo is indexed. If not, stop and report: "GitNexus index not found for {repo}. Run `gitnexus analyze` from repo root."
-2. Check index freshness via `group_status` if groups exist. If stale (>24h), warn but continue.
+Same 3-state freshness gate as `codebase-qa` skill Phase 1. **Always run before any retrieval.**
+
+### 1-a. Parallel preflight (single message)
+
+Fire in parallel:
+- `mcp__gitnexus__list_repos` — indexed repos + last analyzed timestamp.
+- `mcp__gitnexus__group_status` — group-level stale flags (ignore failures).
+- `Bash`: `git -C <repo> rev-parse HEAD && git -C <repo> log -1 --format=%ct HEAD` — current HEAD SHA + commit unix time.
+
+### 1-b. State decision
+
+| State | Condition |
+|---|---|
+| **not-indexed** | target repo missing from `list_repos` |
+| **stale** | indexed AND any of: (a) last analyzed < HEAD commit time, (b) last analyzed >24h ago, (c) `group_status` reports stale groups |
+| **fresh** | none of the above |
+
+### 1-c. Action
+
+- **fresh** → continue to Step 2.
+- **not-indexed** → stop. Report: "GitNexus index not found for {repo}. Run `gitnexus analyze` from repo root." Do not fabricate results.
+- **stale** → ask the caller (single-line confirm):
+  ```
+  Index stale (last analyzed <ts>, HEAD <sha> <relative>). Re-run `gitnexus analyze`? (y/N)
+  ```
+  - **y** → `Bash`: `cd <repo> && gitnexus analyze` → re-check `list_repos` → continue.
+  - **N / silent** → continue with stale index, but **prefix the final report with `⚠️ stale index`**.
+
+Never auto-run `gitnexus analyze` without confirmation.
 
 ## Step 2: Classify the question
 
