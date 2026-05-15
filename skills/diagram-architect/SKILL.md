@@ -1,9 +1,10 @@
 ---
 name: diagram-architect
 description: >
-  Mermaid 기반 아키텍처 다이어그램 설계 스킬.
+  수기 SVG 기반 아키텍처 다이어그램 설계 스킬.
   복잡한 시스템을 C4 모델 계층(Context/Container/Component)으로 분해하고,
   도형 내 텍스트 최소화 + 번호 매기기 + 범례로 깔끔한 다이어그램을 생성한다.
+  모든 다이어그램은 직각 라우팅 기반 수기 SVG로 출력한다. Mermaid는 사용하지 않는다.
   "다이어그램 그려줘", "아키텍처 도식화", "시스템 구조도", "mermaid 다이어그램",
   "flowchart 그려줘", "sequence diagram", "구조 시각화", "diagram",
   "시스템 설계 그림", "데이터 흐름도", "컴포넌트 다이어그램",
@@ -24,9 +25,11 @@ description: >
 
 ## 핵심 원칙
 
-> 상세 규칙: `references/diagram-rules.md` 참조. Phase 3 실행 전 반드시 읽을 것.
+> 상세 규칙:
+> - 공통 (C4/레이아웃/색상/번호/범례): `references/diagram-rules.md` — Phase 3 실행 전 반드시 읽을 것. Mermaid 문법 섹션은 무시.
+> - SVG 전용 (직각 라우팅, 채널, 겹침 방지, 반응형 폭): `references/svg-rules.md` — **모든 다이어그램에 필수**.
 
-Apply the 5 core principles from diagram-rules.md: C4 layering, line semantics, abstraction levels, color consistency, text minimization.
+Apply the 5 core principles from diagram-rules.md: C4 layering, line semantics, abstraction levels, color consistency, text minimization. All diagrams are emitted as hand-authored SVG with orthogonal routing only, reserved channel lanes between subgraphs, zero overlap between edges and unrelated boxes / titles, and a `max-width` CSS cap for responsive embedding.
 
 ---
 
@@ -80,12 +83,14 @@ Apply the 5 core principles from diagram-rules.md: C4 layering, line semantics, 
 
 **`diagram-writer` 에이전트에게 위임한다.**
 
-> Phase 3 실행 전 반드시 `references/diagram-rules.md`를 Read할 것.
+> Phase 3 실행 전 반드시 `references/diagram-rules.md`와 `references/svg-rules.md`를 Read할 것.
 
 각 다이어그램마다:
-1. Mermaid 코드 생성 (규칙 준수)
-2. 범례(Legend) 추가
-3. 번호별 설명 텍스트 작성
+1. SVG 파일 생성 (수기 SVG, 직각 라우팅, 채널 기반 엣지) — `public/diagrams/<name>.svg` 등 정적 자산 경로에 저장
+2. SVG 내부에 범례 그룹 임베드
+3. Markdown에서는 `![](/diagrams/<name>.svg)` 이미지 링크로 참조
+4. 반응형 폭 CSS (`img[src*="/diagrams/"] { max-width: min(100%, 56rem); }`) 적용 여부 확인 — 없으면 추가
+5. 번호별 설명 텍스트 작성
 
 ### Phase 4: 검증
 
@@ -116,20 +121,11 @@ Apply the 5 core principles from diagram-rules.md: C4 layering, line semantics, 
 
 [한 줄 설명]
 
-\`\`\`mermaid
-[Mermaid 코드]
-\`\`\`
-
-### 범례
-| 기호 | 의미 |
-|------|------|
-| 실선 → | 동기 호출 |
-| 점선 --> | 비동기 메시지 |
-| 🔵 파란색 | 데이터 저장소 |
+![제목](/diagrams/<name>.svg)
 
 ### 흐름 설명
 1. [번호] — [설명]
 2. [번호] — [설명]
 ```
 
-여러 장이면 전체 목차를 먼저 출력하고 각 다이어그램을 순서대로 제시.
+범례는 SVG 파일 내부에 그룹으로 임베드한다 (별도 표 작성 금지). 여러 장이면 전체 목차를 먼저 출력하고 각 다이어그램을 순서대로 제시. SVG 파일 저장 경로와 (필요 시) 추가한 CSS 규칙을 본문 끝에 한 줄로 명시.
