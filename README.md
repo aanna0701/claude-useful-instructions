@@ -1,6 +1,9 @@
 # claude-useful-instructions
 
-Portable Claude Code configuration. One `./install.sh` to apply everywhere.
+Portable Claude Code configuration. Two install paths:
+
+- **Claude Code marketplace** (user-level, all-in) — `/plugin marketplace add` + `/plugin install`. Best for cross-machine sync.
+- **`./install.sh`** (per-project, bundle-selectable) — copies into a target project's `.claude/`. Best when you want only a subset of bundles for a specific repo.
 
 ## Layered Structure
 
@@ -22,6 +25,30 @@ Every bundle installs into a target project's `.claude/` (and optionally `.curso
 
 ## Quick Start
 
+### Option A — Claude Code marketplace (recommended for cross-machine sync)
+
+In any Claude Code session on any machine:
+
+```
+/plugin marketplace add https://github.com/aanna0701/claude-useful-instructions
+/plugin install claude-useful-instructions@claude-useful-instructions
+```
+
+This registers the repo as a marketplace and installs the **single bundled plugin** that exposes every `skills/`, `agents/`, `commands/`, `hooks/`, and `rules/` entry at the user level (`~/.claude/plugins/`). Updates: `git push` from this repo, then on the other machine:
+
+```
+/plugin marketplace update claude-useful-instructions
+```
+
+Uninstall: `/plugin uninstall claude-useful-instructions@claude-useful-instructions`.
+
+Notes:
+- Marketplace install is **all-in** — bundle selection (`--base`/`--workflow`/domain flags) is not exposed via the plugin system. Use Option B for per-bundle control.
+- Hooks (`branch-naming`, `guard-branch`, `worktree-cleanup`) and pre-commit templates are bundled in this plugin but Claude Code's plugin system applies hooks user-wide. If you only want them on selected projects, prefer Option B.
+- The repo must be reachable; for private mirrors authenticate via `gh auth login` or SSH on the target machine first.
+
+### Option B — `./install.sh` (per-project, bundle-selectable)
+
 ```bash
 git clone https://github.com/aanna0701/claude-useful-instructions.git
 cd claude-useful-instructions
@@ -36,7 +63,7 @@ cd claude-useful-instructions
 ./install.sh /path/to/project
 ```
 
-### Alias (optional)
+#### Alias (optional)
 
 ```bash
 CUI_DIR=~/claude-useful-instructions
@@ -46,6 +73,16 @@ source ~/.bashrc
 cui-install --list
 cui-install --base --workflow /path/to/project
 ```
+
+### When to pick which
+
+| Need                                                      | Use            |
+|-----------------------------------------------------------|----------------|
+| Same setup on multiple machines, all skills/agents        | **Option A**   |
+| Per-project subset (e.g. only `base`+`workflow`)          | **Option B**   |
+| Project-local `.pre-commit-config.yaml` template install  | **Option B**   |
+| Quick try on one machine without cloning                  | **Option A**   |
+| Iterating on the bundle and want hot reload               | **Option B** (point install.sh at a worktree) |
 
 ## Bundle Matrix
 
