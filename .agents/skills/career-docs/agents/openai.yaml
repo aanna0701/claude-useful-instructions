@@ -1,0 +1,7 @@
+name: "career-docs"
+description: "Korean career document generation & refinement skill. Supports cover letters (자소서), career descriptions (경력기술서), portfolios (포트폴리오), cover letters (커버레터), and HR essays (인사관점 에세이). NotebookLM drafts; AI refines via 3-stage pipeline (Writer → Reviewer → Reviser). Triggers: \"자소서 써줘\", \"경력기술서 작성\", \"포트폴리오 정리\", \"커버레터 작성\", \"cover letter\", \"career description\", \"portfolio\", \"자소서 다듬어줘\", \"자소서 검토\", \"자기소개서\", \"이력서 정리\""
+source: "skills/career-docs/SKILL.md"
+generated_from: "skills/career-docs"
+codex_generation:
+  mode: "auto-only"
+  manual_override_supported: false

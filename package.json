@@ -1,0 +1,10 @@
+{
+  "name": "claude-useful-instructions",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Instruction library with Claude-source files and generated Codex artifacts.",
+  "scripts": {
+    "build:codex": "node scripts/build-codex.js",
+    "validate:codex": "node scripts/validate-codex.js"
+  }
+}

@@ -1,0 +1,7 @@
+name: "collab-workflow"
+description: "Local-only work-item workflow for structured plan-implement-review cycles. No GitHub PRs, no Actions — contracts live in .work/contracts/. Triggers on: \"work item\", \"FEAT-\", \"FIX-\", \"REFAC-\", \"collab-workflow\", \"/work-plan\", \"/work-impl\", \"/work-refactor\", \"/work-review\", \"/work-status\"."
+source: "skills/collab-workflow/SKILL.md"
+generated_from: "skills/collab-workflow"
+codex_generation:
+  mode: "auto-only"
+  manual_override_supported: false

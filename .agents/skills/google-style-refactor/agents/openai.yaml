@@ -1,0 +1,7 @@
+name: "google-style-refactor"
+description: "Refactor an entire C++/Python codebase to the Google Style Guide. Runs automated formatters first (clang-format, ruff), then applies semantic changes (naming, docstrings, imports, type hints) via language-specific subagents. Triggers on: \"google style\", \"google style guide\", \"Google C++ style\", \"Google Python style\", \"refactor to google\", \"/refactor-google-style\"."
+source: "skills/google-style-refactor/SKILL.md"
+generated_from: "skills/google-style-refactor"
+codex_generation:
+  mode: "auto-only"
+  manual_override_supported: false

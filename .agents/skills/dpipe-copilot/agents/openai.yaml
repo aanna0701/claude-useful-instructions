@@ -1,0 +1,7 @@
+name: "dpipe-copilot"
+description: "데이터 파이프라인 운영(operations) 스킬. 이미 구축된 데이터 파이프라인의 실행 / 검증 / 재생성 / 장애대응을 다룬다. Docker + 컬럼 스토어(DuckDB / Parquet / SQLite 등) + 파일 산출물(이미지/오디오/비디오/텍스트) 기반 파이프라인에서 자주 발생하는 함정 — 스키마 drift, dep 변경 후 이미지 미빌드, 장수명 컨테이너의 in-memory 코드 stale, 파생물 재생성 순서 — 을 일반화된 체크리스트로 제공한다. \"파이프라인 다시 돌려줘\", \"스테이지 검증\", \"파생물 재생성\", \"DB 스키마 확인\", \"산출물 재생성\", \"컨테이너 갱신\", \"pipeline operations\", \"rerun stage\", \"verify pipeline outputs\", \"regenerate derived artifacts\", \"schema drift\" 등의 요청에 트리거. 설계(design) 단계는 sibling skill `data-pipeline-architect`를 쓸 것 — 이 스킬은 그 다음, 즉 이미 만들어진 파이프라인을 굴리는 시기에 동작."
+source: "skills/dpipe-copilot/SKILL.md"
+generated_from: "skills/dpipe-copilot"
+codex_generation:
+  mode: "auto-only"
+  manual_override_supported: false

@@ -1,0 +1,7 @@
+name: "diataxis-doc-system"
+description: "Diátaxis Framework + Work Item documentation system. Two axes: (1) Diátaxis — Guide, Explanation, Reference, (2) Delivery — Work Item Bundle (brief/contract/checklist/status/review) + standalone Task/Contract/Checklist/Review. Delegates to type-specific sub-agents. Triggers on: \"write doc\", \"technical doc\", \"architecture doc\", \"API doc\", \"guide\", \"tutorial\", \"design doc\", \"RFC\", \"ADR\", \"README\", \"documentation\", \"technical writing\", \"how-to guide\", \"reference doc\", \"config reference\", \"CLI reference\", \"doc structure\", \"docs init\", \"MkDocs\", \"doc site\", \"information architecture\", \"work item\", \"task\", \"contract\", \"checklist\", \"review\", \"work order\", \"execution artifact\", \"multi-agent\", \"codex\", \"delivery document\", \"interface contract\", \"verification checklist\". Consult this skill first for any documentation-related request."
+source: "skills/diataxis-doc-system/SKILL.md"
+generated_from: "skills/diataxis-doc-system"
+codex_generation:
+  mode: "auto-only"
+  manual_override_supported: false

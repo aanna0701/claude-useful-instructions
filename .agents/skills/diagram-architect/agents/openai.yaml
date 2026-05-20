@@ -1,0 +1,7 @@
+name: "diagram-architect"
+description: "수기 SVG 기반 아키텍처 다이어그램 설계 스킬. 복잡한 시스템을 C4 모델 계층(Context/Container/Component)으로 분해하고, 도형 내 텍스트 최소화 + 번호 매기기 + 범례로 깔끔한 다이어그램을 생성한다. 모든 다이어그램은 직각 라우팅 기반 수기 SVG로 출력한다. Mermaid는 사용하지 않는다. \"다이어그램 그려줘\", \"아키텍처 도식화\", \"시스템 구조도\", \"mermaid 다이어그램\", \"flowchart 그려줘\", \"sequence diagram\", \"구조 시각화\", \"diagram\", \"시스템 설계 그림\", \"데이터 흐름도\", \"컴포넌트 다이어그램\", \"ERD 그려줘\", \"클래스 다이어그램\" 등의 요청에 트리거. 시스템 설계, 아키텍처 논의, 구조 설명에서 시각화가 도움이 될 때도 이 스킬을 사용할 것."
+source: "skills/diagram-architect/SKILL.md"
+generated_from: "skills/diagram-architect"
+codex_generation:
+  mode: "auto-only"
+  manual_override_supported: false

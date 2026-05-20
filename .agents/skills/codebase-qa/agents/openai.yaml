@@ -1,0 +1,7 @@
+name: "codebase-qa"
+description: "GitNexus 기반 코드베이스 질의응답 스킬. \"이 함수 바꾸면 뭐가 깨져?\", \"이 API 어떻게 흘러가?\", \"인증 처리하는 코드 다 찾아줘\", \"이 심볼 누가 쓰냐?\", \"이 커밋 영향 범위 알려줘\", \"모듈 구조 설명해줘\", \"where is X defined\", \"impact of removing Y\", \"how does request flow through Z\", \"who calls\", \"who depends on\", \"blast radius\", \"call graph\", \"코드베이스 질문\", \"codebase question\" 등의 요청에 트리거. 단순 질의는 직접 처리, 복합/다단계 질의는 codebase-researcher 에이전트로 위임."
+source: "skills/codebase-qa/SKILL.md"
+generated_from: "skills/codebase-qa"
+codex_generation:
+  mode: "auto-only"
+  manual_override_supported: false

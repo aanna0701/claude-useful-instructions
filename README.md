@@ -1,6 +1,14 @@
 # claude-useful-instructions
 
-Personal Claude Code skill/agent/command/hook/rule library, distributed as a **Claude Code marketplace plugin**.
+Personal instruction library for Claude Code, with an auto-generated Codex compatibility layer.
+
+## Platform model
+
+- Claude is the source format.
+- Codex artifacts are generated from Claude skills.
+- Unsafe or ambiguous mappings stay unsupported until there is a deterministic conversion rule.
+
+See [docs/codex-auto-generation.md](/home/leo/claude-useful-instructions/docs/codex-auto-generation.md) for the current Codex policy.
 
 ## Install
 
@@ -12,6 +20,26 @@ In any Claude Code session, on any machine:
 ```
 
 This pulls the repo into `~/.claude/plugins/marketplaces/claude-useful-instructions/` and registers every entry under `skills/`, `agents/`, `commands/`, `hooks/`, and `rules/` at the user level.
+
+## Codex generation
+
+This repo now includes a conservative Codex build path for skills.
+
+```bash
+npm run validate:codex
+npm run build:codex
+```
+
+Generated outputs:
+
+- `.agents/skills/*/SKILL.md`
+- `.agents/skills/*/agents/openai.yaml`
+- `.codex/generated/skills-manifest.json`
+
+Current scope:
+
+- `skills/` are supported for automatic conversion
+- `commands/`, `hooks/`, and `rules/` remain intentionally unsupported in the generator
 
 ### Per-project setup (run once per repo)
 
