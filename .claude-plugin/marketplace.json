@@ -1,0 +1,20 @@
+{
+  "name": "claude-useful-instructions",
+  "owner": {
+    "name": "leo",
+    "email": "leolee@navigantis.co"
+  },
+  "metadata": {
+    "description": "Personal Claude Code skill/agent/command/hook/rule library — install across machines via /plugin marketplace add.",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "claude-useful-instructions",
+      "source": "./",
+      "description": "Bundle of personal skills (career-docs, codebase-qa, collab-workflow, data-pipeline-architect, diagram-architect, diataxis-doc-system, google-style-refactor, html-presentation, ppt-generation), DL subagents (dl-capture/data/eval/infra/model/train), doc/career writers and reviewers, slash commands, branch/worktree hooks, and Google-style + PyTorch rules.",
+      "category": "developer-tools",
+      "tags": ["skills", "agents", "commands", "hooks", "rules", "diataxis", "career-docs", "pytorch", "google-style"]
+    }
+  ]
+}

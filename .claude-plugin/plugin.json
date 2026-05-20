@@ -1,0 +1,12 @@
+{
+  "name": "claude-useful-instructions",
+  "version": "0.1.0",
+  "description": "Personal Claude Code skill/agent/command/hook/rule bundle.",
+  "author": {
+    "name": "leo",
+    "email": "leolee@navigantis.co"
+  },
+  "homepage": "https://github.com/aanna0701/claude-useful-instructions",
+  "repository": "https://github.com/aanna0701/claude-useful-instructions",
+  "license": "MIT"
+}
