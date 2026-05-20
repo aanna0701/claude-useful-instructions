@@ -1,0 +1,59 @@
+# Pre-commit hooks — local variant for uv-managed Python projects
+# Run: pre-commit install && pre-commit run --all-files
+#
+# Why local hooks (vs. external mirror repos):
+#   - uv.lock is the single source of truth for tool versions (ruff, mypy,
+#     pyright). Mirror repos with pinned rev: tags drift silently from the
+#     lock file.
+#   - CI (e.g. .github/workflows/pr-checks.yml) and local pre-commit run the
+#     exact same binaries via `uv run`, so "works on my machine" gaps close.
+#   - Avoids pre-commit-mirror packaging bugs (e.g. mirrors-mypy pulling
+#     types-all which frequently fails to resolve).
+repos:
+  # ── Python (local hooks → uv.lock is the single source of truth) ──────
+  - repo: local
+    hooks:
+      - id: ruff
+        name: ruff (lint)
+        entry: uv run ruff check --fix
+        language: system
+        types_or: [python, pyi]
+        require_serial: true
+
+      - id: ruff-format
+        name: ruff (format)
+        entry: uv run ruff format
+        language: system
+        types_or: [python, pyi]
+        require_serial: true
+
+      - id: mypy
+        name: mypy
+        entry: uv run mypy
+        language: system
+        types_or: [python, pyi]
+        require_serial: true
+
+      - id: pyright
+        name: pyright
+        entry: uv run pyright
+        language: system
+        types_or: [python, pyi]
+        require_serial: true
+
+  # ── C++ ───────────────────────────────────────────────────────────────
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: v19.1.7
+    hooks:
+      - id: clang-format
+        types_or: [c, c++]
+
+  # ── General ───────────────────────────────────────────────────────────
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+        args: [--maxkb=1000]

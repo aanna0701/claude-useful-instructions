@@ -62,9 +62,9 @@ A single bundled plugin exposing four layers:
 |-----------|-------|
 | Skills    | `career-docs`, `codebase-qa`, `collab-workflow`, `data-pipeline-architect`, `diagram-architect`, `diataxis-doc-system`, `google-style-refactor`, `html-presentation`, `ppt-generation` |
 | Agents    | Doc writers (`doc-writer-{explain,guide,reference,checklist,contract,task,review}`), `doc-reviewer`, `diagram-writer`, `codebase-researcher`, `debug-guide`, DL (`dl-{capture,data,model,train,eval,infra}`), career (`career-docs-{writer,reviewer,reviser}`), PPT (`ppt-*`), `google-style-refactor-*` |
-| Commands  | `/work-plan`, `/work-impl`, `/work-refactor`, `/work-review`, `/work-status`, `/write-doc`, `/init-docs`, `/sync-docs`, `/polish-doc`, `/codebase-ask`, `/smart-git-commit-push`, `/optimize-tokens`, `/debug-guide`, `/what-to-do`, `/create-presentation`, `/format-presentation`, `/export-pdf`, `/edit-presentation`, `/generate-ppt`, `/refactor-google-style` |
+| Commands  | `/work-plan`, `/work-impl`, `/work-refactor`, `/work-review`, `/work-status`, `/write-doc`, `/init-docs`, `/sync-docs`, `/polish-doc`, `/codebase-ask`, `/smart-git-commit-push`, `/optimize-tokens`, `/debug-guide`, `/what-to-do`, `/create-presentation`, `/format-presentation`, `/export-pdf`, `/edit-presentation`, `/generate-ppt`, `/refactor-google-style`, `/setup-pre-commit` |
 | Hooks     | `branch-naming`, `guard-branch`, `worktree-cleanup` |
-| Rules     | `collab-workflow.md`, `review-merge-policy.md`, `pytorch-dl-standards.md`, `google-style-cpp.md`, `google-style-python.md` |
+| Rules     | `collab-workflow.md`, `review-merge-policy.md`, `pytorch-dl-standards.md`, `google-style-cpp.md`, `google-style-python.md`, `pre-commit-policy.md` |
 
 Detailed reference:
 
@@ -142,7 +142,7 @@ Local merge into parent
 - **5 commands, 0 flags**: `/work-plan`, `/work-impl`, `/work-refactor`, `/work-review`, `/work-status`
 - **1 directory per work item**: `.work/contracts/{ID}-{slug}/` — `contract.md` (spec), `.ready` (sentinel), `review-{sha}.md` (one per review pass). The whole `.work/` tree must be gitignored.
 - **State is derived** from `.work/contracts/` + `git worktree list` + branch ancestry.
-- **No CI**: pre-commit is the only automated gate. Configure pre-commit per project as you see fit; this plugin no longer ships a pre-commit template.
+- **No CI**: pre-commit is the only automated gate. Scaffold the per-project config on demand with `/setup-pre-commit` (see [Pre-commit](#pre-commit) below).
 - **Squash merge only**, performed locally by `/work-review` on APPROVE. APPROVE = squash-merge + `rm -rf .work/contracts/{ID}-{slug}/` (= "PR close").
 - Optional `git push` keeps a remote mirror, but no PR is opened.
 
@@ -163,6 +163,34 @@ Domain skills auto-fire from natural-language triggers:
 | `google-style-refactor`  | `/refactor-google-style` command                                                                                  |
 
 `pytorch-dl-standards` (rules) and the `dl-*` agents are loaded but only act when invoked.
+
+## Pre-commit
+
+The plugin does **not** auto-install `.pre-commit-config.yaml` into your project — marketplace plugins live at user level and can't safely modify arbitrary repos. Instead it ships templates + a policy + a scaffolding command.
+
+```
+/setup-pre-commit
+```
+
+The command (see `commands/setup-pre-commit.md`):
+
+1. Detects the project root (`git rev-parse --show-toplevel`).
+2. Picks a variant per `rules/pre-commit-policy.md`:
+   - `local-uv` if `uv.lock` exists or `pyproject.toml` declares `[tool.uv]` / `[dependency-groups]`.
+   - `external-mirrors` otherwise.
+3. Copies the chosen variant to `<project>/.pre-commit-config.yaml`, plus `.clang-format` if the project has C/C++ sources.
+4. Runs `pre-commit install` and `pre-commit run --all-files` once.
+
+| Variant            | When                                                                  | Python hook source                                          |
+|--------------------|-----------------------------------------------------------------------|-------------------------------------------------------------|
+| `local-uv`         | uv-managed Python projects (`uv.lock` present)                        | `repo: local` with `entry: uv run …` — `uv.lock` is SSOT    |
+| `external-mirrors` | non-uv projects (pip, poetry, hatch, pip-tools, or non-Python)        | pinned `rev:` on `ruff-pre-commit`, `mirrors-mypy`, `pyright-python` |
+
+Both share C++ (clang-format) and general hooks (trailing-whitespace, end-of-file-fixer, check-yaml, check-added-large-files ≤1000 kB).
+
+Bumping tool versions is a marketplace-side change: edit the template, push, run `/plugin marketplace update claude-useful-instructions` on each machine, then re-run `/setup-pre-commit` per project.
+
+Need a new variant (e.g., Poetry-specific)? Add `templates/pre-commit/variants/<name>.yaml` to this plugin and extend the table in `rules/pre-commit-policy.md`. Do not diverge per-project.
 
 ### GitNexus setup (optional — enhances `/sync-docs` and `/codebase-ask`)
 
@@ -208,7 +236,8 @@ claude-useful-instructions/
 ├── hooks/                 # Claude Code hooks
 ├── templates/             # Templates referenced by skills/commands
 │   ├── work-item/         #   used by /work-plan
-│   └── google-style/      #   used by /refactor-google-style
+│   ├── google-style/      #   used by /refactor-google-style
+│   └── pre-commit/        #   used by /setup-pre-commit (local-uv + external-mirrors variants)
 ├── scripts/               # Helper scripts referenced by skills/commands
 │   └── html_to_pdf.py     #   used by /export-pdf
 ├── lib/                   # Shared shell helpers

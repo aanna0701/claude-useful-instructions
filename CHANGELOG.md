@@ -8,15 +8,17 @@
 - Removed `scripts/patch-hook-settings.py` (install.sh helper).
 - Removed `scripts/migrate-v1-to-v2.sh` (legacy v1→v2 migration script).
 - Removed `templates/claude/` (project-level `CLAUDE.md` template — relevant only to install.sh).
-- Removed `templates/pre-commit/` (per-project pre-commit template; configure externally per project).
 - Removed `.claude/` snapshot from repo root (stale install artifact).
 
 ### Added
 - `.claude-plugin/marketplace.json` + `.claude-plugin/plugin.json` — Claude Code marketplace metadata.
+- `rules/pre-commit-policy.md` — variant-selection rule (`local-uv` vs `external-mirrors`) loaded user-wide.
+- `commands/setup-pre-commit.md` — `/setup-pre-commit` slash command that scaffolds `.pre-commit-config.yaml` (+ `.clang-format` if C/C++ sources present) into the current project from `templates/pre-commit/`.
+- `templates/pre-commit/` is now reference data consumed by `/setup-pre-commit` (no longer auto-installed). The two variants (`local-uv.yaml`, `external-mirrors.yaml`) and `.clang-format` are unchanged in content.
 
 ### Changed
 - `hooks/guard-branch`: opt-in comment updated. Marker `.claude-worktree-enabled` is now created by hand (no more `install.sh --core` / `--collab`). Hook logic unchanged.
-- README rewritten around the marketplace flow.
+- README rewritten around the marketplace flow; pre-commit section now points at `/setup-pre-commit` instead of auto-install.
 
 ## v2.0.0 — PR-native workflow (upcoming)
 
