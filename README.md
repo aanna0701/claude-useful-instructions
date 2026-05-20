@@ -15,6 +15,23 @@ In any Claude Code session, on any machine:
 
 This pulls the repo into `~/.claude/plugins/marketplaces/claude-useful-instructions/` and registers every entry under `skills/`, `agents/`, `commands/`, `hooks/`, and `rules/` at the user level.
 
+### Per-project setup (run once per repo)
+
+The plugin loads user-wide, but a few things still belong **in the target project**:
+
+```
+# Enable the worktree-redirect hook on this repo (opt-in marker)
+touch .claude-worktree-enabled
+
+# Enable the local work-item workflow (/work-plan, /work-impl, ...)
+mkdir -p .work/contracts && grep -qxF '.work/' .gitignore || echo '.work/' >> .gitignore
+
+# Scaffold .pre-commit-config.yaml (+ .clang-format if C/C++) — pick variant automatically
+/setup-pre-commit
+```
+
+All three are no-ops on projects where you don't want them — they activate only when the corresponding marker / config exists. See [Per-project opt-ins](#per-project-opt-ins) and [Pre-commit](#pre-commit) for details.
+
 ### Update
 
 After `git push` on this repo:
