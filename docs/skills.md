@@ -1,8 +1,8 @@
 # Skills Reference
 
-Skills are auto-triggered by Claude Code based on conversation context. Each skill is a folder under `.claude/skills/` containing `SKILL.md` and optional `references/`.
+Skills are auto-triggered by Claude Code based on conversation context. Each skill is a folder under `skills/<name>/` in this repo containing `SKILL.md` and optional `references/`.
 
-**Install location**: always `.claude/skills/<name>/` only (project or `~/.claude/skills/` globally). The installer does not create `.cursor/skills/` or `.agent/skills/` trees—those were redundant with Claude Code’s layout. Re-running a project install removes legacy copies or symlinks there from older releases.
+**Install location**: shipped via the `claude-useful-instructions` marketplace plugin. After `/plugin install`, Claude Code loads every skill in this repo's `skills/` directory user-wide. No per-project install step.
 
 ---
 
@@ -292,9 +292,9 @@ GitNexus indexed for the repo (`gitnexus analyze`). Stale index (>24h) triggers 
 
 ## collab-workflow
 
-PR-native collaboration workflow for structured plan → implement → review cycles between Claude and Codex. State is derived from the GitHub PR + git — no per-item status md files.
+Local-only work-item workflow for structured plan → implement → review cycles inside a single Claude Code session. State is derived from `.work/contracts/` + `git worktree list` + branch ancestry — **no GitHub PRs, no Actions, no `gh` calls**.
 
-**Triggers**: "work item", "work plan", "work review", "work status", "codex", "hand off", "delegate", "FEAT-", "FIX-", "REFAC-", "multi-agent", "worktree", "branch map", "collab-workflow"
+**Triggers**: "work item", "work plan", "work review", "work status", "FEAT-", "FIX-", "REFAC-", "worktree", "collab-workflow", "/work-plan", "/work-impl", "/work-refactor", "/work-review", "/work-status"
 
 ### Routing
 
@@ -309,15 +309,14 @@ PR-native collaboration workflow for structured plan → implement → review cy
 ### Pipeline
 
 ```
-/work-plan → /work-impl | /work-refactor → /work-review → merge
+/work-plan → /work-impl | /work-refactor → /work-review → (APPROVE → squash-merge + archive contract)
 ```
 
-Revise loop: if `reviewDecision=CHANGES_REQUESTED`, re-run `/work-impl {ID}` (or `/work-refactor`) — it fetches unresolved review threads via GraphQL and treats each as a MUST-fix.
+Revise loop: if the latest `review-{shortSHA}.md` says `Status: CHANGES_REQUESTED`, re-run `/work-impl {ID}` (or `/work-refactor`) — it reads the latest review file and treats each MUST-fix item as the punch list.
 
 ### Related
 
 - **[Collab Workflow](collab-workflow.md)**: Architecture, setup, walkthrough
-- **[Migration v1 → v2](MIGRATION-v2.md)**: What changed in v2
 - **Commands**: `/work-plan`, `/work-impl`, `/work-refactor`, `/work-review`, `/work-status`
 
 ---
@@ -349,14 +348,10 @@ Refactor an entire C++/Python codebase to the Google Style Guide. Runs mechanica
 | `google-style-refactor-cpp` | `*.{cpp,cc,h,hpp}` semantic rewrite | sonnet | medium |
 | `google-style-refactor-python` | `*.py` semantic rewrite | sonnet | medium |
 
-### Cursor Parity
-
-Installing the `google-style` bundle also writes `.cursor/rules/google-style-{cpp,python}.mdc` with glob triggers so Cursor's inline AI applies the same rules.
-
 ### Related
 
 - **`/refactor-google-style`** command: Entry point
-- **Tooling installed**: `.clang-format` (Google preset), `pyproject.toml` ruff section, Cursor mdc rules
+- **Per-project setup**: drop `.clang-format` (Google preset, ships under `templates/google-style/`) and add a `[tool.ruff]` section to `pyproject.toml`. Do this once per repo — the skill does not auto-install into target projects.
 
 ---
 

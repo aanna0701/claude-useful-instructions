@@ -2,7 +2,7 @@
 
 > **Doc type**: Explanation + Tutorial | **Audience**: Developers using Claude Code locally
 
-The `workflow` bundle gives Claude Code a structured, **fully local** way to handle work items. v3 drops GitHub PRs and Actions entirely — the contract is a local directory under `.work/contracts/`, and "closing the PR" means `rm -rf` on that directory.
+The `collab-workflow` skill + `/work-*` commands give Claude Code a structured, **fully local** way to handle work items. v3 drops GitHub PRs and Actions entirely — the contract is a local directory under `.work/contracts/`, and "closing the PR" means archiving that directory into `.work/archive/`.
 
 This change is intentional: avoid GitHub Actions cost. Branches still go on the remote (free) when `origin` exists, but no PR is opened and no CI runs.
 
@@ -28,7 +28,7 @@ Per work item, the contract directory holds everything:
 ## Pipeline (4 stages)
 
 ```
-/work-plan → /work-impl | /work-refactor → /work-review → (APPROVE → squash-merge + rm contract)
+/work-plan → /work-impl | /work-refactor → /work-review → (APPROVE → squash-merge + archive contract)
 ```
 
 ```
@@ -39,7 +39,7 @@ Per work item, the contract directory holds everything:
   → commits in worktree, touches .ready
 [Claude] /work-review FEAT-042
   → writes review-{sha}.md
-  → on APPROVE: squash-merge into parent, deletes contract dir,
+  → on APPROVE: squash-merge into parent, archives contract dir to .work/archive/,
     worktree-cleanup hook removes worktree + branch
 [Claude] /work-status
   → derives state from .work/contracts/ + git worktree list + branch ancestry
@@ -56,11 +56,11 @@ State is read from local signals only — no `gh` calls.
 | `.ready` exists, no `review-*.md` for current SHA            | `awaiting-review` |
 | latest `review-*.md` says `CHANGES_REQUESTED`                | `revising`        |
 | latest `review-*.md` says `APPROVED`, branch not yet merged  | `ready-to-merge`  |
-| branch merged into parent, contract dir gone                 | `done` (hidden)   |
+| branch merged into parent, contract dir moved to `.work/archive/` | `done` (hidden) |
 
 ## Branch + worktree convention
 
-- Branch: `feature-{TYPE}-{slug}` — `TYPE ∈ {feat, fix, perf, chore, test, refac}`.
+- Branch: `feature-{TYPE}-{slug}` — `TYPE ∈ {feat, fix, perf, chore, test, refac, docs, audit, adhoc}`. `feat` collapses to plain `feature-{slug}`; `adhoc` is auto-stamped by `guard-branch` as `feature-adhoc-{MMDD-HHMM}`.
 - Worktree: `$(dirname $REPO_ROOT)/${PROJECT}-${BRANCH}` (sibling of repo).
 - Enforced by the `branch-naming` and `guard-branch` hooks.
 
@@ -70,7 +70,7 @@ State is read from local signals only — no `gh` calls.
 |---|---|
 | `branch-naming` | Enforce `feature-{TYPE}-{slug}` |
 | `guard-branch` | Block code edits on the main worktree; auto-create a feature worktree (no PR) |
-| `worktree-cleanup` | After local `git merge`: remove worktree, local branch, remote branch (if any), contract dir |
+| `worktree-cleanup` | After local `git merge`: remove worktree, local branch, remote branch (if any). Sweeps `.work/archive/` past `WORK_ARCHIVE_TTL_DAYS` (default 7) |
 
 ## Verification
 
@@ -92,4 +92,4 @@ There is no CI. Pre-commit is the only automated gate.
 
 - v1 stored state in many md files → drift.
 - v2 stored state on the GitHub PR + git → required Actions and `gh` for every operation.
-- v3 stores state in a local `.work/contracts/` dir + git → fully offline-friendly, zero recurring cost, and "closing a PR" is just `rm -rf`.
+- v3 stores state in a local `.work/contracts/` dir + git → fully offline-friendly, zero recurring cost, and "closing a PR" is `mv` to `.work/archive/`.

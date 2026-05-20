@@ -1,17 +1,19 @@
 # Commands Reference
 
-Commands are user-invocable slash commands (`.md` files) under `.claude/commands/`. Users type `/<command-name>` to trigger them.
+Commands are user-invocable slash commands (`.md` files) shipped under `commands/` in this repo. After `/plugin install claude-useful-instructions@claude-useful-instructions`, Claude Code loads them user-wide; users type `/<command-name>` to trigger them.
 
 ---
 
 ## /work-plan
 
-Create a work item for delegation (Codex or branch-based). Generates brief, contract, checklist, and optionally a GitHub Issue.
+Create a local work item: contract + branch + worktree. **No GitHub PR, no GitHub Issue.**
 
 **Usage**:
 ```
 /work-plan <description>
 ```
+
+Materializes `.work/contracts/{ID}-{slug}/contract.md` and creates `feature-{type}-{slug}` branch + worktree.
 
 ---
 
@@ -40,29 +42,24 @@ Review a completed work item against its contract. Decides merge/revise/reject.
 
 ## /work-impl
 
-Implement a work item (`FEAT`/`FIX`/`PERF`/`CHORE`/`TEST`) in its worktree.
-
-Two executors, each reading the same inputs (contract + unresolved review threads + diff):
-
-| Executor | Entry point | When |
-|---|---|---|
-| **Cursor session** (preferred) | `/work-impl FEAT-001` (from `.cursor/commands/`) | Interactive multi-file edit via Composer. Open the worktree in Cursor first. |
-| **Claude session** (fallback) | `/work-impl FEAT-001` (from `.claude/commands/`) | Implements in-session when Cursor is not being used. |
+Implement a work item (`FEAT`/`FIX`/`PERF`/`CHORE`/`TEST`) in its worktree. Reads `contract.md` + the latest `review-{shortSHA}.md` (if any) + `git diff $PARENT...HEAD`.
 
 **Usage**:
 ```
-/work-impl FEAT-001       # Cursor if open on the worktree, otherwise Claude
+/work-impl FEAT-001
 ```
+
+Executor is always the current Claude Code session — there is no Cursor/Codex path.
 
 ---
 
 ## /work-refactor
 
-Refactor a work item (`REFAC` only). Same pipeline and executor matrix as `/work-impl`, but honors `Boundaries.Preserve` — no new public symbols, existing tests stay green.
+Refactor a work item (`REFAC` only). Same inputs as `/work-impl`, but honors `Boundaries.Preserve` from the contract — no new public symbols, existing tests stay green.
 
 **Usage**:
 ```
-/work-refactor REFAC-007       # Cursor or Claude
+/work-refactor REFAC-007
 ```
 
 ---
@@ -474,10 +471,36 @@ Apply the Google C++ / Python Style Guide across the repository. Orchestrates a 
 | Step | Action |
 |------|--------|
 | 1 | Scope discovery (glob C++/Python, exclude `.venv/`, `build/`, `dist/`, `third_party/`, `vendor/`) |
-| 2 | Install/verify config (`.clang-format`, ruff section in `pyproject.toml`, Cursor mdc rules) |
+| 2 | Install/verify config (`.clang-format` from `templates/google-style/`, ruff section in `pyproject.toml`) |
 | 3 | Mechanical pass — `clang-format -i`, `ruff check --fix --unsafe-fixes` + `ruff format` |
 | 4 | Semantic pass — dispatch `google-style-refactor-cpp` / `google-style-refactor-python` agents in parallel (batches of ≤20) |
 | 5 | Verify — re-run formatters, run project tests when discoverable |
 | 6 | Per-language summary (files changed, top rule categories, human-review flags) |
 
 Preconditions: clean worktree (or explicit confirmation), `ruff` installed for Python, `clang-format` on PATH for C++.
+
+---
+
+## /setup-pre-commit
+
+Scaffold `.pre-commit-config.yaml` (+ `.clang-format` for C/C++ projects) in the current project. Variant auto-selected per `rules/pre-commit-policy.md`:
+
+- `local-uv` — when `uv.lock` exists or `pyproject.toml` declares `[tool.uv]` / `[dependency-groups]`. Python hooks run via `uv run …` so `uv.lock` is the single source of truth.
+- `external-mirrors` — otherwise. Python hooks pinned via `rev:` on mirror repos (`ruff-pre-commit`, `mirrors-mypy`, `pyright-python`).
+
+**Usage**:
+```
+/setup-pre-commit
+```
+
+Steps:
+
+1. Resolve plugin root and locate `templates/pre-commit/`.
+2. Detect target project root (`git rev-parse --show-toplevel`).
+3. Pick variant.
+4. If `.pre-commit-config.yaml` already exists, diff against the variant and prompt before overwriting.
+5. Copy variant to project root. Copy `.clang-format` if C/C++ sources detected.
+6. Run `pre-commit install`, then `pre-commit run --all-files`.
+7. Report variant, files written, first-run outcome.
+
+Bumping tool versions is a marketplace-side change: edit `templates/pre-commit/variants/*.yaml`, push, `/plugin marketplace update claude-useful-instructions`, then re-run `/setup-pre-commit` per project.

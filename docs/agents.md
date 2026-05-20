@@ -1,6 +1,6 @@
 # Agents Reference
 
-Agents are subagent definitions (`.md` files) under `.claude/agents/`. Claude Code delegates specific tasks to them based on the `description` field.
+Agents are subagent definitions (`.md` files) shipped under `agents/` in this repo. After `/plugin install claude-useful-instructions@claude-useful-instructions`, Claude Code loads them user-wide and delegates specific tasks to them based on the `description` field.
 
 ---
 
