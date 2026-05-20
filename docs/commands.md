@@ -192,15 +192,15 @@ Page type inferred from: frontmatter `type` field > directory path > content pat
 
 ---
 
-## /polish-doc
+## /refactor-doc
 
 Apply writing-style and structural fixes directly to existing documents. Counterpart to `/write-doc` (creates) and `doc-reviewer` (suggests only).
 
 **Usage**:
 ```
-/polish-doc [filepath]              # Full polish (style + structure)
-/polish-doc [filepath] --quick      # Quick polish (style only)
-/polish-doc [glob-pattern]          # Multiple files
+/refactor-doc [filepath]              # Full polish (style + structure)
+/refactor-doc [filepath] --quick      # Quick polish (style only)
+/refactor-doc [glob-pattern]          # Multiple files
 ```
 
 ### Workflow

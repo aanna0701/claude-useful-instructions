@@ -15,10 +15,12 @@ Agents MUST Read this file before writing any document.
 - **Markdown** (.md) by default; AsciiDoc (.adoc) for complex layouts.
 - Word/PDF are delivery artifacts, not source files.
 
-### File Structure — MkDocs + Numbered Hierarchy (Always)
+### File Structure — Numbered Hierarchy (when a doc site is used)
+
+The folder spine is **SSG-agnostic**. Works under `docs/` (MkDocs, Docusaurus) or `src/content/docs/` (Starlight). Apply this layout only when the project actually publishes a doc site (Adapter B); otherwise organize docs by domain in the repo as appropriate.
 
 ```
-docs/
+<docs-root>/
 ├── index.md
 ├── glossary.md
 ├── 00_context/          # Why: business goals, requirements
@@ -33,7 +35,7 @@ docs/
 ```
 
 > Numbering details: see `references/site-architecture.md`.
-> `/init-docs` command auto-generates this structure.
+> `/init-docs` auto-generates this structure (currently emits MkDocs config; swap to `astro.config.mjs` for Starlight or `docusaurus.config.js` for Docusaurus — the folder spine is unchanged).
 
 ---
 

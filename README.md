@@ -104,7 +104,7 @@ A single bundled plugin exposing four layers:
 |-----------|-------|
 | Skills    | `career-docs`, `codebase-qa`, `collab-workflow`, `data-pipeline-architect`, `dpipe-copilot`, `diagram-architect`, `diataxis-doc-system`, `google-style-refactor` |
 | Agents    | Doc writers (`doc-writer-{explain,guide,reference,checklist,contract,task,review}`), `doc-reviewer`, `diagram-writer`, `codebase-researcher`, `debug-guide`, DL (`dl-{capture,data,model,train,eval,infra}`), career (`career-docs-{writer,reviewer,reviser}`), `dpipe-runner`, `google-style-refactor-*` |
-| Commands  | `/work-plan`, `/work-impl`, `/work-refactor`, `/work-review`, `/work-status`, `/write-doc`, `/init-docs`, `/sync-docs`, `/polish-doc`, `/codebase-ask`, `/smart-git-commit-push`, `/optimize-tokens`, `/debug-guide`, `/what-to-do`, `/refactor-google-style`, `/setup-pre-commit` |
+| Commands  | `/work-plan`, `/work-impl`, `/work-refactor`, `/work-review`, `/work-status`, `/write-doc`, `/init-docs`, `/sync-docs`, `/refactor-doc`, `/codebase-ask`, `/smart-git-commit-push`, `/optimize-tokens`, `/debug-guide`, `/what-to-do`, `/refactor-google-style`, `/setup-pre-commit` |
 | Hooks     | `branch-naming`, `guard-branch`, `worktree-cleanup` |
 | Rules     | `collab-workflow.md`, `review-merge-policy.md`, `pytorch-dl-standards.md`, `google-style-cpp.md`, `google-style-python.md`, `pre-commit-policy.md` |
 

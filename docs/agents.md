@@ -116,7 +116,7 @@ Delegation trigger: 2+ intents, multiple symbols, or semantic search required. S
 
 | Agent | Model | Effort | Description |
 |-------|-------|--------|-------------|
-| `doc-polisher` | sonnet | medium | Applies writing-style and structural fixes directly to existing docs (counterpart to `doc-reviewer`, which only suggests). Invoked by `/polish-doc`. |
+| `doc-polisher` | sonnet | medium | Applies writing-style and structural fixes directly to existing docs (counterpart to `doc-reviewer`, which only suggests). Invoked by `/refactor-doc`. |
 
 ---
 
