@@ -1,3 +1,7 @@
+---
+description: Analyze current codebase state and update documentation files to match code reality.
+---
+
 # sync-docs — Sync Documentation to Current Codebase
 
 Analyze current codebase state and update documentation files to match code reality.

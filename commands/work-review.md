@@ -1,3 +1,7 @@
+---
+description: Read the local diff + contract, write a review file. On APPROVE squash-merge locally and archive the contract directory.
+---
+
 # work-review — Review a Work Item (Local-Only)
 
 Read the local diff + contract, write a review file, and on APPROVE merge locally and delete the contract directory ("PR close").

@@ -1,3 +1,7 @@
+---
+description: Create a local work item: contract + branch + worktree. No GitHub PR, no Actions.
+---
+
 # work-plan — Create a Work Item (Local-Only)
 
 Create one work item: contract + branch + worktree. **No GitHub PR.**

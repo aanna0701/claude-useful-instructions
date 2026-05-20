@@ -120,17 +120,6 @@ Delegation trigger: 2+ intents, multiple symbols, or semantic search required. S
 
 ---
 
-## PPT Generation Agents
-
-Used by the `/generate-ppt` command and `ppt-generation` skill. Both run after content injection to enforce the template's design contract.
-
-| Agent | Model | Effort | Role |
-|-------|-------|--------|------|
-| `ppt-density-checker` | sonnet | medium | Detect over-dense slides; flag slides violating density budgets |
-| `ppt-format-reviewer` | sonnet | medium | Final compliance check for fonts, layout, colors, shapes against the base template |
-
----
-
 ## Google Style Refactor Agents
 
 Used by the `/refactor-google-style` command and `google-style-refactor` skill. Dispatched in parallel on file batches after the mechanical formatter pass.
@@ -141,6 +130,16 @@ Used by the `/refactor-google-style` command and `google-style-refactor` skill. 
 | `google-style-refactor-python` | `*.py` semantic rewrite (docstrings, type hints, naming, import groups) | sonnet | medium |
 
 Each agent reads `rules/google-style-{cpp,python}.md` before rewriting.
+
+---
+
+## Data Pipeline Operations Agent
+
+Used by the `dpipe-copilot` skill. Executes pipeline stages in Docker, validates DuckDB/Parquet schemas + video/image outputs, regenerates derived artifacts on config change.
+
+| Agent | Model | Effort | Role |
+|-------|-------|--------|------|
+| `dpipe-runner` | sonnet | medium | Runs pipeline stages, verifies outputs, regenerates derived artifacts. Returns PASS/FAIL report to keep main session context clean. Project-agnostic — caller supplies stage map. |
 
 ---
 
@@ -202,7 +201,7 @@ Reasoning effort should match the agent's responsibility, and model should match
 | Effort | Default model | When to use | Agents in this repo |
 |--------|---------------|-------------|---------------------|
 | `low` | sonnet (or haiku) | Mechanical data movement, simple sync/format tasks | — |
-| `medium` | sonnet | Standard code/doc generation, straightforward analysis, routine writing | `dl-*`, `debug-guide`, `what-to-do`, `diagram-writer`, `doc-polisher`, most `doc-writer-*`, `doc-reviewer-execution`, `ppt-density-checker`, `ppt-format-reviewer`, `google-style-refactor-cpp`, `google-style-refactor-python` |
+| `medium` | sonnet | Standard code/doc generation, straightforward analysis, routine writing | `dl-*`, `debug-guide`, `what-to-do`, `diagram-writer`, `doc-polisher`, most `doc-writer-*`, `doc-reviewer-execution`, `dpipe-runner`, `google-style-refactor-cpp`, `google-style-refactor-python` |
 | `medium` | opus | Medium tasks that still benefit from Opus quality (e.g. Korean career documents with strong tone requirements) | `career-docs-writer`, `career-docs-reviser` |
 | `high` | sonnet | Senior sonnet judgment calls where opus isn't warranted (none currently) | — |
 | `max` | **opus only** | Deep-judgment tasks: quality scoring, cross-system audits, final review gates, architectural decisions | `doc-reviewer`, `career-docs-reviewer`, `doc-writer-explain` |

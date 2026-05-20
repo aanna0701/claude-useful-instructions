@@ -1,3 +1,7 @@
+---
+description: Scan Claude Code instruction files for token waste, report findings, and optionally apply fixes.
+---
+
 # optimize-tokens — Analyze and reduce token waste in Claude Code instructions
 
 Scan `.claude/` instruction files for token inefficiencies, report findings, and optionally apply fixes.

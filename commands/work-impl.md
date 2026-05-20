@@ -1,3 +1,7 @@
+---
+description: Implement a work item (FEAT / FIX / PERF / CHORE / TEST). Local-only, reads contract + latest review-{sha}.md.
+---
+
 # work-impl — Implement a Work Item (Local-Only)
 
 For `FEAT / FIX / PERF / CHORE / TEST`. No PR, no CI — review is a local file.

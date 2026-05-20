@@ -1,3 +1,7 @@
+---
+description: Diátaxis + Work Item documentation writer. Delegates to the diataxis-doc-system skill.
+---
+
 # write-doc — Diátaxis + Work Item Documentation
 
 Thin CLI wrapper around `diataxis-doc-system` SKILL.md. Handles mode detection and file saving only — all workflow logic lives in SKILL.md.

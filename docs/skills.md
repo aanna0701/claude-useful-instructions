@@ -144,54 +144,28 @@ All 8 principles reflected, schema contracts at boundaries, raw immutability, re
 
 Single markdown file (`{project}_pipeline_instructions.md`) containing: diagnosis table, stage definitions, agent structure, instruction set, verification checklist, usage guide.
 
+### Related (sibling skill)
+
+- **`dpipe-copilot`** — once the pipeline is built, switch to this sibling skill for run / verify / regenerate / troubleshoot.
+
 ---
 
-## html-presentation
+## dpipe-copilot
 
-HTML presentation formatting skill. Converts existing HTML slides into a standard 16:9 dark-theme slide deck using `base-template.html` CSS/JS system.
+Data-pipeline **operations** skill. Covers run / verify / regenerate / troubleshoot for an already-built pipeline (Docker + DuckDB/Parquet + video encoding stack). Catalogs common pitfalls: schema drift, image not rebuilt after dep change, in-memory stale code in long-lived containers, derived-artifact regen order.
 
-**Triggers**: "PPT 포맷 맞춰줘", "슬라이드 변환해줘", "format-presentation", "HTML 슬라이드 변환", "템플릿에 맞춰줘"
+**Triggers**: "파이프라인 다시 돌려줘", "dpipe 실행", "stage 검증", "파생물 재생성", "DuckDB 스키마 확인", "cropped_videos 재생성", "encoder 출력 검증", "viewer/container 갱신", "pipeline operations", "run dataset pipeline"
 
-### Workflow
+### When to use vs `data-pipeline-architect`
 
-```
-[Input HTML] → Phase 1: Parse    → Phase 2: Map           → Phase 3: Regenerate      → Phase 4: Verify
-               (slide extraction)   (component selection)     (base-template based)      (rule check)
-```
-
-### Core Rules
-
-1. Use `base-template.html` CSS/JS as-is — no custom styles
-2. All slides use `.slide-dark` class
-3. Only the first slide gets `.active`
-4. All slides include `.slide-label` for header label updates
-5. 16:9 aspect ratio maintained
-6. Content taken from source HTML verbatim — no text modifications
-
-### Component Catalog
-
-| Content Pattern | Component |
-|----------------|-----------|
-| Title + presenter info | `title` |
-| 3 items listed | `cards-3` |
-| 6 items listed | `grid-2x3` |
-| Linear steps | `pipeline` |
-| A → B → C data flow | `flow` |
-| Two-way comparison | `brain-split` |
-| Key numbers highlight | `stats` |
-| Item status (done/in-progress/planned) | `table` |
-| Chronological steps | `timeline` |
-| Short/mid/long-term plan | `roadmap` |
-| 4 differentiators | `advantages` |
-| Paragraph + callout box | `section + callout` |
-| Final summary | `summary` |
+| Phase | Skill |
+|-------|-------|
+| Design / architecture (pre-build) | `data-pipeline-architect` |
+| Run / verify / regenerate / troubleshoot (post-build) | `dpipe-copilot` |
 
 ### Related
 
-- **`/create-presentation`** command: Generate new presentation from content
-- **`/format-presentation`** command: Convert existing HTML to standard format
-- **`/edit-presentation`** command: Modify content in formatted presentations
-- **`/export-pdf`** command: Convert to PDF
+- **`dpipe-runner`** agent: executes pipeline stages, verifies outputs, regenerates derived artifacts
 
 ---
 
@@ -353,38 +327,3 @@ Refactor an entire C++/Python codebase to the Google Style Guide. Runs mechanica
 - **`/refactor-google-style`** command: Entry point
 - **Per-project setup**: drop `.clang-format` (Google preset, ships under `templates/google-style/`) and add a `[tool.ruff]` section to `pyproject.toml`. Do this once per repo — the skill does not auto-install into target projects.
 
----
-
-## ppt-generation
-
-Fill a pre-formatted PowerPoint template (`.potx` or `.pptx`) with content from source material. Treats the base template as an **immutable design system** — inserts content only, never modifies fonts, layouts, colors, or shapes.
-
-**Triggers**: "fill template", "populate slides", "use this template", "base PPT", ".potx", "템플릿에 내용 넣어줘", "베이스 PPT에 채워줘", "템플릿 기반으로 발표자료 만들어줘"
-
-### Non-Negotiable Rules
-
-1. Never change fonts, font sizes, bullet styles, colors, spacing, or positions
-2. Never move, resize, or delete shapes/text boxes/images
-3. Only replace placeholder text or insert into designated slots
-4. Inherit all `<a:rPr>` and `<a:pPr>` from the template
-5. Content is concise, technical, one core message per slide
-6. No decorative elements, animations, or new shapes
-
-### 8-Step Pipeline
-
-| Step | Action |
-|------|--------|
-| 1 | Template analysis (guard) — slideLayout XML, placeholders, fixed elements |
-| 2 | Slot extraction — idx, position, size, bullet hierarchy |
-| 3 | Source compression — extract key facts from source docs |
-| 4 | Slide message design — one core message per slide |
-| 5 | Content generation — phrase-first, presentation-ready |
-| 6 | XML insertion — into designated placeholders only |
-| 7 | Density check — `ppt-density-checker` agent |
-| 8 | Format compliance review — `ppt-format-reviewer` agent |
-
-### Related
-
-- **`/generate-ppt`** command: Entry point
-- **`ppt-density-checker`** agent: Detect over-dense slides
-- **`ppt-format-reviewer`** agent: Enforce template design contract

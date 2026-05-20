@@ -1,3 +1,7 @@
+---
+description: Group staged/unstaged changes by independent feature, commit each, then push.
+---
+
 # smart-git-commit-push — Analyze changes, commit by feature, and push
 
 Analyze all staged and unstaged changes, group them by independent feature/concern, create separate commits for each group, then push to remote.

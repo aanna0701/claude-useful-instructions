@@ -1,3 +1,7 @@
+---
+description: Analyze recent git commits and generate a prioritized verification/debug checklist.
+---
+
 # debug-guide — Analyze recent commits and generate a verification/debug checklist
 
 Analyze recent git commits to identify what needs checking, testing, and debugging. Produces a prioritized checklist of verification steps.

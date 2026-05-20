@@ -1,3 +1,7 @@
+---
+description: Refactor the whole codebase to the Google C++ / Python Style Guide.
+---
+
 # /refactor-google-style — Refactor codebase to Google Style Guide
 
 Apply the Google C++ / Python Style Guide across the whole repository.

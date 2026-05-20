@@ -1,3 +1,7 @@
+---
+description: View work items. Read-only, derived from .work/contracts/ + git worktree list + branch ancestry.
+---
+
 # work-status — View Work Items (Local-Only)
 
 Read-only. State is derived from `.work/contracts/` + `git worktree list` + branch ancestry. **No GitHub calls.**

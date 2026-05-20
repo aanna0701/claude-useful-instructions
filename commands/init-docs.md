@@ -1,3 +1,7 @@
+---
+description: Initialize a MkDocs-based docs site with numbered Diataxis hierarchy + work item structure.
+---
+
 # init-docs — Initialize Project Documentation Structure
 
 Create MkDocs-based doc site structure (numbered hierarchy + Diataxis) and work item structure (`work/`), with auto-generated mkdocs.yml, workflow map, and category index files.

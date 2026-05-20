@@ -1,3 +1,7 @@
+---
+description: Review recent commits and generate a prioritized action plan (verify / debug / next implementation).
+---
+
 # what-to-do — Review recent work and generate an action plan
 
 Analyze recent git commits to summarize what was done and guide next steps: verification, debugging, and implementation.

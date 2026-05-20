@@ -1,3 +1,7 @@
+---
+description: Answer questions about the codebase using GitNexus MCP tools. Read-only — never edits code.
+---
+
 # codebase-ask — Ask questions about the codebase (GitNexus-backed)
 
 Answer a question about the codebase using GitNexus MCP tools. Read-only — never edits code.

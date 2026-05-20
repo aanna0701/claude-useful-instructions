@@ -55,9 +55,8 @@ A single bundled plugin exposing four layers:
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  domain     docs · dl · career · google-style · presen-      │
-│             tation · ppt-generation · data-pipeline ·        │
-│             codebase                                         │
+│  domain     docs · dl · career · google-style ·              │
+│             data-pipeline · codebase                         │
 ├──────────────────────────────────────────────────────────────┤
 │  workflow   Local work-item flow (no PR, no CI):             │
 │             /work-plan /work-impl /work-refactor             │
@@ -75,9 +74,9 @@ A single bundled plugin exposing four layers:
 
 | Group     | Items |
 |-----------|-------|
-| Skills    | `career-docs`, `codebase-qa`, `collab-workflow`, `data-pipeline-architect`, `diagram-architect`, `diataxis-doc-system`, `google-style-refactor`, `html-presentation`, `ppt-generation` |
-| Agents    | Doc writers (`doc-writer-{explain,guide,reference,checklist,contract,task,review}`), `doc-reviewer`, `diagram-writer`, `codebase-researcher`, `debug-guide`, DL (`dl-{capture,data,model,train,eval,infra}`), career (`career-docs-{writer,reviewer,reviser}`), PPT (`ppt-*`), `google-style-refactor-*` |
-| Commands  | `/work-plan`, `/work-impl`, `/work-refactor`, `/work-review`, `/work-status`, `/write-doc`, `/init-docs`, `/sync-docs`, `/polish-doc`, `/codebase-ask`, `/smart-git-commit-push`, `/optimize-tokens`, `/debug-guide`, `/what-to-do`, `/create-presentation`, `/format-presentation`, `/export-pdf`, `/edit-presentation`, `/generate-ppt`, `/refactor-google-style`, `/setup-pre-commit` |
+| Skills    | `career-docs`, `codebase-qa`, `collab-workflow`, `data-pipeline-architect`, `dpipe-copilot`, `diagram-architect`, `diataxis-doc-system`, `google-style-refactor` |
+| Agents    | Doc writers (`doc-writer-{explain,guide,reference,checklist,contract,task,review}`), `doc-reviewer`, `diagram-writer`, `codebase-researcher`, `debug-guide`, DL (`dl-{capture,data,model,train,eval,infra}`), career (`career-docs-{writer,reviewer,reviser}`), `dpipe-runner`, `google-style-refactor-*` |
+| Commands  | `/work-plan`, `/work-impl`, `/work-refactor`, `/work-review`, `/work-status`, `/write-doc`, `/init-docs`, `/sync-docs`, `/polish-doc`, `/codebase-ask`, `/smart-git-commit-push`, `/optimize-tokens`, `/debug-guide`, `/what-to-do`, `/refactor-google-style`, `/setup-pre-commit` |
 | Hooks     | `branch-naming`, `guard-branch`, `worktree-cleanup` |
 | Rules     | `collab-workflow.md`, `review-merge-policy.md`, `pytorch-dl-standards.md`, `google-style-cpp.md`, `google-style-python.md`, `pre-commit-policy.md` |
 
@@ -170,11 +169,10 @@ Domain skills auto-fire from natural-language triggers:
 | Skill                    | Trigger examples                                                                                                |
 |--------------------------|-----------------------------------------------------------------------------------------------------------------|
 | `diataxis-doc-system`    | "Write docs", "Design doc", "API docs", "Draw diagram", "ERD" — drives `/write-doc`, `/init-docs`, `/sync-docs` |
-| `data-pipeline-architect`| "Design data pipeline", "ETL architecture"                                                                      |
+| `data-pipeline-architect`| "Design data pipeline", "ETL architecture", "데이터 파이프라인 설계해줘" (design phase)                          |
+| `dpipe-copilot`          | "파이프라인 다시 돌려줘", "stage 검증", "DuckDB 스키마 확인", "cropped_videos 재생성" (ops phase)                  |
 | `codebase-qa`            | "what breaks if I change X", "who calls Y", "blast radius", "이 함수 바꾸면 뭐 깨져?" — drives `/codebase-ask`   |
 | `career-docs`            | "자소서 써줘", "Cover letter", "경력기술서"                                                                       |
-| `html-presentation`      | "PPT format", "Slide conversion", "format-presentation"                                                          |
-| `ppt-generation`         | "템플릿에 내용 넣어줘", "fill template", ".potx"                                                                  |
 | `google-style-refactor`  | `/refactor-google-style` command                                                                                  |
 
 `pytorch-dl-standards` (rules) and the `dl-*` agents are loaded but only act when invoked.
@@ -253,8 +251,6 @@ claude-useful-instructions/
 │   ├── work-item/         #   used by /work-plan
 │   ├── google-style/      #   used by /refactor-google-style
 │   └── pre-commit/        #   used by /setup-pre-commit (local-uv + external-mirrors variants)
-├── scripts/               # Helper scripts referenced by skills/commands
-│   └── html_to_pdf.py     #   used by /export-pdf
 ├── lib/                   # Shared shell helpers
 │   └── merge-lock.sh      #   used by /work-review
 ├── docs/                  # Reference guides

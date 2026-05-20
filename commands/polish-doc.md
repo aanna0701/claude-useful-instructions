@@ -1,3 +1,7 @@
+---
+description: Apply writing-style and structural fixes directly to existing documentation.
+---
+
 # polish-doc — Polish Existing Documentation
 
 Applies writing-style and structural fixes directly to existing documents. Counterpart to `write-doc` (creates) and `doc-reviewer` (suggests only).

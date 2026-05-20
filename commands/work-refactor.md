@@ -1,3 +1,7 @@
+---
+description: Refactor a work item (REFAC only). Same inputs as /work-impl but with preservation constraints.
+---
+
 # work-refactor — Refactor a Work Item (Local-Only)
 
 For `REFAC` only. Same pipeline as `/work-impl` but with preservation constraints.
