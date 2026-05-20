@@ -2,8 +2,6 @@
 
 Personal Claude Code skill/agent/command/hook/rule library, distributed as a **Claude Code marketplace plugin**.
 
-> Install path is marketplace-only. The previous `./install.sh` bundle installer has been removed.
-
 ## Install
 
 In any Claude Code session, on any machine:
