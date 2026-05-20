@@ -1,5 +1,23 @@
 # Changelog
 
+## Unreleased — marketplace-only distribution
+
+### Breaking changes
+- **Install path is now marketplace-only.** Use `/plugin marketplace add https://github.com/aanna0701/claude-useful-instructions` + `/plugin install claude-useful-instructions@claude-useful-instructions`.
+- Removed `install.sh` and all bundle flags (`--base`, `--workflow`, `--dl`, `--all`, `--exclude`, `--interactive`, `--list`, `--uninstall`).
+- Removed `scripts/patch-hook-settings.py` (install.sh helper).
+- Removed `scripts/migrate-v1-to-v2.sh` (legacy v1→v2 migration script).
+- Removed `templates/claude/` (project-level `CLAUDE.md` template — relevant only to install.sh).
+- Removed `templates/pre-commit/` (per-project pre-commit template; configure externally per project).
+- Removed `.claude/` snapshot from repo root (stale install artifact).
+
+### Added
+- `.claude-plugin/marketplace.json` + `.claude-plugin/plugin.json` — Claude Code marketplace metadata.
+
+### Changed
+- `hooks/guard-branch`: opt-in comment updated. Marker `.claude-worktree-enabled` is now created by hand (no more `install.sh --core` / `--collab`). Hook logic unchanged.
+- README rewritten around the marketplace flow.
+
 ## v2.0.0 — PR-native workflow (upcoming)
 
 Complete redesign. State is derived from GitHub PR + git, never stored in md.

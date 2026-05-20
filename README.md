@@ -1,126 +1,94 @@
 # claude-useful-instructions
 
-Portable Claude Code configuration. Two install paths:
+Personal Claude Code skill/agent/command/hook/rule library, distributed as a **Claude Code marketplace plugin**.
 
-- **Claude Code marketplace** (user-level, all-in) — `/plugin marketplace add` + `/plugin install`. Best for cross-machine sync.
-- **`./install.sh`** (per-project, bundle-selectable) — copies into a target project's `.claude/`. Best when you want only a subset of bundles for a specific repo.
+> Install path is marketplace-only. The previous `./install.sh` bundle installer has been removed.
 
-## Layered Structure
+## Install
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  domain-*     docs · dl · career · google-style · presen-    │
-│               tation · ppt-generation · data-pipeline        │
-├──────────────────────────────────────────────────────────────┤
-│  workflow     Local work-item flow (no PR, no CI)            │
-│               (work items, CLAUDE.md, .work/contracts/,      │
-│                local review + squash-merge policy)           │
-├──────────────────────────────────────────────────────────────┤
-│  base         git hooks + commit/push helpers                │
-│               + token/debug utilities + pre-commit template  │
-└──────────────────────────────────────────────────────────────┘
-```
-
-Every bundle installs into a target project's `.claude/` (and optionally `.cursor/`, `.agent/`, project root). A global shared config lives under `~/.claude/`.
-
-## Quick Start
-
-### Option A — Claude Code marketplace (recommended for cross-machine sync)
-
-In any Claude Code session on any machine:
+In any Claude Code session, on any machine:
 
 ```
 /plugin marketplace add https://github.com/aanna0701/claude-useful-instructions
 /plugin install claude-useful-instructions@claude-useful-instructions
 ```
 
-This registers the repo as a marketplace and installs the **single bundled plugin** that exposes every `skills/`, `agents/`, `commands/`, `hooks/`, and `rules/` entry at the user level (`~/.claude/plugins/`). Updates: `git push` from this repo, then on the other machine:
+This pulls the repo into `~/.claude/plugins/marketplaces/claude-useful-instructions/` and registers every entry under `skills/`, `agents/`, `commands/`, `hooks/`, and `rules/` at the user level.
+
+### Update
+
+After `git push` on this repo:
 
 ```
 /plugin marketplace update claude-useful-instructions
 ```
 
-Uninstall: `/plugin uninstall claude-useful-instructions@claude-useful-instructions`.
+### Uninstall
 
-Notes:
-- Marketplace install is **all-in** — bundle selection (`--base`/`--workflow`/domain flags) is not exposed via the plugin system. Use Option B for per-bundle control.
-- Hooks (`branch-naming`, `guard-branch`, `worktree-cleanup`) and pre-commit templates are bundled in this plugin but Claude Code's plugin system applies hooks user-wide. If you only want them on selected projects, prefer Option B.
-- The repo must be reachable; for private mirrors authenticate via `gh auth login` or SSH on the target machine first.
-
-### Option B — `./install.sh` (per-project, bundle-selectable)
-
-```bash
-git clone https://github.com/aanna0701/claude-useful-instructions.git
-cd claude-useful-instructions
-
-# Typical: base + workflow per project
-./install.sh --base --workflow /path/to/my-project
-
-# Add a domain when needed
-./install.sh --base --workflow --dl /path/to/ml-project
-
-# Install everything
-./install.sh /path/to/project
+```
+/plugin uninstall claude-useful-instructions@claude-useful-instructions
+/plugin marketplace remove claude-useful-instructions
 ```
 
-#### Alias (optional)
+### Private mirror
 
-```bash
-CUI_DIR=~/claude-useful-instructions
-echo "alias cui-install='$CUI_DIR/install.sh'" >> ~/.bashrc
-source ~/.bashrc
+The repo is public. If you fork to a private mirror, authenticate on the target machine first (`gh auth login` or SSH key) before `/plugin marketplace add`.
 
-cui-install --list
-cui-install --base --workflow /path/to/project
+## What you get
+
+A single bundled plugin exposing four layers:
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  domain     docs · dl · career · google-style · presen-      │
+│             tation · ppt-generation · data-pipeline ·        │
+│             codebase                                         │
+├──────────────────────────────────────────────────────────────┤
+│  workflow   Local work-item flow (no PR, no CI):             │
+│             /work-plan /work-impl /work-refactor             │
+│             /work-review /work-status                        │
+├──────────────────────────────────────────────────────────────┤
+│  base       git hooks + commit/push helpers + token/debug    │
+│             utilities                                        │
+├──────────────────────────────────────────────────────────────┤
+│  rules      collab-workflow · review-merge-policy ·          │
+│             pytorch-dl-standards · google-style-{cpp,python} │
+└──────────────────────────────────────────────────────────────┘
 ```
 
-### When to pick which
+### Contents catalog
 
-| Need                                                      | Use            |
-|-----------------------------------------------------------|----------------|
-| Same setup on multiple machines, all skills/agents        | **Option A**   |
-| Per-project subset (e.g. only `base`+`workflow`)          | **Option B**   |
-| Project-local `.pre-commit-config.yaml` template install  | **Option B**   |
-| Quick try on one machine without cloning                  | **Option A**   |
-| Iterating on the bundle and want hot reload               | **Option B** (point install.sh at a worktree) |
+| Group     | Items |
+|-----------|-------|
+| Skills    | `career-docs`, `codebase-qa`, `collab-workflow`, `data-pipeline-architect`, `diagram-architect`, `diataxis-doc-system`, `google-style-refactor`, `html-presentation`, `ppt-generation` |
+| Agents    | Doc writers (`doc-writer-{explain,guide,reference,checklist,contract,task,review}`), `doc-reviewer`, `diagram-writer`, `codebase-researcher`, `debug-guide`, DL (`dl-{capture,data,model,train,eval,infra}`), career (`career-docs-{writer,reviewer,reviser}`), PPT (`ppt-*`), `google-style-refactor-*` |
+| Commands  | `/work-plan`, `/work-impl`, `/work-refactor`, `/work-review`, `/work-status`, `/write-doc`, `/init-docs`, `/sync-docs`, `/polish-doc`, `/codebase-ask`, `/smart-git-commit-push`, `/optimize-tokens`, `/debug-guide`, `/what-to-do`, `/create-presentation`, `/format-presentation`, `/export-pdf`, `/edit-presentation`, `/generate-ppt`, `/refactor-google-style` |
+| Hooks     | `branch-naming`, `guard-branch`, `worktree-cleanup` |
+| Rules     | `collab-workflow.md`, `review-merge-policy.md`, `pytorch-dl-standards.md`, `google-style-cpp.md`, `google-style-python.md` |
 
-## Bundle Matrix
+Detailed reference:
 
-| Layer    | Bundle            | Profile requires       | Contents                                                                                     |
-|----------|-------------------|------------------------|----------------------------------------------------------------------------------------------|
-| base     | `base`            | _(any)_                | `branch-naming`, `guard-branch`, `worktree-cleanup` hooks; `smart-git-commit-push`, `optimize-tokens`, `debug-guide`, `what-to-do` commands & agents; token analyzers; `.pre-commit-config.yaml` (variant auto-picked: `local-uv` for uv projects, `external-mirrors` otherwise) |
-| workflow | `workflow`        | _(any)_                | Local work-item flow (`/work-plan`, `/work-impl`, `/work-refactor`, `/work-review`, `/work-status`), `collab-workflow` skill, `templates/work-item/contract.md`, `CLAUDE.md`. **No GitHub PRs, no Actions** — `.work/contracts/{ID}-{slug}/` replaces the PR. |
-| domain   | `docs`            | _(any)_                | `diataxis-doc-system`, `diagram-architect` skills + doc/diagram agents + `/write-doc`, `/init-docs`, `/sync-docs` (v2: GitNexus + Starlight), `/polish-doc` |
-| domain   | `data-pipeline`   | `python` + `ml-gpu`    | `data-pipeline-architect` skill                                                              |
-| domain   | `codebase`        | _(any)_                | `codebase-qa` skill + `codebase-researcher` agent + `/codebase-ask` (GitNexus-backed)        |
-| domain   | `career`          | _(any)_                | `career-docs` skill + writer/reviewer/reviser agents                                         |
-| domain   | `dl`              | `python` + `ml-gpu`    | `pytorch-dl-standards` rules + DL agents (`capture`, `data`, `model`, `train`, `eval`, `infra`) |
-| domain   | `presentation`    | `presentation`         | `html-presentation` skill + slide commands + `scripts/html_to_pdf.py` PDF export             |
-| domain   | `ppt-generation`  | `presentation`         | PPT template-based generation (`/generate-ppt`, density/format agents)                       |
-| domain   | `google-style`    | `python` or `cpp`      | Google C++/Python Style Guide rules + skill + `/refactor-google-style` + agents + `.clang-format` |
+| Group                 | Catalog                                         |
+|-----------------------|-------------------------------------------------|
+| Skills                | [docs/skills.md](docs/skills.md)                |
+| Agents                | [docs/agents.md](docs/agents.md)                |
+| Commands              | [docs/commands.md](docs/commands.md)            |
+| Workflow architecture | [docs/collab-workflow.md](docs/collab-workflow.md) |
 
-`detect_project_profile` tags the target from actual files (`pyproject.toml`, `uv.lock`, `astro.config.mjs`, `package.json`, CUDA in `docker-compose*.yml`, `CMakeLists.txt`, `Cargo.toml`, `go.mod`, HTML/PDF references). Bundles whose requirements don't intersect the profile are auto-skipped from `--all` and default installs. To install anyway, pass the explicit `--<bundle>` flag — explicit naming always wins.
+## Per-project opt-ins
 
-## Install Options
+A few features need a per-project marker because they alter the project's git workflow:
 
-```bash
-./install.sh --list                                     # show bundles
-./install.sh --all /path/to/project                     # install everything
-./install.sh --base --workflow /path/to/project         # typical
-./install.sh --exclude dl /path/to/project              # all except dl
-./install.sh --interactive /path/to/project             # menu
+| Feature                       | Opt-in                                              |
+|-------------------------------|-----------------------------------------------------|
+| `guard-branch` worktree redirect | `touch .claude-worktree-enabled` in the repo root |
+| `collab-workflow` (`/work-*`)    | `mkdir -p .work/contracts` and add `.work/` to `.gitignore` |
 
-./install.sh --uninstall /path/to/project               # remove all
-./install.sh --uninstall --workflow /path/to/project    # remove workflow only
-```
-
-Breaking change: the old `--core` and `--collab` flags are **removed**. Use `--base` and `--workflow`.
-
----
+Without these markers, the corresponding hooks and commands stay dormant on that project. This is intentional: a user-level marketplace install should not silently change behavior of every repo on the machine.
 
 ## base layer — git workflow hooks
 
-The `base` bundle installs the strict worktree-based git workflow:
+Strict worktree-based flow. When active in a project:
 
 ```
 Code edit on main repo
@@ -139,50 +107,27 @@ Local merge into parent
 
 ### Branch convention
 
-| Type     | Pattern                        | Example                       |
-|----------|--------------------------------|-------------------------------|
-| feat     | `feature-{slug}`               | `feature-user-auth`           |
-| fix      | `feature-fix-{slug}`           | `feature-fix-login-crash`     |
-| refac    | `feature-refac-{slug}`         | `feature-refac-db-schema`     |
-| docs     | `feature-docs-{slug}`          | `feature-docs-api-guide`      |
-| perf     | `feature-perf-{slug}`          | `feature-perf-query-cache`    |
-| test     | `feature-test-{slug}`          | `feature-test-auth-fuzz`      |
-| chore    | `feature-chore-{slug}`         | `feature-chore-bump-deps`     |
-| audit    | `feature-audit-{slug}`         | `feature-audit-ci-topology`   |
-| adhoc    | `feature-adhoc-{slug}`         | `feature-adhoc-0408-1530`     |
+| Type   | Pattern                  | Example                     |
+|--------|--------------------------|-----------------------------|
+| feat   | `feature-{slug}`         | `feature-user-auth`         |
+| fix    | `feature-fix-{slug}`     | `feature-fix-login-crash`   |
+| refac  | `feature-refac-{slug}`   | `feature-refac-db-schema`   |
+| docs   | `feature-docs-{slug}`    | `feature-docs-api-guide`    |
+| perf   | `feature-perf-{slug}`    | `feature-perf-query-cache`  |
+| test   | `feature-test-{slug}`    | `feature-test-auth-fuzz`    |
+| chore  | `feature-chore-{slug}`   | `feature-chore-bump-deps`   |
+| audit  | `feature-audit-{slug}`   | `feature-audit-ci-topology` |
+| adhoc  | `feature-adhoc-{slug}`   | `feature-adhoc-0408-1530`   |
 
 `adhoc` is auto-created by `guard-branch` with a `MMDD-HHMM` stamp; manual slugs are also accepted. Enforced by `hooks/branch-naming`.
 
 ### Hooks
 
-| Hook              | Event                          | What it does                                                 |
-|-------------------|--------------------------------|--------------------------------------------------------------|
-| `branch-naming`   | PreToolUse (Bash)              | Blocks non-`feature-*` branch names                          |
-| `guard-branch`    | PreToolUse (Edit/Write)        | Redirects code edits to a feature worktree (no PR)           |
-| `worktree-cleanup`| PostToolUse (Bash) + Stop      | After `git merge`: deletes merged worktrees, local + remote branches, and `.work/contracts/{ID}-{slug}/` |
-
-### Pre-commit template (two variants, auto-picked)
-
-Shipped as part of `base`. cui-install picks a variant based on the target project and installs it unconditionally at `.pre-commit-config.yaml`:
-
-| Variant           | Condition                                                              | Python hooks source                                      |
-|-------------------|------------------------------------------------------------------------|----------------------------------------------------------|
-| `local-uv`        | `uv.lock` present, or `pyproject.toml` has `[tool.uv]` / `[dependency-groups]` | `repo: local` + `entry: uv run ...` — `uv.lock` is SSOT |
-| `external-mirrors`| otherwise                                                              | pinned `rev:` on `ruff-pre-commit` / `mirrors-mypy` / `pyright-python` |
-
-Both variants share C++ and general hooks (clang-format, trailing-whitespace, end-of-file-fixer, check-yaml, check-added-large-files).
-
-| Language | Format      | Lint | Type          |
-|----------|-------------|------|---------------|
-| Python   | ruff-format | ruff | pyright, mypy |
-| C++      | clang-format| —    | —             |
-| General  | end-of-file-fixer, trailing-whitespace | check-yaml, check-added-large-files (≤1000 kB) | — |
-
-Variants live under `templates/pre-commit/variants/`. Adding a new variant (e.g. for Poetry, Hatch, or pip-tools projects) means dropping a `.yaml` file there and teaching `_select_pre_commit_variant` to pick it — not forking this repo per-project.
-
-cui-install **overwrites** `.pre-commit-config.yaml` on every run. Per-project divergence is not supported as a design decision: if a project shape needs a different variant, contribute the variant upstream rather than diverge locally. This also applies to `script:*` installs: each `.py` script is rewritten on every run and post-processed by the target project's own `ruff format`/`ruff check --fix` if `pyproject.toml` declares `[tool.ruff]`, so the installed version conforms to the target's lint rules even when CUI's own ruff settings differ.
-
----
+| Hook              | Event                   | What it does                                                                                            |
+|-------------------|-------------------------|---------------------------------------------------------------------------------------------------------|
+| `branch-naming`   | PreToolUse (Bash)       | Blocks non-`feature-*` branch names                                                                     |
+| `guard-branch`    | PreToolUse (Edit/Write) | Redirects code edits to a feature worktree (no PR). Opt-in via `.claude-worktree-enabled`               |
+| `worktree-cleanup`| PostToolUse (Bash) + Stop | After `git merge`: deletes merged worktrees, local + remote branches, and `.work/contracts/{ID}-{slug}/` |
 
 ## workflow layer — local work-item workflow (no PR)
 
@@ -195,34 +140,33 @@ cui-install **overwrites** `.pre-commit-config.yaml` on every run. Per-project d
 ```
 
 - **5 commands, 0 flags**: `/work-plan`, `/work-impl`, `/work-refactor`, `/work-review`, `/work-status`
-- **1 directory per work item**: `.work/contracts/{ID}-{slug}/` — `contract.md` (spec), `.ready` (sentinel), `review-{sha}.md` (one per review pass). The whole `.work/` tree is gitignored.
-- **State is derived** from `.work/contracts/` + `git worktree list` + branch ancestry
-- **No CI**: pre-commit is the only automated gate. The user opted out of GitHub Actions to control cost.
+- **1 directory per work item**: `.work/contracts/{ID}-{slug}/` — `contract.md` (spec), `.ready` (sentinel), `review-{sha}.md` (one per review pass). The whole `.work/` tree must be gitignored.
+- **State is derived** from `.work/contracts/` + `git worktree list` + branch ancestry.
+- **No CI**: pre-commit is the only automated gate. Configure pre-commit per project as you see fit; this plugin no longer ships a pre-commit template.
 - **Squash merge only**, performed locally by `/work-review` on APPROVE. APPROVE = squash-merge + `rm -rf .work/contracts/{ID}-{slug}/` (= "PR close").
 - Optional `git push` keeps a remote mirror, but no PR is opened.
 
-Executor is always Claude Code in-session. Cursor and Codex paths were removed.
-
----
+Executor is always Claude Code in-session.
 
 ## domain layer — task-specific bundles
 
-| Bundle           | Trigger examples (skills auto-fire)                                  |
-|------------------|---------------------------------------------------------------------|
-| `docs`           | "Write docs", "Design doc", "API docs", "Draw diagram", "ERD", "Sync docs" — `/sync-docs` v2 auto-detects Starlight wiki and GitNexus code index for code-level doc sync |
-| `data-pipeline`  | "Design data pipeline", "ETL architecture"                          |
-| `codebase`       | "what breaks if I change X", "who calls Y", "blast radius", "이 함수 바꾸면 뭐 깨져?" — `/codebase-ask`, GitNexus required |
-| `career`         | "자소서 써줘", "Cover letter", "경력기술서"                          |
-| `dl`             | PyTorch DL standards; manual invocation of DL agents                |
-| `presentation`   | "PPT format", "Slide conversion", "format-presentation"             |
-| `ppt-generation` | "템플릿에 내용 넣어줘", "fill template", ".potx"                    |
-| `google-style`   | `/refactor-google-style` command                                     |
+Domain skills auto-fire from natural-language triggers:
 
-Install only the domains you need. Domain bundles are independent of each other.
+| Skill                    | Trigger examples                                                                                                |
+|--------------------------|-----------------------------------------------------------------------------------------------------------------|
+| `diataxis-doc-system`    | "Write docs", "Design doc", "API docs", "Draw diagram", "ERD" — drives `/write-doc`, `/init-docs`, `/sync-docs` |
+| `data-pipeline-architect`| "Design data pipeline", "ETL architecture"                                                                      |
+| `codebase-qa`            | "what breaks if I change X", "who calls Y", "blast radius", "이 함수 바꾸면 뭐 깨져?" — drives `/codebase-ask`   |
+| `career-docs`            | "자소서 써줘", "Cover letter", "경력기술서"                                                                       |
+| `html-presentation`      | "PPT format", "Slide conversion", "format-presentation"                                                          |
+| `ppt-generation`         | "템플릿에 내용 넣어줘", "fill template", ".potx"                                                                  |
+| `google-style-refactor`  | `/refactor-google-style` command                                                                                  |
 
-### GitNexus setup (optional — enhances `/sync-docs`)
+`pytorch-dl-standards` (rules) and the `dl-*` agents are loaded but only act when invoked.
 
-GitNexus indexes your codebase into a knowledge graph (symbols, call chains, clusters, processes). When available, `/sync-docs` v2 uses it for code-level documentation sync instead of file-level diffs.
+### GitNexus setup (optional — enhances `/sync-docs` and `/codebase-ask`)
+
+GitNexus indexes your codebase into a knowledge graph. When available, `/sync-docs` v2 and `/codebase-ask` use it for code-level analysis instead of file-level diffs.
 
 ```bash
 # 1. Install
@@ -244,52 +188,40 @@ Add `.gitnexus/` to your project's `.gitignore`:
 echo '.gitnexus/' >> .gitignore
 ```
 
-`/sync-docs` auto-detects GitNexus — no flags needed. Without it, sync falls back to git-diff-based analysis.
-
 | With GitNexus | Without |
 |---|---|
 | "function `train()` added `optimizer` param, callers updated — regenerate training-config.md from actual code" | "trainer.py changed — update docs that reference it" |
 
 Re-index after major changes: `gitnexus analyze`. Stale index (>24h) triggers a warning.
 
----
-
-## Reference
-
-| Group               | Catalog                                                                                 |
-|---------------------|-----------------------------------------------------------------------------------------|
-| Skills              | [docs/skills.md](docs/skills.md)                                                        |
-| Agents              | [docs/agents.md](docs/agents.md)                                                        |
-| Commands            | [docs/commands.md](docs/commands.md)                                                    |
-| Workflow architecture | [docs/collab-workflow.md](docs/collab-workflow.md)                                    |
-
 ## Project structure
 
 ```
 claude-useful-instructions/
-├── skills/           # Auto-triggered skills (diataxis, diagram, data-pipeline, codebase-qa,
-│                     #   collab-workflow, html-presentation, career-docs, ppt-generation,
-│                     #   google-style-refactor)
-├── agents/           # Subagents (doc writers, diagram writer, debug-guide, token analyzers,
-│                     #   codebase-researcher, dl-*, career-docs-*,
-│                     #   ppt-*, google-style-*)
-├── commands/         # Slash commands (/work-*, /write-doc, /init-docs, /sync-docs, /codebase-ask,
-│                     #   /smart-git-commit-push, /optimize-tokens, /debug-guide, /what-to-do,
-│                     #   /create-presentation, /format-presentation, /export-pdf, /generate-ppt,
-│                     #   /refactor-google-style)
-├── rules/            # Code standards (collab-workflow.md, review-merge-policy.md,
-│                     #   pytorch-dl-standards.md, google-style-*.md)
-├── hooks/            # Claude Code hooks (branch-naming, guard-branch, worktree-cleanup)
-├── templates/        # Installable templates (pre-commit, work-item, claude/)
-├── scripts/          # Utility scripts (html_to_pdf.py, patch-hook-settings.py)
-├── lib/              # Shared helpers (merge-lock.sh)
-├── docs/             # Reference guides
-└── install.sh        # Bundle-based installer (+ --uninstall)
+├── .claude-plugin/
+│   ├── marketplace.json   # /plugin marketplace add target
+│   └── plugin.json        # plugin metadata
+├── skills/                # Auto-triggered skills
+├── agents/                # Subagents
+├── commands/              # Slash commands
+├── rules/                 # Code standards
+├── hooks/                 # Claude Code hooks
+├── templates/             # Templates referenced by skills/commands
+│   ├── work-item/         #   used by /work-plan
+│   └── google-style/      #   used by /refactor-google-style
+├── scripts/               # Helper scripts referenced by skills/commands
+│   └── html_to_pdf.py     #   used by /export-pdf
+├── lib/                   # Shared shell helpers
+│   └── merge-lock.sh      #   used by /work-review
+├── docs/                  # Reference guides
+├── CHANGELOG.md
+└── README.md
 ```
 
 ## Adding new configuration
 
 1. Add files to `skills/`, `agents/`, `commands/`, `rules/`, or `hooks/`.
-2. Register in `install.sh` under the appropriate `BUNDLE_*` array.
-3. `git commit && git push`.
-4. On other machines: `git pull && ./install.sh …`.
+2. `git commit && git push`.
+3. On other machines: `/plugin marketplace update claude-useful-instructions`.
+
+No registration step — the plugin loader picks up every file in those directories.

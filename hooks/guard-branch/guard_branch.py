@@ -173,7 +173,7 @@ def main() -> None:
     if _is_orchestration_file(rel_path):
         return
 
-    # Only activate for projects that opted in (install.sh --core or --collab)
+    # Only activate for projects that opted in (touch .claude-worktree-enabled in repo root)
     if not (root / ".claude-worktree-enabled").exists():
         return
 
