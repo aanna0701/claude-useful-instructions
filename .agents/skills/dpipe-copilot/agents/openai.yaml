@@ -4,4 +4,5 @@ source: "skills/dpipe-copilot/SKILL.md"
 generated_from: "skills/dpipe-copilot"
 codex_generation:
   mode: "auto-only"
+  build_strategy: "clear-and-rebuild"
   manual_override_supported: false

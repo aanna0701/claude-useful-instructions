@@ -5,7 +5,20 @@ const path = require("path");
 
 const repoRoot = path.resolve(__dirname, "..");
 const skillsRoot = path.join(repoRoot, "skills");
+const generatedSkillsRoot = path.join(repoRoot, ".agents", "skills");
 const generatedManifestPath = path.join(repoRoot, ".codex", "generated", "skills-manifest.json");
+
+function listDirectories(dirPath) {
+  if (!fs.existsSync(dirPath)) {
+    return [];
+  }
+
+  return fs
+    .readdirSync(dirPath, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort();
+}
 
 function parseFrontmatter(sourceText) {
   if (!sourceText.startsWith("---\n")) {
@@ -69,12 +82,34 @@ function validateReferences(skillDir, sourceText) {
   }
 }
 
+function validateGeneratedSkills(skillDirs) {
+  const generatedSkillDirs = listDirectories(generatedSkillsRoot);
+  const sourceSkillSet = new Set(skillDirs);
+
+  for (const generatedSkillName of generatedSkillDirs) {
+    if (!sourceSkillSet.has(generatedSkillName)) {
+      fail(
+        `Legacy generated skill directory detected: .agents/skills/${generatedSkillName}. ` +
+          "Run `npm run build:codex` to clean stale generated files.",
+      );
+      continue;
+    }
+
+    const generatedSkillPath = path.join(generatedSkillsRoot, generatedSkillName, "SKILL.md");
+    const generatedMetadataPath = path.join(generatedSkillsRoot, generatedSkillName, "agents", "openai.yaml");
+
+    if (!fs.existsSync(generatedSkillPath)) {
+      fail(`Missing generated skill file: ${path.relative(repoRoot, generatedSkillPath)}`);
+    }
+
+    if (!fs.existsSync(generatedMetadataPath)) {
+      fail(`Missing generated metadata file: ${path.relative(repoRoot, generatedMetadataPath)}`);
+    }
+  }
+}
+
 function main() {
-  const skillDirs = fs
-    .readdirSync(skillsRoot, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => entry.name)
-    .sort();
+  const skillDirs = listDirectories(skillsRoot);
 
   for (const skillName of skillDirs) {
     const skillDir = path.join(skillsRoot, skillName);
@@ -109,6 +144,8 @@ function main() {
   if (!fs.existsSync(generatedManifestPath)) {
     fail("Missing generated manifest. Run `npm run build:codex` first.");
   }
+
+  validateGeneratedSkills(skillDirs);
 
   if (process.exitCode) {
     process.exit(process.exitCode);

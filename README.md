@@ -39,6 +39,7 @@ Generated outputs:
 Current scope:
 
 - `skills/` are supported for automatic conversion
+- each build clears generated Codex outputs before rebuilding
 - `commands/`, `hooks/`, and `rules/` remain intentionally unsupported in the generator
 
 ### Per-project setup (run once per repo)

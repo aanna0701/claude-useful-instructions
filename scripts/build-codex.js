@@ -12,6 +12,10 @@ function ensureDir(dirPath) {
   fs.mkdirSync(dirPath, { recursive: true });
 }
 
+function removeDir(dirPath) {
+  fs.rmSync(dirPath, { recursive: true, force: true });
+}
+
 function readText(filePath) {
   return fs.readFileSync(filePath, "utf8");
 }
@@ -22,6 +26,10 @@ function writeText(filePath, content) {
 }
 
 function listDirectories(dirPath) {
+  if (!fs.existsSync(dirPath)) {
+    return [];
+  }
+
   return fs
     .readdirSync(dirPath, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
@@ -125,7 +133,8 @@ function buildOpenAiYaml(metadata) {
     `source: ${yamlEscape(metadata.source)}`,
     `generated_from: ${yamlEscape(metadata.generatedFrom)}`,
     "codex_generation:",
-    "  mode: \"auto-only\"",
+    '  mode: "auto-only"',
+    '  build_strategy: "clear-and-rebuild"',
     "  manual_override_supported: false",
     "",
   ].join("\n");
@@ -140,13 +149,21 @@ function collectCommandNames() {
     .sort();
 }
 
-function main() {
+function resetGeneratedOutputs() {
+  removeDir(outputRoot);
+  removeDir(codexRoot);
   ensureDir(outputRoot);
   ensureDir(codexRoot);
+}
 
+function main() {
+  resetGeneratedOutputs();
+
+  const sourceSkillNames = listDirectories(skillsRoot);
   const manifest = {
     policy: {
       mode: "auto-only",
+      buildStrategy: "clear-and-rebuild",
       manualOverrides: false,
       unsupportedKinds: ["commands", "hooks", "rules"],
     },
@@ -156,7 +173,7 @@ function main() {
     },
   };
 
-  for (const skillName of listDirectories(skillsRoot)) {
+  for (const skillName of sourceSkillNames) {
     const skillDir = path.join(skillsRoot, skillName);
     const sourcePath = path.join(skillDir, "SKILL.md");
     if (!fs.existsSync(sourcePath)) {
@@ -202,13 +219,14 @@ function main() {
     "",
     "- Source of truth: `skills/`",
     "- Generated skills: `.agents/skills/`",
+    "- Build strategy: clear `.agents/skills/` and `.codex/generated/`, then rebuild from source",
     "- Manual overrides: not supported in this version",
     "- Unsupported kinds remain listed in `skills-manifest.json` until a safe mapping exists",
     "",
   ].join("\n");
   writeText(path.join(codexRoot, "README.md"), readme);
 
-  process.stdout.write(`Generated ${manifest.skills.length} Codex skill artifacts.\n`);
+  process.stdout.write(`Generated ${manifest.skills.length} Codex skill artifacts with clear-and-rebuild.\n`);
 }
 
 main();

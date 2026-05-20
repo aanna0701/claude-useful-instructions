@@ -4,4 +4,5 @@ source: "skills/data-pipeline-architect/SKILL.md"
 generated_from: "skills/data-pipeline-architect"
 codex_generation:
   mode: "auto-only"
+  build_strategy: "clear-and-rebuild"
   manual_override_supported: false

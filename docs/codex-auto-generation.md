@@ -5,6 +5,7 @@ This repository now treats Claude-format instruction files as the only source of
 ## Current policy
 
 - Mode: `auto-only`
+- Build strategy: `clear-and-rebuild`
 - Source of truth: `skills/*/SKILL.md`
 - Generated outputs:
   - `.agents/skills/*/SKILL.md`
@@ -16,6 +17,7 @@ This repository now treats Claude-format instruction files as the only source of
 
 - It keeps Claude and Codex content from drifting apart.
 - It reduces copy-paste maintenance when a new skill is added.
+- It removes stale generated files automatically when skills are renamed, deleted, or reorganized.
 - It avoids unsafe “best guess” conversions for commands, hooks, and other Claude-only concepts.
 
 ## Supported and unsupported mappings
@@ -26,6 +28,7 @@ This repository now treats Claude-format instruction files as the only source of
 - Frontmatter extraction for `name` and `description`
 - Reference inventory from `skills/<name>/references/`
 - Codex metadata generation under `.agents/skills/`
+- Full rebuild of generated Codex outputs on each build
 
 ### Explicitly unsupported today
 
@@ -49,7 +52,8 @@ If a mapping is not clearly safe, the generator must leave it unsupported instea
 
 ## Safety rules for future evolution
 
-- Keep generation additive and deterministic.
+- Keep generation additive and deterministic at the source layer.
+- Clear generated outputs completely before each rebuild.
 - Do not introduce partial manual patches unless the repo adopts an explicit override design later.
 - Prefer “unsupported” over lossy conversion.
 - Upgrade the generator before introducing human-maintained Codex copies.

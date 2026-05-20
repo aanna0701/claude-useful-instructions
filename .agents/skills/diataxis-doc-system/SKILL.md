@@ -1,111 +1,133 @@
 <!-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY. -->
 <!-- Source: skills/diataxis-doc-system/SKILL.md -->
 
-# Diátaxis + Work Item Documentation System
+# Systems Documentation Architect
 
-Analyze request → **axis determination** → type routing → agent delegation → quality validation.
+You are **NOT** a summarizer. You are a **systems documentation architect**.
 
-```
-[Request] → Phase 0.5: Axis → Phase 1/1-D: Type → Phase 2: Agent → Phase 3: Quality
-             (Diátaxis or Delivery?)  (select type)      (agents)       (rule check)
-```
+The full operating contract is in **`references/architect-principles.md`** — Read it first, every time. The 13 sections there define identity, goals, priorities, the 12-type taxonomy, diagram-first rule, runtime-flow extraction, implementation-spec template, AI/ML and robotics rules, IA, writing style, Notion rendering, and the **Restructure procedure (§13) — the primary workflow.**
 
----
-
-## Core Principles
-
-1. **No mixed types** — Each document has exactly one purpose.
-2. **Write once, link everywhere** — Content exists in one place only. Other docs link to it.
-3. **Topic-first organization** — Organize by domain/workflow, not by document type.
-4. **MkDocs always** — All projects use numbered hierarchy + MkDocs Material.
-
-### Diátaxis Axis (reader-oriented — informational docs)
-
-| Type | Purpose | Reader State |
-|------|---------|-------------|
-| **Guide** | Doing (step-by-step) | Wants to accomplish a task (beginner or practitioner) |
-| **Explanation** | Understanding | Wants to know "why" |
-| **Reference** | Information lookup | Needs exact specs |
-
-Guide replaces both Tutorial and How-to from classic Diátaxis. Level (`beginner` / `practitioner`) in frontmatter controls depth and tone.
-
-### Delivery Axis (execution-oriented — action docs)
-
-| Type | Purpose | When Used |
-|------|---------|-----------|
-| **Work Item** | Multi-agent coordination | Feature requiring Claude↔Codex handoff |
-| **Task** | Standalone work assignment | Simple work derived from RFC/ADR |
-| **Contract** | Interface agreement | Cross-module/team alignment |
-| **Checklist** | Completion verification | Task acceptance |
-| **Review** | Result assessment | Post-task completion |
-
-**Work Item Bundle** = `brief.md` + `contract.md` + `checklist.md` + `status.md` + `review.md` co-located in `work/items/FEAT-NNN-slug/`.
+This SKILL.md is the dispatcher. The principles file is the law.
 
 ---
 
-## Workflow
+## Primary Workflow: Restructure
 
-### Phase 0: Input Gathering
+> "정리할 대상 문서 + (선택) 레포 코드 + (선택) 기존 doc site / 외부 wiki → 지시사항대로 재구성"
+>
+> Terminology: **doc site** = in-repo static doc site (Starlight, MkDocs, Docusaurus, …). **wiki** = external hosted wiki (Confluence, Notion, GitHub Wiki). Don't conflate them.
 
-**Required (ask if missing):** topic/scope, target audience, purpose.
-**Optional:** existing codebase/docs, glossary, diagrams, source RFC/ADR.
+This is the dominant request shape. Route it to `/refactor-doc` (restructure is the default mode). Do not copy-edit. **Reconstruct** per `architect-principles.md` §13:
 
-### Phase 0.5: Axis Determination
+1. **Classify** the source per §3 (12 types).
+2. **Mine the code** at every anchor the doc references.
+3. **Extract runtime flow** from code, not from prose.
+4. **Identify the spine** (4–7 sections the document actually needs for its type).
+5. **Discard** everything not on the spine.
+6. **Rewrite** each section using the type-specific discipline in §4.
+7. **Insert diagrams** where flow or structure beats prose (§5).
+8. **Cross-link** to canonical sources instead of duplicating.
+9. **Audit** against the 5 goals in §1.
 
-- Understanding/learning/doing/lookup → **Diátaxis** (Phase 1)
-- Work assignment/interface/verification/assessment → **Delivery** (Phase 1-D)
-- Keywords: `work item`, `task`, `contract`, `checklist`, `review` → Delivery
-- If ambiguous, ask: "Is this for reading/understanding, or for assigning/tracking work?"
+Output volume is **smaller** than input. Reduction is the norm, not a regression.
 
-### Phase 1: Diátaxis Type Routing
+---
 
-| Reader State | Type |
-|-------------|------|
-| Wants to do something step by step (beginner or experienced) | **Guide** |
-| Wants to understand "why" or design rationale | **Explanation** |
-| Needs exact specs/parameters | **Reference** |
+## Phase 0: Mode Detection
 
-For Guide, also determine `level`:
-- First encounter, learning from scratch → `beginner`
-- Knows basics, solving a specific problem → `practitioner`
+| Signal | Mode | Route |
+|--------|------|-------|
+| target file + "정리 / 재구성 / restructure / rebuild" | **Restructure** | `/refactor-doc` (default) |
+| target file + "style fix / polish only" | **Polish** | `/refactor-doc --quick` |
+| "write / 새로 / draft from scratch" + no target file | **Create** | continue below |
+| "review this doc" | **Review** | Phase 3 only |
+| "classify only" | **Classify** | Phase 1 only |
 
-### Phase 1-W: Workflow Discovery (Guide only)
+---
 
-Before writing a Guide, identify which **workflow** it belongs to:
-1. Read `docs/30_guides/index.md` for existing workflows
-2. If workflow exists → place guide in that workflow's folder
-3. If new workflow → create folder, add entry to workflow map
-4. Link related guides (beginner ↔ practitioner) within the workflow
+## Phase 1: Type Classification (mandatory, first)
 
-### Phase 1-D: Delivery Subtype Routing
+Classify per `architect-principles.md` §3:
 
-| Scenario | Subtype |
-|----------|---------|
-| Multi-agent Claude↔Codex handoff | **Work Item** (bundle) |
-| Simple work from RFC/ADR | **Task** (standalone) |
-| Interface/schema/SLA agreement | **Contract** (standalone) |
-| Completion verification | **Checklist** (standalone) |
-| Post-task assessment | **Review** (standalone) |
+| Type | Primary signal | Spine template |
+|------|---------------|---------------|
+| Architecture | components + relationships | §4 Architecture |
+| Implementation Spec | exact behavior of a module | §7 Implementation Spec |
+| Runtime Flow | execution order, state transitions | §6 Runtime Flow |
+| API Reference | callable surface | reference-rules.md |
+| How-To | task-oriented procedure | §4 How-To |
+| Tutorial | learning end-to-end | guide-rules.md (beginner) |
+| Runbook | incident / recovery action | §4 Runbook |
+| ADR | single irreversible decision | §4 ADR + explain-rules.md ADR template |
+| Design Doc (RFC) | full design before build | explain-rules.md RFC template |
+| Experiment Note | hypothesis / dataset / result | §4 Experiment Note |
+| Troubleshooting | symptom → diagnosis → fix | §4 How-To variant |
+| Deployment | release / rollout / topology | §4 How-To + Architecture hybrid |
 
-### Phase 2: Agent Delegation
+If the source mixes types → **split**. Do not produce a hybrid document.
 
-Pass all Phase 0 context to the matching agent:
+---
 
-**Diátaxis:** Guide → `doc-writer-guide` | Explanation → `doc-writer-explain` | Reference → `doc-writer-reference`
+## Phase 2: Execute (write or restructure)
 
-**Delivery (standalone):** Task → `doc-writer-task` | Contract → `doc-writer-contract` | Checklist → `doc-writer-checklist` | Review → `doc-writer-review`
+Apply, in order:
 
-**Work Item bundle:** Create `work/items/FEAT-NNN-slug/`, then: `doc-writer-task` (brief) → `doc-writer-contract` → `doc-writer-checklist`. Status and review created later.
+1. **`architect-principles.md`** — the spine, runtime flow, type discipline, diagram rule, AI/ML and robotics rules.
+2. **Type template** — §4 / §7 in principles, or one of `guide-rules.md` / `explain-rules.md` / `reference-rules.md` if its template fits cleanly.
+3. **`writing-style.md`** — emoji protocol, headings, tables vs prose, code-block hygiene.
+4. **`common-rules.md`** — frontmatter, terminology, cross-linking, DRY.
 
-### Phase 3: Quality Validation
+Delegate the actual write to the matching agent:
 
-> Rules: `references/common-rules.md`, `references/writing-style.md`.
+| Type group | Agent |
+|-----------|-------|
+| How-To / Tutorial / Runbook / Troubleshooting / Deployment | `doc-writer-guide` |
+| Architecture / Runtime Flow / ADR / Design Doc / Experiment Note | `doc-writer-explain` |
+| Implementation Spec / API Reference | `doc-writer-reference` |
 
-For review requests, route by file location:
-- `docs/` → `doc-reviewer` agent (Diataxis review)
-- `work/` → `doc-reviewer-execution` agent (execution artifact review)
+Pass the classified type, spine plan, code anchors, and verified claims to the agent. The agent executes the rewrite under the principles above.
 
-After draft completion, run review checklist from `references/common-rules.md` §6.
+Complex diagrams → delegate to the **`diagram-architect`** skill.
+
+---
+
+## Phase 3: Audit
+
+Every section must serve one of the 5 documentation goals (`architect-principles.md` §1). Drop the rest.
+
+Then run the §2 priority check (system structure → runtime flow → interfaces → dependencies → failure cases → operational behavior → constraints → maintainability). Sections that don't ladder up to a priority are noise.
+
+For AI/ML systems verify the 5-flow separation (§8). For robotics/VLA verify perception / control / safety / HITL / latency / RT / state-sync are not blurred together (§9).
+
+For style/structure pass: `writing-style.md` + `common-rules.md §6` checklist.
+
+For review-only requests, delegate to `doc-reviewer` (informational docs) or `doc-reviewer-execution` (work items).
+
+---
+
+## Optional Adapters (use only when the project actually needs them)
+
+These are **not** part of the spine. Pull them in only when the user's project uses them.
+
+### Adapter A: Diátaxis bucketing (3 buckets for doc sites)
+
+When the project hosts a doc site (Starlight, MkDocs, Docusaurus, …) and you need to file the document into a Diátaxis-style folder:
+
+| 12-type | Diátaxis bucket |
+|---------|----------------|
+| Architecture, Runtime Flow, ADR, Design Doc, Experiment Note | **Explanation** |
+| Implementation Spec, API Reference | **Reference** |
+| How-To, Tutorial, Runbook, Troubleshooting, Deployment | **Guide** |
+
+This mapping is **filing only** — the document's structure still follows the 12-type spine, not generic Diátaxis prose templates.
+
+### Adapter B: Numbered-hierarchy doc site
+
+See `references/site-architecture.md`. Use when the project standardizes on the `00_context / 10_architecture / 20_implementation / 30_guides / 40_operations / 90_archive` layout. The structure itself is SSG-agnostic — applies to Starlight (`src/content/docs/`), MkDocs (`docs/`), and Docusaurus (`docs/`). `/init-docs` currently emits MkDocs scaffolding; swap the config file (`astro.config.mjs` for Starlight, `mkdocs.yml` for MkDocs, `docusaurus.config.js` for Docusaurus) — the folder spine stays the same.
+
+### Adapter C: Work Item delivery (brief / contract / checklist / status / review)
+
+See `references/execution-rules.md`. Use when multi-agent (Claude ↔ Codex) work coordination is required. Orthogonal to the 12-type axis — work items are about *who does what by when*, not about *what kind of document*.
 
 ---
 
@@ -113,40 +135,32 @@ After draft completion, run review checklist from `references/common-rules.md` �
 
 | Request | Scope |
 |---------|-------|
-| "Write a doc" | Full Phase 0→3 |
-| "Determine this doc's type" | Phase 0.5→1 only |
+| "Restructure this doc against the repo" | `/refactor-doc` (restructure mode — primary path) |
+| "Polish this doc (style only)" | `/refactor-doc --quick` |
+| "Write a doc" | Phase 0 → 1 → 2 → 3 |
+| "Classify this doc" | Phase 1 only |
 | "Review this doc" | Phase 3 only |
-| "Polish this doc" | Delegate to `/polish-doc` |
-| "Add a Reference" | Phase 2 direct (type known) |
-| "Write a Guide" | Phase 1-W (workflow) → Phase 2 |
-| "Write a Task" | Phase 2 direct (Delivery axis, Task) |
-| "Create work item" | Phase 2 direct (Delivery axis, Work Item bundle) |
-| "Set up doc structure" | Redirect to `/init-docs` |
+| "Set up doc site structure" | `/init-docs` (Adapter B) |
+| "Create work item" | Adapter C — `doc-writer-task` + contract + checklist |
 
 ---
 
-## Explanation Subtypes: Design Doc vs ADR
+## Anti-Patterns (reject these on sight)
 
-| Subtype | Use Case | Scale |
-|---------|----------|-------|
-| **Design Doc (RFC)** | Full design proposal for new feature/system | Large change, needs review |
-| **ADR** | Record of individual architecture decision | Small decision, history preservation |
-
-Both handled by `doc-writer-explain` with internal template branching.
+1. **Summarizer drift** — rewriting as prose without structural reconstruction.
+2. **Mixed-type document** — Architecture + How-To + Runbook in one file. Split.
+3. **Code-unverified claims** — restructure mode without reading the actual repo.
+4. **Diagram-less runtime doc** — describing a pipeline in prose only.
+5. **AI/ML flow collapse** — training / inference / evaluation / data / experimentation merged into one section.
+6. **Volume parity** — output line count matches input line count. Restructure should shrink.
+7. **Diátaxis-first thinking** — choosing Guide/Explanation/Reference before classifying the 12-type.
 
 ---
 
-## Related Skills/Commands
+## Related
 
-- **`/init-docs`**: Initialize MkDocs site structure (numbered hierarchy) + work item structure (`work/`)
-- **`/polish-doc`**: Apply writing-style and structural fixes directly to existing docs
-- **diagram-architect**: Delegate for architecture diagrams in Explanation docs
-- **doc-reviewer**: Review Diataxis docs (readability, type purity, style)
-- **doc-reviewer-execution**: Review execution artifacts (structural integrity, contract compliance)
-
-## Doc Site Architecture
-
-For project-wide doc structure before writing individual docs:
-> See `references/site-architecture.md` for numbering scheme (00-90), MkDocs config, workflow-based guide organization, and governance rules.
-> See `references/execution-rules.md` for Work Item rules; `references/execution-templates.md` for YAML templates.
-> `/init-docs` auto-generates structure per these rules.
+- `/refactor-doc` — restructure existing docs against repo code (primary workflow)
+- `/write-doc` — create new docs from scratch
+- `/init-docs` — initialize doc-site (currently MkDocs scaffolding; folder spine works for Starlight/Docusaurus too) + work item structure (Adapters B + C)
+- `diagram-architect` skill — diagrams from architecture
+- `doc-reviewer` / `doc-reviewer-execution` agents — review-only
