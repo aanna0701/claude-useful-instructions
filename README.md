@@ -170,7 +170,7 @@ Domain skills auto-fire from natural-language triggers:
 |--------------------------|-----------------------------------------------------------------------------------------------------------------|
 | `diataxis-doc-system`    | "Write docs", "Design doc", "API docs", "Draw diagram", "ERD" — drives `/write-doc`, `/init-docs`, `/sync-docs` |
 | `data-pipeline-architect`| "Design data pipeline", "ETL architecture", "데이터 파이프라인 설계해줘" (design phase)                          |
-| `dpipe-copilot`          | "파이프라인 다시 돌려줘", "stage 검증", "DuckDB 스키마 확인", "cropped_videos 재생성" (ops phase)                  |
+| `dpipe-copilot`          | "파이프라인 다시 돌려줘", "stage 검증", "DB/스키마 확인", "산출물 재생성", "rerun pipeline" (ops phase)            |
 | `codebase-qa`            | "what breaks if I change X", "who calls Y", "blast radius", "이 함수 바꾸면 뭐 깨져?" — drives `/codebase-ask`   |
 | `career-docs`            | "자소서 써줘", "Cover letter", "경력기술서"                                                                       |
 | `google-style-refactor`  | `/refactor-google-style` command                                                                                  |

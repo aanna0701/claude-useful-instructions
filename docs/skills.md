@@ -154,7 +154,7 @@ Single markdown file (`{project}_pipeline_instructions.md`) containing: diagnosi
 
 Data-pipeline **operations** skill. Covers run / verify / regenerate / troubleshoot for an already-built pipeline (Docker + DuckDB/Parquet + video encoding stack). Catalogs common pitfalls: schema drift, image not rebuilt after dep change, in-memory stale code in long-lived containers, derived-artifact regen order.
 
-**Triggers**: "파이프라인 다시 돌려줘", "dpipe 실행", "stage 검증", "파생물 재생성", "DuckDB 스키마 확인", "cropped_videos 재생성", "encoder 출력 검증", "viewer/container 갱신", "pipeline operations", "run dataset pipeline"
+**Triggers**: "파이프라인 다시 돌려줘", "스테이지 검증", "파생물 재생성", "DB/스키마 확인", "산출물 재생성", "장수명 컨테이너 갱신", "pipeline operations", "rerun stage", "verify pipeline outputs", "regenerate derived artifacts", "schema drift"
 
 ### When to use vs `data-pipeline-architect`
 
